@@ -6,7 +6,7 @@
   },
   "plugins": [
     {
-      "name": "sap-enterprise-stack",
+      "name": "ses",
       "source": ".",
       "description": "SAP Enterprise Agent Stack — 11 agentes SAP especializados, orquestador, subagentes, hooks de Definition of Done y MCP servers SAP (via pnpm dlx). MIT."
     }

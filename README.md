@@ -20,20 +20,20 @@ corepack enable && corepack prepare pnpm@latest --activate   # o: brew install p
 
 ```text
 /plugin marketplace add DayronDLR/sap-enterprise-stack-plugin
-/plugin install sap-enterprise-stack@sap-stack
+/plugin install ses@sap-stack
 /reload-plugins
 ```
 
-Los comandos quedan namespaced: `/sap-enterprise-stack:sap-abap …`.
+Los comandos quedan namespaced: `/ses:sap-abap …`.
 
 ## Primeros pasos (2 minutos)
 
 1. Instalá (los 3 comandos de arriba).
-2. Escribí `/sap-enterprise-stack:` y el autocompletado te muestra los 11 agentes.
+2. Escribí `/ses:` y el autocompletado te muestra los 11 agentes.
 3. Probá uno:
 
    ```text
-   /sap-enterprise-stack:sap-abap Necesito un report de aging AR con buckets
+   /ses:sap-abap Necesito un report de aging AR con buckets
    0-30, 31-60, 61-90, +90 días usando BSID/BSAD
    ```
 
@@ -59,7 +59,7 @@ Los comandos quedan namespaced: `/sap-enterprise-stack:sap-abap …`.
 | `:sap-devops` | CI/CD, gCTS, ATC, pipelines | Pipeline de transporte con gate de ATC |
 | `:sap-doc` | Documentación técnica, Word, full-stack | Documento técnico del proyecto con arquitectura |
 
-> Todos prefijados con `/sap-enterprise-stack:`. Además: `:sap-techlead` (planifica
+> Todos prefijados con `/ses:`. Además: `:sap-techlead` (planifica
 > tareas multi-agente) y los subagentes `reviewer` / `mentor` (vía `/agents` o por
 > palabras clave como "review" / "explicame").
 
@@ -67,9 +67,9 @@ Los comandos quedan namespaced: `/sap-enterprise-stack:sap-abap …`.
 
 | Componente | Invocación | Activación |
 | --- | --- | --- |
-| 11 comandos de agente | `/sap-enterprise-stack:sap-abap …` | automática |
+| 11 comandos de agente | `/ses:sap-abap …` | automática |
 | Orquestador (routing NL) | skill `sap-orchestrator` | automática |
-| Subagentes (reviewer, mentor, Fiori) | `/agents` → `sap-enterprise-stack:reviewer` | automática |
+| Subagentes (reviewer, mentor, Fiori) | `/agents` → `ses:reviewer` | automática |
 | Hooks de Definition of Done | evento `Stop` (quality-gate + review) | tras `/reload-plugins` |
 | MCP servers (5) | herramientas `mcp__…` | al iniciar sesión |
 

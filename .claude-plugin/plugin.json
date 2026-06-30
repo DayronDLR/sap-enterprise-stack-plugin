@@ -1,6 +1,6 @@
 {
-  "name": "sap-enterprise-stack",
-  "version": "0.1.4",
+  "name": "ses",
+  "version": "0.1.5",
   "description": "SAP Enterprise Agent Stack — 11 agentes especializados (ABAP, CAP/BTP, Fiori, HANA, Integration, Basis, Migration, QA, DevOps, Requirements, Docs), gates de Definition of Done, y MCP servers SAP. Orquestador SAP como skill.",
   "author": {
     "name": "Insight Technologies"
