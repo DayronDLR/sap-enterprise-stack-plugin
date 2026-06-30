@@ -1,0 +1,51 @@
+{
+  "mcpServers": {
+    "sap-cap-capire": {
+      "command": "pnpm",
+      "args": [
+        "dlx",
+        "@cap-js/mcp-server@0.0.5"
+      ],
+      "env": {}
+    },
+    "sap-ui5": {
+      "command": "pnpm",
+      "args": [
+        "dlx",
+        "@ui5/mcp-server@0.2.14"
+      ],
+      "env": {}
+    },
+    "sap-fiori-tools": {
+      "command": "pnpm",
+      "args": [
+        "dlx",
+        "@sap-ux/fiori-mcp-server@1.7.1",
+        "fiori-mcp"
+      ],
+      "env": {}
+    },
+    "github": {
+      "command": "pnpm",
+      "args": [
+        "dlx",
+        "@modelcontextprotocol/server-github@2025.4.8"
+      ],
+      "env": {}
+    },
+    "sap-adt": {
+      "command": "pnpm",
+      "args": [
+        "dlx",
+        "@mcp-abap-adt/core@7.2.1"
+      ],
+      "env": {
+        "SAP_ADT_URL": "${SAP_ADT_URL:-}",
+        "SAP_ADT_USER": "${SAP_ADT_USER:-}",
+        "SAP_ADT_PASSWORD": "${SAP_ADT_PASSWORD:-}",
+        "SAP_ADT_CLIENT": "${SAP_ADT_CLIENT:-}",
+        "SAP_ADT_LANG": "${SAP_ADT_LANG:-EN}"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "sap-stack",
+  "owner": {
+    "name": "Insight Technologies",
+    "url": "https://github.com/DayronDLR/sap-enterprise-stack-plugin"
+  },
+  "plugins": [
+    {
+      "name": "sap-enterprise-stack",
+      "source": ".",
+      "description": "SAP Enterprise Agent Stack — 11 agentes SAP especializados, orquestador, subagentes, hooks de Definition of Done y MCP servers SAP (via pnpm dlx). MIT."
+    }
+  ]
+}

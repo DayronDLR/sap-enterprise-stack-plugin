@@ -1,0 +1,120 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git pull origin main --quiet 2>&1 | grep -v 'Already up to date' || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/protect-sensitive-files.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm run lint:json --silent 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-lint-ui5.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-lint-cds.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-validate-manifest.sh\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent-reinforcement.sh\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rm -f \"${CLAUDE_PROJECT_DIR:-.}/tmp/.active-sap-agent\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.review-done\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.qa-nfr-done\" 2>/dev/null; echo '# Contexto SAP Stack\\nSistema: SAP S/4HANA 2023 On-Premise + SAP BTP\\nLandscape: DEV > QAS > PRD | Principio: Clean Core\\nReglas: shared/core-dev-principles.md + rules/DEFINITION-OF-DONE.md + shared/non-functional-requirements.md\\nRouting: orchestrator/routing_rules.json\\nSi el contexto fue compactado, releer CLAUDE.md antes de continuar.'"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '# Re-inyeccion post-compactacion\\nStack SAP activo. Releer CLAUDE.md, shared/core-dev-principles.md, shared/non-functional-requirements.md y rules/DEFINITION-OF-DONE.md si necesitas contexto.\\nRouting: orchestrator/routing_rules.json'"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/log-agent-activity.sh\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'SAP Stack: Verificar TRs pendientes, sesiones de depuracion y commits antes de cerrar.'"
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/quality-gate.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/mandatory-review.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
