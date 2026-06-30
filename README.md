@@ -26,6 +26,43 @@ corepack enable && corepack prepare pnpm@latest --activate   # o: brew install p
 
 Los comandos quedan namespaced: `/sap-enterprise-stack:sap-abap …`.
 
+## Primeros pasos (2 minutos)
+
+1. Instalá (los 3 comandos de arriba).
+2. Escribí `/sap-enterprise-stack:` y el autocompletado te muestra los 11 agentes.
+3. Probá uno:
+
+   ```text
+   /sap-enterprise-stack:sap-abap Necesito un report de aging AR con buckets
+   0-30, 31-60, 61-90, +90 días usando BSID/BSAD
+   ```
+
+4. O describí la tarea en lenguaje natural y dejá que el orquestador enrute:
+
+   ```text
+   Tengo que diseñar un Calculation View de ventas con conversión de moneda para SAC
+   ```
+
+## Uso — los 11 agentes
+
+| Comando | Dominio | Ejemplo |
+| --- | --- | --- |
+| `:sap-req` | Requirements, blueprints, FS, gap analysis | Blueprint del proceso Procure-to-Pay |
+| `:sap-integration` | CPI, iFlows, OData, IDocs, APIs | iFlow asíncrono SAP→Salesforce con reintentos |
+| `:sap-cap` | CAP Node.js/Java, BTP, MTA, XSUAA | App de aprobaciones de gastos con CAP + HANA Cloud |
+| `:sap-fiori` | Fiori Elements, SAPUI5, RAP, BAS | List Report + Object Page de órdenes de compra |
+| `:sap-hana` | Calculation Views, SQLScript, HDI | CalcView de ventas con conversión de moneda |
+| `:sap-abap` | ABAP, CDS, RAP, BAdIs, EML, AMDP | Report de aging AR con buckets y manejo de errores |
+| `:sap-basis` | Roles, autorizaciones, transportes, SoD | Diseño de rol con SoD para FI display |
+| `:sap-migration` | Migración de datos, LTMC, Migration Cockpit | Mapeo de campos para carga de maestro de clientes |
+| `:sap-qa` | Casos de prueba, UAT, NFR, go-live | Plan de pruebas + checklist NFR para el report de aging |
+| `:sap-devops` | CI/CD, gCTS, ATC, pipelines | Pipeline de transporte con gate de ATC |
+| `:sap-doc` | Documentación técnica, Word, full-stack | Documento técnico del proyecto con arquitectura |
+
+> Todos prefijados con `/sap-enterprise-stack:`. Además: `:sap-techlead` (planifica
+> tareas multi-agente) y los subagentes `reviewer` / `mentor` (vía `/agents` o por
+> palabras clave como "review" / "explicame").
+
 ## Qué queda activo al instalar
 
 | Componente | Invocación | Activación |
