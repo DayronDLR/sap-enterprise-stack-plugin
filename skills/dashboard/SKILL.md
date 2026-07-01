@@ -12,16 +12,23 @@ Leer los logs de actividad de agents y presentar un resumen visual.
 
 ### 1. Leer logs
 
+> Los logs se leen SIEMPRE desde la raíz del proyecto (`${CLAUDE_PROJECT_DIR}/logs/`),
+> que es donde el hook `log-agent-activity.sh` los escribe — no desde el CWD.
+> Así el dashboard funciona igual estés en la raíz o en un subdirectorio, y también
+> cuando el stack corre como plugin instalado.
+
 ```bash
+LOGS="${CLAUDE_PROJECT_DIR:-.}/logs"
+
 # Ver logs de hoy
-cat logs/agents-$(date +%Y-%m-%d).jsonl 2>/dev/null || echo "No hay logs de hoy"
+cat "$LOGS/agents-$(date +%Y-%m-%d).jsonl" 2>/dev/null || echo "No hay logs de hoy"
 
 # Ver logs de los últimos 7 días
 for i in $(seq 0 6); do
     DATE=$(date -d "$i days ago" +%Y-%m-%d 2>/dev/null || date -v-${i}d +%Y-%m-%d 2>/dev/null)
-    if [ -f "logs/agents-$DATE.jsonl" ]; then
+    if [ -f "$LOGS/agents-$DATE.jsonl" ]; then
         echo "=== $DATE ==="
-        cat "logs/agents-$DATE.jsonl"
+        cat "$LOGS/agents-$DATE.jsonl"
     fi
 done
 ```
@@ -60,5 +67,5 @@ Presentar en formato:
 También mostrar las últimas decisiones arquitectónicas:
 
 ```bash
-tail -30 memory/decisions.md 2>/dev/null || echo "No hay decisiones registradas"
+tail -30 "${CLAUDE_PROJECT_DIR:-.}/memory/decisions.md" 2>/dev/null || echo "No hay decisiones registradas"
 ```
