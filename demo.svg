@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="392" viewBox="0 0 820 392" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14">
+  <!-- window -->
+  <rect x="0" y="0" width="820" height="392" rx="12" fill="#181825"/>
+  <rect x="0" y="0" width="820" height="36" rx="12" fill="#313244"/>
+  <rect x="0" y="24" width="820" height="12" fill="#313244"/>
+  <circle cx="20" cy="18" r="6" fill="#f38ba8"/>
+  <circle cx="40" cy="18" r="6" fill="#f9e2af"/>
+  <circle cx="60" cy="18" r="6" fill="#a6e3a1"/>
+  <text x="410" y="23" text-anchor="middle" fill="#bac2de" font-size="12.5">SAP Enterprise Stack — Claude Code</text>
+
+  <!-- body -->
+  <g>
+    <text x="22" y="66"><tspan fill="#a6e3a1">$ </tspan><tspan fill="#cdd6f4">/plugin marketplace add DayronDLR/sap-enterprise-stack-plugin</tspan></text>
+    <text x="22" y="89"><tspan fill="#a6e3a1">$ </tspan><tspan fill="#cdd6f4">/plugin install ses@sap-stack</tspan></text>
+    <text x="22" y="112"><tspan fill="#a6e3a1">  ✓ </tspan><tspan fill="#7f849c">Installed ses · 17 skills · 12 agents · 5 MCP servers</tspan></text>
+
+    <text x="22" y="150"><tspan fill="#89b4fa" font-weight="bold">› /ses:sap-abap</tspan><tspan fill="#cdd6f4">  AR aging report — buckets 0-30/31-60/61-90/90+ (BSID/BSAD)</tspan></text>
+
+    <text x="22" y="184" fill="#6c7086">  # ABAP Developer · Clean Core · report ZFI_AR_AGING</text>
+    <text x="22" y="207"><tspan fill="#cba6f7">  SELECT </tspan><tspan fill="#cdd6f4">bukrs, kunnr, waers, dmbtr, zfbdt</tspan></text>
+    <text x="22" y="230"><tspan fill="#cba6f7">    FROM </tspan><tspan fill="#cdd6f4">bsid </tspan><tspan fill="#cba6f7">INTO TABLE </tspan><tspan fill="#f9e2af">@DATA(lt_open)</tspan></text>
+    <text x="22" y="253"><tspan fill="#cba6f7">    WHERE </tspan><tspan fill="#cdd6f4">budat &lt;= </tspan><tspan fill="#f9e2af">@p_keydt</tspan><tspan fill="#cdd6f4">.</tspan></text>
+    <text x="22" y="276" fill="#6c7086">  " buckets via CASE · ENQUEUE before update · SLG1 logging</text>
+    <text x="22" y="299"><tspan fill="#a6e3a1">  ✓ </tspan><tspan fill="#cdd6f4">error handling · secondary-index hint · NFR checklist</tspan></text>
+
+    <text x="22" y="337"><tspan fill="#f9e2af">  ⏻ DoD gate: </tspan><tspan fill="#cdd6f4">quality-gate </tspan><tspan fill="#a6e3a1">✓</tspan><tspan fill="#cdd6f4"> · code review </tspan><tspan fill="#a6e3a1">✓</tspan></text>
+
+    <text x="22" y="372" fill="#585b70" font-size="12.5">…or describe the task in natural language — the orchestrator routes it. Agents reply in your language.</text>
+  </g>
+</svg>

@@ -2,6 +2,10 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
+![SAP Enterprise Stack — demo](demo.svg)
+
+<sub>Illustrative example of `/ses:sap-abap` in action.</sub>
+
 **English** · [Español](#sap-enterprise-stack--plugin-de-claude-code-español)
 
 A complete SAP development stack inside Claude Code. Install the plugin and you
