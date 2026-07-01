@@ -1,5 +1,7 @@
 # SAP Enterprise Stack — Claude Code Plugin
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
 11 agentes SAP especializados (ABAP, CAP/BTP, Fiori, HANA, Integration, Basis,
 Migration, QA, DevOps, Requirements, Docs) como comandos auto-contenidos, un
 orquestador SAP que enruta por lenguaje natural, subagentes (reviewer, mentor,
