@@ -1,18 +1,19 @@
 ---
 name: Feature request
-about: Proponé una mejora, un nuevo agente o una skill
+about: Suggest an improvement, agent or skill / Proponé una mejora
 title: "[idea] "
 labels: enhancement
 ---
 
-## Qué te gustaría
+## What you'd like / Qué te gustaría
 
-Describí la mejora o capacidad nueva.
+Describe the improvement or new capability. / Describí la mejora o capacidad.
 
-## Caso de uso SAP
+## SAP use case / Caso de uso SAP
 
-Por qué suma — qué problema real resuelve (módulo, escenario, rol).
+Why it helps — the real problem it solves (module, scenario, role).
+Por qué suma — qué problema real resuelve.
 
-## Alternativas consideradas
+## Alternatives considered / Alternativas consideradas
 
-Otras formas de resolverlo, si las hay.
+Other ways to solve it, if any. / Otras formas de resolverlo, si las hay.

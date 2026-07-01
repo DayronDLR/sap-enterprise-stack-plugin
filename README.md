@@ -2,16 +2,243 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
+**English** · [Español](#sap-enterprise-stack--plugin-de-claude-code-español)
+
+A complete SAP development stack inside Claude Code. Install the plugin and you
+get **11 specialized SAP agents**, an **orchestrator** that routes in natural
+language, support **subagents**, **SAP reference skills**, **quality gates
+(Definition of Done)** and **5 SAP MCP servers** — without cloning any repo.
+
+> 🌐 **The agents reply in your language.** Write your request in English → you
+> get English; write in Spanish → Spanish. SAP terms and code stay untouched.
+
+- **Development agents** (Opus): ABAP, CAP/BTP, Fiori/UI5, HANA, Integration.
+- **Support agents** (Sonnet): Basis, Migration, QA, DevOps, Requirements, Docs.
+- **Assumed landscape:** S/4HANA 2023 + BTP, DEV→QAS→PRD, Clean Core principles.
+
+## License
+
+**GPL-3.0** (see [`LICENSE`](LICENSE)). Free **copyleft** software: you may use,
+modify and redistribute it, as long as your derivatives **stay GPL-3.0 and you
+publish their source**. It cannot be closed-sourced or embedded in a proprietary
+product.
+
+It bundles compatible third-party components — full attributions in
+[`NOTICE`](NOTICE):
+
+| Component | Source | License |
+| --- | --- | --- |
+| 10 SAP reference skills | [`secondsky/sap-skills`](https://github.com/secondsky/sap-skills) | GPL-3.0 |
+| `skill-creator` | Anthropic | Apache-2.0 |
+| `sapui5-freestyle` | upstream | MIT |
+| Everything else (agents, hooks, orchestrator, commands) | Insight Technologies | GPL-3.0 |
+
+## Requirement: pnpm
+
+Everything Node-related uses **pnpm** (MCP servers run via `pnpm dlx`, and so do
+the hook linters). Have it on your PATH:
+
+```bash
+corepack enable && corepack prepare pnpm@latest --activate   # or: brew install pnpm
+```
+
+## Install
+
+```text
+/plugin marketplace add DayronDLR/sap-enterprise-stack-plugin
+/plugin install ses@sap-stack
+/reload-plugins
+```
+
+Commands are namespaced under `ses:` — e.g. `/ses:sap-abap`.
+
+## How to update
+
+Update it like any Claude Code plugin:
+
+```text
+/plugin update
+```
+
+Every release publishes a new marketplace version automatically, so
+`/plugin update` pulls the latest — **no re-cloning, no manual steps**. After
+updating, run `/reload-plugins` to reload commands and hooks.
+
+> Behind the scenes: every change to the stack rebuilds and re-publishes this
+> repo (which is plugin **and** marketplace) with a bumped version — that's how
+> `/plugin update` detects it.
+
+## Getting started (2 minutes)
+
+1. Install (the 3 commands above).
+2. Type `/ses:` and autocomplete shows the 11 agents.
+3. Try one:
+
+   ```text
+   /ses:sap-abap I need an AR aging report with 0-30/31-60/61-90/90+ buckets from BSID/BSAD
+   ```
+
+4. Or describe the task in natural language and let the orchestrator route it:
+
+   ```text
+   I need to design a sales Calculation View with currency conversion for SAC
+   ```
+
+## Usage — the 11 agents
+
+| Command | Domain | Example |
+| --- | --- | --- |
+| `:sap-req` | Requirements, blueprints, FS, gap analysis | Procure-to-Pay process blueprint |
+| `:sap-integration` | CPI, iFlows, OData, IDocs, APIs | Async SAP→Salesforce iFlow with retries |
+| `:sap-cap` | CAP Node.js/Java, BTP, MTA, XSUAA | Expense-approval app with CAP + HANA Cloud |
+| `:sap-fiori` | Fiori Elements, SAPUI5, RAP, BAS | List Report + Object Page for purchase orders |
+| `:sap-hana` | Calculation Views, SQLScript, HDI | Sales CalcView with currency conversion |
+| `:sap-abap` | ABAP, CDS, RAP, BAdIs, EML, AMDP | AR aging report with buckets and error handling |
+| `:sap-basis` | Roles, authorizations, transports, SoD | Role design with SoD for FI display |
+| `:sap-migration` | Data migration, LTMC, Migration Cockpit | Field mapping for a customer-master load |
+| `:sap-qa` | Test cases, UAT, NFR, go-live | Test plan + NFR checklist for the aging report |
+| `:sap-devops` | CI/CD, gCTS, ATC, pipelines | Transport pipeline with an ATC gate |
+| `:sap-doc` | Technical docs, Word, full-stack | Technical document with architecture |
+
+> All prefixed with `/ses:`. Also: `:sap-techlead` (plans multi-agent tasks) and
+> the `reviewer` / `mentor` subagents (via `/agents` or keywords).
+
+## What ships / becomes active on install
+
+| Component | What it does | Invocation |
+| --- | --- | --- |
+| 11 agent commands | Self-contained SAP personas (persona + rules + NFR + Clean Core inline) | `/ses:sap-abap …` |
+| Orchestrator (skill) | Routes your natural-language request to the right agent | automatic |
+| Subagents | `reviewer` (code review), `mentor` (educational review), Fiori (architect/implementer/debugger/tester) | `/agents` or keywords |
+| SAP reference skills | Technical material (ABAP, CDS, CAP, SQLScript, BTP, Fiori Tools, UI5) consulted on-demand | automatic |
+| Definition of Done hooks | Quality gates on `Stop` (quality-gate + code review), sensitive-file protection, auto-lint | after `/reload-plugins` |
+| 5 MCP servers | `sap-cap-capire`, `sap-ui5`, `sap-fiori-tools`, `github`, `sap-adt` | `mcp__…` tools |
+
+## What you can / can't do
+
+**You can:**
+
+- Use the 11 agents in **any SAP project** without cloning the repo.
+- Let the **orchestrator** route by natural language (no need to memorize commands).
+- Run the **Definition of Done gates** automatically when closing tasks.
+- Consult the **SAP reference skills** on-demand.
+- Use the **5 MCP servers** (4 with no credentials; `sap-adt` needs credentials).
+- **Update** with `/plugin update` and modify/fork it (under GPL-3.0).
+
+**You can't (by design or plugin limits):**
+
+- Invoke commands **without the `ses:` prefix** — plugin namespacing is mandatory
+  in Claude Code (there is no bare `/sap-abap`).
+- **Develop or regenerate the stack** itself (the generator, tests and CI live in
+  the development repo, not in the plugin).
+- The **branded documentation build** (`.docx`/`.pptx` with a client theme +
+  diagrams with SAP BTP icons) — not distributed (the icons are proprietary SAP
+  assets). `sap-doc` still produces the doc **content**.
+- Have the plugin **set env vars** for you (a plugin can't ship `env`) — you set
+  them manually (see below).
+- **Relicense** under a non-GPL license — it's copyleft.
+
+## Quality gates (Definition of Done) — important
+
+This plugin is **opinionated**: it installs hooks that enforce a *Definition of
+Done*. It's intentional (it comes from an enterprise workflow), but you should
+know before installing:
+
+| Event | What it does | Can it block? |
+| --- | --- | --- |
+| `Stop` (closing a task) | Runs **quality-gate** (linters/smells) + **code review** on the diff | **Yes** — CRITICAL/HIGH findings ask you to keep working before closing |
+| `PreToolUse` | **Protects sensitive files** (`.env`, `xs-security.json`, …) | Yes — blocks editing them |
+| `PostToolUse` | Auto-lints CDS/UI5/manifests on edit | No (informative) |
+
+**Don't want them?** Set this in your `settings.json` (opt-out, plugin only):
+
+```json
+{ "env": { "SES_SKIP_DOD_GATES": "1" } }
+```
+
+That **skips** the `Stop` gates so you can close without a review. Agents, skills
+and MCP keep working. (Sensitive-file protection and auto-lint don't depend on
+this variable.)
+
+> The hooks are **bash** scripts — on Windows you need Git Bash or WSL.
+
+## User configuration
+
+1. **MCP `sap-adt`** (reads ABAP from the live system) needs credentials:
+
+   ```bash
+   export SAP_ADT_URL="https://your-system:44300"
+   export SAP_ADT_USER="..." SAP_ADT_PASSWORD="..." SAP_ADT_CLIENT="100"
+   ```
+
+   The other 4 MCP (CAP, UI5, Fiori Tools, GitHub) start with no secrets.
+
+2. **Context optimization (optional)** — a plugin can't ship `env`; if you want
+   it, add to YOUR `settings.json`:
+
+   ```json
+   { "env": { "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60", "ENABLE_TOOL_SEARCH": "auto:5", "MAX_MCP_OUTPUT_TOKENS": "50000" } }
+   ```
+
+3. **First use of each MCP downloads its package** (`pnpm dlx`, needs network).
+
+## SAP reference skills (included)
+
+This plugin **includes** the SAP reference skills (ABAP, CDS, CAP, SQLScript,
+BTP, Fiori Tools, UI5 syntax, …) — material the agents consult on-demand. They
+come from the upstream project
+[`secondsky/sap-skills`](https://github.com/secondsky/sap-skills) under
+**GPL-3.0**; that's why the whole plugin is distributed under **GPL-3.0**. See
+`NOTICE` for full attributions.
+
+## Inputs & documentation (`sap-doc` agent)
+
+`/ses:sap-doc` produces SAP technical documentation. Since a plugin is
+**read-only**, its inputs live in **YOUR project**, not in the plugin — the agent
+reads them via `${CLAUDE_PROJECT_DIR}`.
+
+**Client data (you place it, in your project):**
+
+```text
+your-project/
+└── docs/architecture/
+    ├── client-theme.yaml     # client palette, fonts, logos
+    ├── reference.docx        # Word template for pandoc --reference-doc
+    └── …                     # client structure/template
+```
+
+> Never push client data to a public repo. Keep it in your (private) project.
+
+**Branded build (`.docx`/`.pptx` with theme + draw.io diagrams):** the toolchain
+(draw.io generator, `build-doc.sh`, the **SAP BTP icon library** and the example
+diagrams) is **not** distributed with this plugin — the icons are SAP assets under
+their own license. `/ses:sap-doc` produces the doc **content**; for the full
+branded build, use the toolchain from the stack's development repo.
+
+## Support
+
+Issues and improvements: <https://github.com/DayronDLR/sap-enterprise-stack-plugin/issues>
+
+---
+
+<a name="sap-enterprise-stack--plugin-de-claude-code-español"></a>
+
+## SAP Enterprise Stack — Plugin de Claude Code (Español)
+
+[English](#sap-enterprise-stack--claude-code-plugin) · **Español**
+
 Un stack completo de desarrollo SAP dentro de Claude Code. Instalás el plugin y
 tenés **11 agentes SAP especializados**, un **orquestador** que enruta por
 lenguaje natural, **subagentes** de apoyo, **skills SAP de referencia**, **gates
 de calidad (Definition of Done)** y **5 MCP servers SAP** — sin clonar ningún
 repo.
 
+> 🌐 **Los agentes responden en tu idioma.** Escribís en español → respondés en
+> español; en inglés → inglés. Los términos SAP y el código quedan intactos.
+
 - **Agentes de desarrollo** (Opus): ABAP, CAP/BTP, Fiori/UI5, HANA, Integration.
 - **Agentes de soporte** (Sonnet): Basis, Migration, QA, DevOps, Requirements, Docs.
-- **Entorno asumido:** S/4HANA 2023 + BTP, landscape DEV→QAS→PRD, principios
-  Clean Core, español técnico.
+- **Entorno asumido:** S/4HANA 2023 + BTP, landscape DEV→QAS→PRD, Clean Core.
 
 ## Licencia
 
@@ -61,27 +288,6 @@ Cada release publica una versión nueva del marketplace automáticamente, así q
 `/plugin update` te trae lo último — **sin re-clonar ni pasos manuales**. Después
 de actualizar, corré `/reload-plugins` para recargar comandos y hooks.
 
-> Detrás de escena: cada cambio en el stack reconstruye y republica este repo
-> (que es plugin **y** marketplace a la vez) bumpeando la versión — por eso
-> `/plugin update` detecta el cambio.
-
-## Primeros pasos (2 minutos)
-
-1. Instalá (los 3 comandos de arriba).
-2. Escribí `/ses:` y el autocompletado te muestra los 11 agentes.
-3. Probá uno:
-
-   ```text
-   /ses:sap-abap Necesito un report de aging AR con buckets
-   0-30, 31-60, 61-90, +90 días usando BSID/BSAD
-   ```
-
-4. O describí la tarea en lenguaje natural y dejá que el orquestador enrute:
-
-   ```text
-   Tengo que diseñar un Calculation View de ventas con conversión de moneda para SAC
-   ```
-
 ## Uso — los 11 agentes
 
 | Comando | Dominio | Ejemplo |
@@ -98,124 +304,46 @@ de actualizar, corré `/reload-plugins` para recargar comandos y hooks.
 | `:sap-devops` | CI/CD, gCTS, ATC, pipelines | Pipeline de transporte con gate de ATC |
 | `:sap-doc` | Documentación técnica, Word, full-stack | Documento técnico del proyecto con arquitectura |
 
-> Todos prefijados con `/ses:`. Además: `:sap-techlead` (planifica tareas
-> multi-agente) y los subagentes `reviewer` / `mentor` (vía `/agents` o por
-> palabras clave como "review" / "explicame").
+> Todos prefijados con `/ses:`. Además: `:sap-techlead` y los subagentes
+> `reviewer` / `mentor` (vía `/agents` o por palabras clave).
 
-## Funcionalidad completa — qué queda activo al instalar
+## Qué podés / Qué NO
 
-| Componente | Qué hace | Invocación |
-| --- | --- | --- |
-| 11 comandos de agente | Personas SAP auto-contenidas (persona + reglas + NFR + Clean Core inline) | `/ses:sap-abap …` |
-| Orquestador (skill) | Enruta tu petición en lenguaje natural al agente correcto | automático |
-| Subagentes | `reviewer` (code review), `mentor` (review educativo), Fiori (architect/implementer/debugger/tester) | `/agents` o keywords |
-| Skills SAP de referencia | Material técnico (ABAP, CDS, CAP, SQLScript, BTP, Fiori Tools, UI5) que el agente consulta on-demand | automático |
-| Hooks de Definition of Done | Gates de calidad en el evento `Stop` (quality-gate + code review), protección de archivos sensibles, auto-lint | tras `/reload-plugins` |
-| 5 MCP servers | `sap-cap-capire`, `sap-ui5`, `sap-fiori-tools`, `github`, `sap-adt` | herramientas `mcp__…` |
+**Podés:** usar los 11 agentes en cualquier proyecto SAP sin clonar; dejar que el
+orquestador enrute por lenguaje natural; correr los gates de DoD; consultar las
+skills; usar los 5 MCP; actualizar con `/plugin update` y forkear (bajo GPL-3.0).
 
-## Qué podés hacer / Qué NO
+**No podés:** invocar comandos sin el prefijo `ses:` (namespacing obligatorio);
+desarrollar/regenerar el stack desde el plugin; el build branded de docs con
+iconos SAP (no se distribuye); que el plugin setee `env` por vos; relicenciar
+fuera de GPL.
 
-**Podés:**
+## Gates de calidad (Definition of Done)
 
-- Usar los 11 agentes en **cualquier proyecto SAP** sin clonar el repo.
-- Dejar que el **orquestador** enrute por lenguaje natural (sin recordar comandos).
-- Correr los **gates de Definition of Done** automáticamente al cerrar tareas.
-- Consultar las **skills SAP de referencia** on-demand.
-- Usar los **5 MCP servers** (4 sin credenciales; `sap-adt` con credenciales).
-- **Actualizar** con `/plugin update` y modificar/forkear (bajo GPL-3.0).
-
-**No podés (por diseño o límites de un plugin):**
-
-- Invocar comandos **sin el prefijo `ses:`** — el namespacing de plugins es
-  obligatorio en Claude Code (no hay `/sap-abap` pelado).
-- **Desarrollar o regenerar el stack** en sí (el generador, tests y CI viven en el
-  repo de desarrollo, no en el plugin).
-- El **build branded de documentación** (`.docx`/`.pptx` con tema del cliente +
-  diagramas con iconos SAP BTP) — no se distribuye (los iconos son assets
-  propietarios de SAP). `sap-doc` sí genera el **contenido** de la doc.
-- Que el plugin **setee env vars** por vos (un plugin no puede shippear `env`) —
-  los ponés a mano (ver abajo).
-- **Relicenciar** bajo una licencia no-GPL — es copyleft.
-
-## Gates de calidad (Definition of Done) — importante
-
-Este plugin es **opinionado**: instala hooks que aplican una *Definition of Done*.
-Es intencional (nace de un flujo enterprise), pero conviene que lo sepas antes:
-
-| Evento | Qué hace | ¿Puede bloquear? |
-| --- | --- | --- |
-| `Stop` (al cerrar una tarea) | Corre **quality-gate** (linters/smells) + **code review** sobre el diff | **Sí** — si hay hallazgos CRITICAL/HIGH, te pide seguir trabajando antes de cerrar |
-| `PreToolUse` | **Protege archivos sensibles** (`.env`, `xs-security.json`, …) | Sí — impide editarlos |
-| `PostToolUse` | Auto-lint de CDS/UI5/manifests al editar | No (informativo) |
-
-**¿No los querés?** Poné esta variable en tu `settings.json` (opt-out solo para
-el plugin):
+El plugin instala hooks que aplican una *Definition of Done*: en `Stop` corre
+quality-gate + code review (**puede bloquear** el cierre si hay CRITICAL/HIGH),
+`PreToolUse` protege archivos sensibles, `PostToolUse` auto-lint. Para
+desactivar los gates de `Stop`, poné en tu `settings.json`:
 
 ```json
 { "env": { "SES_SKIP_DOD_GATES": "1" } }
 ```
 
-Con eso los gates de `Stop` se **omiten** y podés cerrar sin review. Los agentes,
-skills y MCP siguen funcionando igual. (La protección de archivos sensibles y el
-auto-lint no dependen de esta variable.)
+Los hooks son scripts **bash** — en Windows necesitás Git Bash o WSL.
 
-> Los hooks son scripts **bash** — en Windows necesitás Git Bash o WSL para que
-> corran.
+## Configuración que requiere acción
 
-## Configuración que requiere acción del usuario
+1. **MCP `sap-adt`** necesita credenciales (`SAP_ADT_URL/USER/PASSWORD/CLIENT`);
+   los otros 4 MCP arrancan sin secrets.
+2. **Env de optimización de contexto (opcional)** — se ponen a mano en tu
+   `settings.json` (un plugin no puede shippear `env`).
+3. Primer uso de cada MCP descarga su paquete (`pnpm dlx`, requiere red).
 
-1. **MCP `sap-adt`** (lectura ABAP del sistema real) necesita credenciales:
+## Insumos y documentación (`sap-doc`)
 
-   ```bash
-   export SAP_ADT_URL="https://tu-sistema:44300"
-   export SAP_ADT_USER="..." SAP_ADT_PASSWORD="..." SAP_ADT_CLIENT="100"
-   ```
-
-   Los otros 4 MCP (CAP, UI5, Fiori Tools, GitHub) arrancan sin secrets.
-
-2. **Optimización de contexto (opcional)** — un plugin no puede shippear `env`;
-   si la querés, agregá a TU `settings.json`:
-
-   ```json
-   { "env": { "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60", "ENABLE_TOOL_SEARCH": "auto:5", "MAX_MCP_OUTPUT_TOKENS": "50000" } }
-   ```
-
-3. **Primer uso de cada MCP descarga su paquete** (`pnpm dlx`, requiere red).
-
-## Skills SAP de referencia (incluidas)
-
-Este plugin **incluye** las skills de referencia SAP (sintaxis ABAP, CDS, CAP,
-SQLScript, BTP, Fiori Tools, UI5, …) — material que los agentes consultan
-on-demand. Provienen del proyecto upstream
-[`secondsky/sap-skills`](https://github.com/secondsky/sap-skills) bajo **GPL-3.0**;
-por eso todo este plugin se distribuye bajo **GPL-3.0**. Ver `NOTICE` para las
-atribuciones completas.
-
-## Insumos y documentación (agente `sap-doc`)
-
-`/ses:sap-doc` genera documentación técnica SAP. Como un plugin es de
-**solo-lectura**, sus insumos van en **TU proyecto**, no en el plugin — el agente
-los lee vía `${CLAUDE_PROJECT_DIR}`.
-
-**Datos del cliente (los colocás vos, en tu proyecto):**
-
-```text
-tu-proyecto/
-└── docs/architecture/
-    ├── client-theme.yaml     # paleta, fuentes, logos del cliente
-    ├── reference.docx        # plantilla Word para pandoc --reference-doc
-    └── …                     # estructura/plantilla del cliente
-```
-
-> Nunca subas datos de cliente a un repo público. Van en el repo/carpeta de tu
-> proyecto (privado).
-
-**Build con identidad visual (branded `.docx`/`.pptx` + diagramas draw.io):**
-el toolchain (generador draw.io, `build-doc.sh`, la librería de **iconos SAP BTP**
-y los diagramas de ejemplo) **no** se distribuye con este plugin — los iconos son
-assets de SAP con su propia licencia. `/ses:sap-doc` produce el **contenido** de
-la documentación; para el build branded completo, usá el toolchain del repo de
-desarrollo del stack.
+Los insumos del cliente (tema, `reference.docx`, plantillas) van en **tu
+proyecto** (`docs/architecture/…`), no en el plugin. El build branded con iconos
+SAP BTP no se distribuye (assets de SAP); `sap-doc` genera el **contenido**.
 
 ## Soporte
 

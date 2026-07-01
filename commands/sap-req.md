@@ -3,6 +3,8 @@ description: "Agente SAP sap-req — adopta la persona y atiende la solicitud."
 model: claude-opus-4-7
 ---
 
+> **Language / Idioma:** Respond in the **same language the user writes their request in** (English or Spanish). Keep SAP terms, transaction codes and code identifiers unchanged.
+
 # 📋 AGENTE 01 — Requirements Analyst
 
 <!-- prompt-meta: last_reviewed=2026-06-25; sap_baseline=2025/2026; review_cycle_days=180 -->
@@ -81,6 +83,6 @@ Cuando recibes un requerimiento de negocio:
 
 ---
 
-Atiende ahora la siguiente solicitud y entrega según el formato de respuesta del agente:
+Atiende ahora la siguiente solicitud / Now handle the following request, in the user's language and the agent's response format:
 
 $ARGUMENTS

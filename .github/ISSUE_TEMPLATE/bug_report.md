@@ -1,27 +1,27 @@
 ---
 name: Bug report
-about: Reportá un problema con el plugin
+about: Report a problem with the plugin / Reportá un problema
 title: "[bug] "
 labels: bug
 ---
 
-## Descripción
+## Description / Descripción
 
-Qué pasó vs. qué esperabas.
+What happened vs. what you expected. / Qué pasó vs. qué esperabas.
 
-## Pasos para reproducir
+## Steps to reproduce / Pasos para reproducir
 
 1. …
 2. …
 3. …
 
-## Entorno
+## Environment / Entorno
 
-- Versión del plugin (`/plugin`):
-- Sistema operativo:
+- Plugin version (`/plugin`):
+- OS / Sistema operativo:
 - `pnpm --version`:
-- ¿MCP afectado? ¿cuál?
+- Affected MCP? / ¿MCP afectado?
 
-## Logs / salida
+## Logs / output
 
-Pegá la salida relevante (⚠️ sin credenciales ni datos de cliente).
+Paste the relevant output (⚠️ no credentials or client data).
