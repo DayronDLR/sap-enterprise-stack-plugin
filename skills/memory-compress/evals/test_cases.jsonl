@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Compress memory files to reduce context", "expected_keywords": ["memory/", "frontmatter", ".original"], "expected_patterns": ["memory/", "frontmatter"], "category": "compress"}
+{"id": "TC-002", "prompt": "Preserve technical SAP terms during compression", "expected_keywords": ["BAdI", "XSUAA", "DEV/QAS/PRD"], "expected_patterns": ["BAdI", "XSUAA"], "category": "preservation"}
+{"id": "TC-003", "prompt": "Backup and compress markdown notes", "expected_keywords": ["Backup", "40%", "Comprimir"], "expected_patterns": ["Backup", "Comprimir"], "category": "backup"}

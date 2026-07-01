@@ -1,0 +1,38 @@
+{
+  "skill": "sap-btp-developer-guide",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 3,
+  "pass": 2,
+  "partial": 1,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered: 'cds init' found in SKILL.md (line 143), references/tools.md (line 144), references/extended/cap-development.md (line 93). 'cds add hana' in tools.md and cap-development.md. 'cds add xsuaa' in SKILL.md (line 150), tools.md (line 146), extended/security.md (line 65), extended/cap-development.md (line 97).",
+      "gaps": "None identified.",
+      "recommendation": "Excellent coverage across multiple reference files. No changes needed."
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PASS",
+      "coverage": "Multitenancy well covered with 57 matches across 15 reference files. '@sap/mtxs' and 'tenant' patterns found in extended/cap-development.md (5 matches), partners.md (19 matches covering SaaS patterns), design-patterns.md, and whats-new.md. Subscription lifecycle documented in operations.md and extensions.md.",
+      "gaps": "None identified.",
+      "recommendation": "Strong multitenancy coverage. Consider consolidating the scattered references into a dedicated multitenancy section in cap-development.md."
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PARTIAL",
+      "coverage": "references/observability.md covers SAP Cloud Logging and SAP Cloud ALM with OpenTelemetry strategy. 16 matches found across 6 files. General observability architecture is documented well.",
+      "gaps": "'@sap/logging' npm package not explicitly mentioned in observability.md. 'application-logs' service binding not covered in the reference. 'kibana' not mentioned (SAP Cloud Logging uses OpenSearch Dashboards, not Kibana). The test case expected keywords are slightly outdated.",
+      "recommendation": "Add @sap/logging package reference and application-logs service instance configuration to observability.md. Update test case TC-003 to use 'OpenSearch Dashboards' instead of 'kibana' to match current SAP Cloud Logging terminology."
+    }
+  ],
+  "overall_score": "2.5/3",
+  "improvement_recommendations": [
+    "Add @sap/logging npm package usage examples to references/observability.md",
+    "Add application-logs service binding configuration to observability.md",
+    "Update TC-003 expected_keywords: replace 'kibana' with 'OpenSearch Dashboards' to match current SAP Cloud Logging",
+    "Consolidate multitenancy content from 15 scattered files into a focused section in cap-development.md"
+  ]
+}

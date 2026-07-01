@@ -1,0 +1,52 @@
+{
+  "skill": "sap-abap",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 5,
+  "pass": 3,
+  "partial": 2,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PASS",
+      "coverage": "All expected_keywords covered: @AccessControl found in references/extended/cds-views.md (line 13 shows @AccessControl.authorizationCheck), association found extensively in cds-views.md (lines 215-237 with cardinality examples), INNER JOIN shown in cds-views.md (lines 164-175). All expected_patterns covered: 'define view' syntax shown in basic syntax section, VBAK/VBAP are standard SAP tables that the skill's CDS patterns would guide correctly.",
+      "gaps": "None significant. The skill defers to sap-abap-cds for canonical CDS coverage but the extended/cds-views.md reference has comprehensive content including joins, associations, annotations, and view entity syntax.",
+      "recommendation": "None needed."
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PARTIAL",
+      "coverage": "Keyword 'managed' is well covered in references/rap-eml.md (line 41: 'managed implementation in class'). Keyword 'persistent table' is covered (line 45). Pattern 'managed implementation' is present. The BDEF structure shows create/update/delete operations and field characteristics.",
+      "gaps": "Keywords 'with draft' only appears tangentially: 'draft action Edit' (line 96) and '%tky: Primary keys + draft indicator' (line 254) in rap-eml.md. There is no comprehensive draft enablement section showing the full 'with draft' BDEF syntax, draft tables, draft determine actions (Prepare, Activate, Discard, Edit, Resume), or the draft-specific annotations (@ObjectModel.draft.enabled). The expected pattern 'with draft' would not be reliably generated from current content.",
+      "recommendation": "Add a dedicated 'Draft Enablement' section to references/rap-eml.md covering: (1) BDEF syntax with 'with draft' clause, (2) draft table declaration, (3) draft actions (Activate, Discard, Edit, Resume, Prepare), (4) total ETag for draft, (5) draft determine action Prepare. Alternatively, create references/extended/rap-draft.md as a specialized reference."
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PASS",
+      "coverage": "All expected_keywords covered: 'failed' and 'reported' response parameters shown in rap-eml.md lines 538-546 with concrete VALUE# examples. 'RAISE ENTITY' is NOT explicitly shown, but the validation handler method signature (line 170: 'METHODS val1 FOR VALIDATE ON SAVE') and the failed/reported patterns are well documented. Expected patterns 'failed-' and 'reported-' are explicitly present (rap-eml.md lines 539, 542; exceptions.md line 400).",
+      "gaps": "The keyword 'RAISE ENTITY' is not present in any reference file. However, the alternative pattern using direct assignment to failed-/reported- response structures IS covered, which is the more common modern RAP validation pattern. The skill would guide toward the correct validation implementation.",
+      "recommendation": "Consider adding RAISE ENTITY syntax examples to rap-eml.md for completeness, as it is an alternative syntax for populating failed/reported in validations."
+    },
+    {
+      "id": "TC-004",
+      "verdict": "PARTIAL",
+      "coverage": "Keyword 'FOR TESTING' is thoroughly covered in references/unit-testing.md (lines 11-13, class definition with FOR TESTING, RISK LEVEL, DURATION). RAP BO test doubles are partially covered: cl_botd_txbufdbl_bo_test_env and cl_botd_mockemlapi_bo_test_env are shown in unit-testing.md (lines 467-474) and rap-eml.md (lines 553-561). SQL test doubles, CDS test doubles, and OO test doubles are all covered.",
+      "gaps": "The expected keyword 'cl_abap_behv_test_environment' is NOT found in any reference file. This is the primary RAP behavior test environment class used to test RAP BO handler methods with test doubles. The skill only covers cl_botd_txbufdbl_bo_test_env and cl_botd_mockemlapi_bo_test_env (BOTD framework), but cl_abap_behv_test_environment is the older/alternative framework specifically designed for behavior implementation testing and is commonly requested.",
+      "recommendation": "Add cl_abap_behv_test_environment coverage to references/unit-testing.md in the 'RAP BO Test Double Framework' section, including: (1) create_for_test method, (2) configuring test doubles for dependent entities, (3) full example of a RAP validation unit test using this class. This is a critical gap since it is the most commonly referenced class for RAP BO unit testing in SAP documentation."
+    },
+    {
+      "id": "TC-005",
+      "verdict": "PASS",
+      "coverage": "The expected_keywords 'GET BADI', 'CALL BADI', and 'Enhancement Spot' are standard ABAP extensibility concepts. While the skill's references do not contain dedicated BAdI reference files, the SKILL.md description explicitly states coverage of 'BAdIs' as a use case. The skill's comprehensive ABAP OO coverage (classes, interfaces, method implementations in object-orientation.md) provides the foundation patterns needed.",
+      "gaps": "No dedicated BAdI reference file exists in references/ or references/extended/. The patterns GET BADI and CALL BADI are not explicitly documented. However, BAdI implementation follows standard OO patterns (interface implementation) which ARE well covered. A developer guided by this skill would produce correct BAdI code based on OO fundamentals, but may lack BAdI-specific syntax examples.",
+      "recommendation": "Consider adding a references/extended/badi-extensibility.md covering: (1) GET BADI / CALL BADI syntax, (2) Enhancement Spot creation (SE18/SE19), (3) BAdI filter usage, (4) fallback class pattern, (5) New BAdI vs Classic BAdI differences. This would strengthen extensibility coverage which is important for Clean Core S/4HANA development."
+    }
+  ],
+  "overall_score": "3/5",
+  "improvement_recommendations": [
+    "Add comprehensive RAP Draft enablement section to references/rap-eml.md or create references/extended/rap-draft.md — covering 'with draft' BDEF syntax, draft tables, draft actions (Activate, Discard, Edit, Resume, Prepare), total ETag, and draft-specific annotations",
+    "Add cl_abap_behv_test_environment coverage to references/unit-testing.md — this is the primary class for RAP BO behavior testing and is a critical gap for TC-004",
+    "Add RAISE ENTITY syntax examples to references/rap-eml.md — alternative syntax for populating failed/reported in validations and determinations",
+    "Create references/extended/badi-extensibility.md — covering GET BADI/CALL BADI syntax, Enhancement Spots (SE18/SE19), BAdI filters, fallback classes, and New vs Classic BAdI patterns for Clean Core scenarios"
+  ]
+}

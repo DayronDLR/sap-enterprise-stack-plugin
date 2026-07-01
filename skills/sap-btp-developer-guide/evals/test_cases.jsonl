@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Set up CAP project with HANA Cloud and XSUAA on CF", "expected_keywords": ["cds init", "cds add hana", "cds add xsuaa"], "expected_patterns": ["cds\\s+init", "cds\\s+add\\s+hana", "cds\\s+add\\s+xsuaa"], "category": "project_setup"}
+{"id": "TC-002", "prompt": "Implement multitenancy for SaaS application", "expected_keywords": ["@sap/mtxs", "subscription", "tenant"], "expected_patterns": ["@sap/mtxs", "tenant"], "category": "multitenancy"}
+{"id": "TC-003", "prompt": "Configure observability with SAP Cloud Logging", "expected_keywords": ["application-logs", "kibana", "@sap/logging"], "expected_patterns": ["application-logs", "@sap/logging"], "category": "observability"}

@@ -3,9 +3,11 @@
 11 agentes SAP especializados (ABAP, CAP/BTP, Fiori, HANA, Integration, Basis,
 Migration, QA, DevOps, Requirements, Docs) como comandos auto-contenidos, un
 orquestador SAP que enruta por lenguaje natural, subagentes (reviewer, mentor,
-Fiori), hooks de **Definition of Done** y 5 **MCP servers SAP**.
+Fiori), **skills SAP de referencia**, hooks de **Definition of Done** y 5
+**MCP servers SAP**.
 
-> **Licencia:** MIT (ver `LICENSE`). Este plugin contiene solo contenido original.
+> **Licencia:** GPL-3.0 (ver `LICENSE`). Incluye skills de referencia de
+> terceros; las atribuciones completas están en `NOTICE`.
 
 ## Requisito: pnpm
 
@@ -69,6 +71,7 @@ Los comandos quedan namespaced: `/ses:sap-abap …`.
 | --- | --- | --- |
 | 11 comandos de agente | `/ses:sap-abap …` | automática |
 | Orquestador (routing NL) | skill `sap-orchestrator` | automática |
+| Skills SAP de referencia (ABAP, CAP, SQLScript, BTP, …) | consulta on-demand del agente | automática |
 | Subagentes (reviewer, mentor, Fiori) | `/agents` → `ses:reviewer` | automática |
 | Hooks de Definition of Done | evento `Stop` (quality-gate + review) | tras `/reload-plugins` |
 | MCP servers (5) | herramientas `mcp__…` | al iniciar sesión |
@@ -93,14 +96,15 @@ Los comandos quedan namespaced: `/ses:sap-abap …`.
 
 3. **Primer uso de cada MCP descarga su paquete** (`pnpm dlx`, requiere red).
 
-## Skills SAP de referencia (add-on opcional)
+## Skills SAP de referencia (incluidas)
 
-Este plugin **no incluye** las skills de referencia SAP (sintaxis ABAP, CAP,
-SQLScript, etc.) porque provienen del proyecto upstream
-[`secondsky/sap-skills`](https://github.com/secondsky/sap-skills) bajo licencia
-GPL-3.0. Los agentes funcionan sin ellas (la persona es auto-contenida); las
-skills solo agregan material de referencia. Para sumarlas, instalalas por
-separado desde el upstream.
+Este plugin **incluye** las skills de referencia SAP (sintaxis ABAP, CDS, CAP,
+SQLScript, BTP, Fiori Tools, UI5, …) — material que los agentes consultan
+on-demand. Provienen del proyecto upstream
+[`secondsky/sap-skills`](https://github.com/secondsky/sap-skills) bajo **GPL-3.0**;
+por eso todo este plugin se distribuye bajo **GPL-3.0**. Ver `NOTICE` para las
+atribuciones completas (secondsky GPL-3.0, Anthropic `skill-creator` Apache-2.0,
+`sapui5-freestyle` MIT).
 
 ## Insumos y documentación (agente `sap-doc`)
 

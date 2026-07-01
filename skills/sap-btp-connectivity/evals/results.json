@@ -1,0 +1,37 @@
+{
+  "skill": "sap-btp-connectivity",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 3,
+  "pass": 2,
+  "partial": 1,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered: 'OAuth2ClientCredentials' in SKILL.md Quick Start section, references/authentication-types.md (38 occurrences), references/http-destinations.md (23 occurrences), and templates/destination-http-oauth.json; 'tokenServiceURL' in authentication-types.md, http-destinations.md, SKILL.md, and destination-service-api.md; 'clientId' in authentication-types.md, http-destinations.md, and templates.",
+      "gaps": "None. OAuth2 destination configuration is extensively covered with dedicated reference files and a JSON template.",
+      "recommendation": "No changes needed. This is the best-covered area of the skill."
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered: 'Cloud Connector' in SKILL.md (20 occurrences), references/cloud-connector.md (13 occurrences), and 8+ other reference files; 'virtual host' in references/cloud-connector.md, identity-propagation-scenarios.md, troubleshooting.md, and SKILL.md; 'system mapping' in cloud-connector.md, connectivity-alternatives-and-config.md, and operational-guides.md.",
+      "gaps": "None. Cloud Connector has a dedicated reference file and extensive coverage across the skill.",
+      "recommendation": "No changes needed."
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PARTIAL",
+      "coverage": "'SAMLAssertion' found in references/authentication-types.md and references/http-destinations.md. 'principal propagation' found in SKILL.md and references/identity-propagation-scenarios.md. However, 'trust configuration' as an exact phrase is NOT found in any reference file -- only fragmented trust-related content (STRUST transaction, trust store, trust chain) in identity-propagation-scenarios.md and troubleshooting.md.",
+      "gaps": "The exact phrase 'trust configuration' is missing from the references. The identity-propagation-scenarios.md covers trust stores and STRUST but does not explicitly document the BTP subaccount trust configuration steps (IDP setup, SAML metadata exchange) needed for principal propagation end-to-end.",
+      "recommendation": "Add a section on 'BTP Subaccount Trust Configuration' to identity-propagation-scenarios.md covering: (1) SAML metadata exchange between IAS/IDP and BTP subaccount, (2) trust configuration in BTP cockpit, (3) mapping of assertion attributes. This would close the gap for the principal propagation end-to-end scenario."
+    }
+  ],
+  "overall_score": "2.5/3",
+  "improvement_recommendations": [
+    "Add explicit 'Trust Configuration' section to identity-propagation-scenarios.md covering BTP cockpit trust setup, SAML metadata exchange, and IDP-to-subaccount trust establishment",
+    "Add an end-to-end principal propagation template (JSON destination + Cloud Connector + trust config steps) in templates/",
+    "Consider adding a troubleshooting entry for common principal propagation failures (403, assertion mapping errors)"
+  ]
+}

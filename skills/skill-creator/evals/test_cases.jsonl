@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Create a new skill from scratch", "expected_keywords": ["SKILL.md", "description", "test cases"], "expected_patterns": ["SKILL\\.md", "description"], "category": "create"}
+{"id": "TC-002", "prompt": "Run evals and benchmark a skill", "expected_keywords": ["generate_review.py", "benchmark", "variance"], "expected_patterns": ["generate_review", "benchmark"], "category": "eval"}
+{"id": "TC-003", "prompt": "Improve skill triggering accuracy", "expected_keywords": ["--skill-name", "--eval-set", "--model"], "expected_patterns": ["--skill-name", "--eval-set"], "category": "optimize"}

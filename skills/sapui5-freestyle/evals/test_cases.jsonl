@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Create a master-detail SAPUI5 app with routing", "expected_keywords": ["SplitApp", "FlexibleColumnLayout", "routing", "targets"], "expected_patterns": ["SplitApp", "routing", "targets"], "category": "app_structure"}
+{"id": "TC-002", "prompt": "Add a form view with validation", "expected_keywords": ["ColumnLayout", "Form", "valueLiveUpdate"], "expected_patterns": ["ColumnLayout", "Form"], "category": "forms"}
+{"id": "TC-003", "prompt": "Create a dashboard with KPI tiles", "expected_keywords": ["GenericTile", "TileContent", "NumericContent"], "expected_patterns": ["GenericTile", "NumericContent"], "category": "dashboard"}

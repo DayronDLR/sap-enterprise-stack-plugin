@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Configure HTTP destination with OAuth2 client credentials", "expected_keywords": ["OAuth2ClientCredentials", "tokenServiceURL", "clientId"], "expected_patterns": ["OAuth2ClientCredentials", "tokenServiceURL"], "category": "destinations"}
+{"id": "TC-002", "prompt": "Set up Cloud Connector for on-premise SAP system", "expected_keywords": ["Cloud Connector", "virtual host", "system mapping"], "expected_patterns": ["Cloud Connector", "virtual host"], "category": "cloud_connector"}
+{"id": "TC-003", "prompt": "Implement principal propagation from BTP to S/4HANA", "expected_keywords": ["SAMLAssertion", "principal propagation", "trust configuration"], "expected_patterns": ["SAMLAssertion", "principal propagation"], "category": "security"}

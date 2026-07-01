@@ -1,0 +1,52 @@
+SAP Enterprise Agent Stack
+Copyright (c) 2026 Insight Technologies
+
+This product is licensed under the GNU General Public License v3.0 (see LICENSE).
+
+It includes and redistributes the following third-party components, each under
+its own license (all compatible with GPL-3.0 in this aggregate distribution):
+
+-------------------------------------------------------------------------------
+SAP reference skills — GPL-3.0
+-------------------------------------------------------------------------------
+skills/sap-abap, sap-abap-cds, sap-api-style, sap-btp-best-practices,
+sap-btp-connectivity, sap-btp-developer-guide, sap-cap-capire, sap-fiori-tools,
+sap-sqlscript, sapui5-cli
+  Source:  https://github.com/secondsky/sap-skills
+  License: GPL-3.0 (see each skill's .claude-plugin/plugin.json)
+
+-------------------------------------------------------------------------------
+skill-creator — Apache License 2.0
+-------------------------------------------------------------------------------
+plugins/skill-creator, skills/skill-creator
+  Source:  https://github.com/anthropics/claude-plugins-official
+  License: Apache-2.0 (see skills/skill-creator/LICENSE.txt)
+
+-------------------------------------------------------------------------------
+sapui5-freestyle — MIT
+-------------------------------------------------------------------------------
+skills/sapui5-freestyle
+  License: MIT (declared in its SKILL.md front matter)
+
+-------------------------------------------------------------------------------
+Original stack content — GPL-3.0
+-------------------------------------------------------------------------------
+Everything else in this repository (the 11 agent prompts, 6 subagents, slash
+commands, hooks, the sap-orchestrator skill, and the operational skills
+dashboard/verify/team-refactor/memory-compress) is original work by Insight
+Technologies, licensed under GPL-3.0.
+
+-------------------------------------------------------------------------------
+Modifications in the distributed build
+-------------------------------------------------------------------------------
+Example/placeholder credentials embedded in bundled skill reference docs (e.g. a
+Stripe documentation example key, an example PEM private key) are redacted in the
+public artifact for GitHub secret-scanning compliance. No functional content is
+changed; only illustrative secret values are replaced with clear placeholders.
+
+-------------------------------------------------------------------------------
+NOT redistributed
+-------------------------------------------------------------------------------
+The SAP BTP official icon library (agents/11-documentation/sap-btp-icons/) and
+the example diagrams that embed it are proprietary SAP assets and are NOT part
+of the public distribution.

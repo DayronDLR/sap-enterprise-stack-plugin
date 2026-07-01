@@ -1,0 +1,36 @@
+{
+  "skill": "sap-fiori-tools",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 3,
+  "pass": 2,
+  "partial": 1,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PASS",
+      "coverage": "SKILL.md covers ListReport and ObjectPage floorplans in the Application Generation section (lines 83-89), manifest.json in the generated project structure (line 103), and references/annotations.md includes UI.LineItem annotation patterns in both CDS and XML format. Page Editor section covers Object Page header/sections/footer configuration.",
+      "gaps": "No explicit @UI.lineItem CDS annotation syntax in SKILL.md itself — it is in references/annotations.md which is properly linked.",
+      "recommendation": ""
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PASS",
+      "coverage": "SKILL.md has a dedicated 'Fiori Launchpad Configuration' section (lines 232-247) covering Semantic Object, Action, Title, Subtitle parameters. references/deployment.md contains the full crossNavigation/inbounds/semanticObject manifest.json configuration block (lines 331-334). The FLP command is listed in Quick Start Commands.",
+      "gaps": "The crossNavigation JSON structure is only in references/deployment.md, not in SKILL.md directly, but the reference is accessible.",
+      "recommendation": ""
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PARTIAL",
+      "coverage": "SKILL.md mentions Custom Column in the Page Editor Extension-Based Elements table (line 135) and references/page-editor.md covers adding custom columns with XML fragments. references/annotations.md has UI.LineItem patterns.",
+      "gaps": "Missing @UI.dataPoint and criticality annotation patterns. The annotations reference covers LineItem but lacks DataPoint and Criticality vocabulary examples. The custom column section focuses on fragment-based extensions (OData V4) rather than annotation-driven custom columns with criticality indicators.",
+      "recommendation": "Add @UI.DataPoint and Criticality annotation examples to references/annotations.md. Include a section showing how to add criticality-based status indicators to LineItem columns, which is a very common Fiori Elements pattern."
+    }
+  ],
+  "overall_score": "2/3",
+  "improvement_recommendations": [
+    "Add @UI.DataPoint annotation patterns with Criticality to references/annotations.md — this is one of the most common Fiori Elements annotation patterns for status visualization.",
+    "Consider adding a 'Common Annotation Recipes' section covering LineItem + DataPoint + Criticality combinations, which are frequently requested together."
+  ]
+}

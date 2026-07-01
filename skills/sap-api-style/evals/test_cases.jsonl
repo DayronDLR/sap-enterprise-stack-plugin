@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Name an API endpoint for reading purchase orders", "expected_keywords": ["PurchaseOrder", "GET", "/sap/", "camelCase"], "expected_patterns": ["PurchaseOrder", "GET"], "category": "naming_conventions"}
+{"id": "TC-002", "prompt": "Document deprecation of an API version", "expected_keywords": ["x-sap-stateInfo", "deprecated", "sunset"], "expected_patterns": ["x-sap-stateInfo", "deprecated"], "category": "lifecycle"}
+{"id": "TC-003", "prompt": "Write OpenAPI spec for a CRUD service", "expected_keywords": ["openapi", "paths", "components/schemas", "responses"], "expected_patterns": ["openapi", "paths", "components/schemas"], "category": "openapi"}
