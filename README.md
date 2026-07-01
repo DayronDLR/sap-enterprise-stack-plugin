@@ -35,7 +35,7 @@ It bundles compatible third-party components — full attributions in
 | 10 SAP reference skills | [`secondsky/sap-skills`](https://github.com/secondsky/sap-skills) | GPL-3.0 |
 | `skill-creator` | Anthropic | Apache-2.0 |
 | `sapui5-freestyle` | upstream | MIT |
-| Everything else (agents, hooks, orchestrator, commands) | Insight Technologies | GPL-3.0 |
+| Everything else (agents, hooks, orchestrator, commands) | DayronDLR | GPL-3.0 |
 
 ## Requirement: pnpm
 
@@ -289,7 +289,7 @@ Incluye componentes de terceros compatibles — atribuciones completas en
 | 10 skills SAP de referencia | [`secondsky/sap-skills`](https://github.com/secondsky/sap-skills) | GPL-3.0 |
 | `skill-creator` | Anthropic | Apache-2.0 |
 | `sapui5-freestyle` | upstream | MIT |
-| Todo lo demás (agentes, hooks, orquestador, comandos) | Insight Technologies | GPL-3.0 |
+| Todo lo demás (agentes, hooks, orquestador, comandos) | DayronDLR | GPL-3.0 |
 
 ## Requisito: pnpm
 
