@@ -137,6 +137,31 @@ de actualizar, corré `/reload-plugins` para recargar comandos y hooks.
   los ponés a mano (ver abajo).
 - **Relicenciar** bajo una licencia no-GPL — es copyleft.
 
+## Gates de calidad (Definition of Done) — importante
+
+Este plugin es **opinionado**: instala hooks que aplican una *Definition of Done*.
+Es intencional (nace de un flujo enterprise), pero conviene que lo sepas antes:
+
+| Evento | Qué hace | ¿Puede bloquear? |
+| --- | --- | --- |
+| `Stop` (al cerrar una tarea) | Corre **quality-gate** (linters/smells) + **code review** sobre el diff | **Sí** — si hay hallazgos CRITICAL/HIGH, te pide seguir trabajando antes de cerrar |
+| `PreToolUse` | **Protege archivos sensibles** (`.env`, `xs-security.json`, …) | Sí — impide editarlos |
+| `PostToolUse` | Auto-lint de CDS/UI5/manifests al editar | No (informativo) |
+
+**¿No los querés?** Poné esta variable en tu `settings.json` (opt-out solo para
+el plugin):
+
+```json
+{ "env": { "SES_SKIP_DOD_GATES": "1" } }
+```
+
+Con eso los gates de `Stop` se **omiten** y podés cerrar sin review. Los agentes,
+skills y MCP siguen funcionando igual. (La protección de archivos sensibles y el
+auto-lint no dependen de esta variable.)
+
+> Los hooks son scripts **bash** — en Windows necesitás Git Bash o WSL para que
+> corran.
+
 ## Configuración que requiere acción del usuario
 
 1. **MCP `sap-adt`** (lectura ABAP del sistema real) necesita credenciales:

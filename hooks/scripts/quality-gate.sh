@@ -5,6 +5,19 @@
 
 set -u
 
+# Opt-out para consumidores del PLUGIN: si el script corre desde .../plugins/...
+# (plugin instalado) y SES_SKIP_DOD_GATES=1, se omiten los gates de calidad. En el
+# stack clonado/interno la Definition of Done es politica — el bypass auditado es
+# via HOTFIX-OVERRIDE (ADR-005), no esta variable.
+case "${BASH_SOURCE[0]:-$0}" in
+  */plugins/*)
+    if [ "${SES_SKIP_DOD_GATES:-}" = "1" ]; then
+      echo "[DoD] SES_SKIP_DOD_GATES=1 -> quality gate omitido (opt-out del plugin)." >&2
+      exit 0
+    fi
+    ;;
+esac
+
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 HOTFIX_FLAG="${PROJECT_DIR}/tmp/.hotfix-override"
 

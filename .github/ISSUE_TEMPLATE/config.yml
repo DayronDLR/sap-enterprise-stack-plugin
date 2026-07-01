@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentación (README)
+    url: https://github.com/DayronDLR/sap-enterprise-stack-plugin#readme
+    about: Instalación, uso, licencias y cómo actualizar.
