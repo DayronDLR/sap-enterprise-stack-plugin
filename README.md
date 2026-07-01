@@ -102,6 +102,32 @@ GPL-3.0. Los agentes funcionan sin ellas (la persona es auto-contenida); las
 skills solo agregan material de referencia. Para sumarlas, instalalas por
 separado desde el upstream.
 
+## Insumos y documentación (agente `sap-doc`)
+
+`/ses:sap-doc` genera documentación técnica SAP. Como un plugin es de
+**solo-lectura**, sus insumos van en **TU proyecto**, no en el plugin — el agente
+los lee vía `${CLAUDE_PROJECT_DIR}`.
+
+**Datos del cliente (los colocás vos, en tu proyecto):**
+
+```text
+tu-proyecto/
+└── docs/architecture/
+    ├── client-theme.yaml     # paleta, fuentes, logos del cliente
+    ├── reference.docx        # plantilla Word para pandoc --reference-doc
+    └── …                     # estructura/plantilla del cliente
+```
+
+> Nunca subas datos de cliente a un repo público. Van en el repo/carpeta de tu
+> proyecto (privado).
+
+**Build con identidad visual (branded `.docx`/`.pptx` + diagramas draw.io):**
+el toolchain (generador draw.io, `build-doc.sh`, la librería de **iconos SAP BTP**
+y los diagramas de ejemplo) **no** se distribuye con este plugin público — los
+iconos son assets de SAP con su propia licencia. `/ses:sap-doc` produce el
+**contenido** de la documentación; para el build branded completo, usá el
+toolchain del stack (repo de desarrollo) o el plugin privado.
+
 ## Soporte
 
 Issues y mejoras: <https://github.com/DayronDLR/sap-enterprise-stack-plugin/issues>
