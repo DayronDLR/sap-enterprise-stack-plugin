@@ -118,6 +118,25 @@ updating, run `/reload-plugins` to reload commands and hooks.
 | Definition of Done hooks | Quality gates on `Stop` (quality-gate + code review), sensitive-file protection, auto-lint | after `/reload-plugins` |
 | 5 MCP servers | `sap-cap-capire`, `sap-ui5`, `sap-fiori-tools`, `github`, `sap-adt` | `mcp__…` tools |
 
+## Prerequisites for full functionality (100%)
+
+**Nothing extra is required to use the agents and skills** — with just Claude Code
+and `pnpm` you get the 11 agents, orchestrator, subagents, all 17 skills and the
+DoD hooks. The table maps the few capabilities that need one extra thing:
+
+| Capability | Ready as-is? | To unlock it |
+| --- | --- | --- |
+| 11 agents · orchestrator · subagents · 17 SAP skills | ✅ | — |
+| DoD quality gates + auto-lint | ✅ | **Windows:** Git Bash or WSL (hooks are bash). First lint downloads `@sap/cds-dk` / `@ui5/linter` / `eslint` via `pnpm dlx` → needs network |
+| 4 MCP servers (CAP, UI5, Fiori Tools, GitHub) | ✅ | first use downloads the package via `pnpm dlx` (network); `GITHUB_TOKEN` raises GitHub rate limits |
+| MCP `sap-adt` — read ABAP from a **live** system | ⚠️ creds | export `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
+| `/ses:sap-doc` — document **content** | ✅ | — |
+| `/ses:sap-doc` — **Word/PPTX** output | ➕ add-on | `pandoc` 3.x + `python3` + `pip install python-pptx lxml` |
+| `/ses:sap-doc` — **branded** build (theme + draw.io) | ➕ add-on | the [`sap-doc-toolkit`](https://github.com/DayronDLR/sap-doc-toolkit) companion (MIT) + your own SAP BTP icon set |
+| Context optimization (autocompact, tool-search) | ➕ optional | env vars in your `settings.json` (see below) |
+
+Legend: ✅ works out of the box · ⚠️ needs credentials · ➕ optional add-on.
+
 ## What you can / can't do
 
 **You can:**
@@ -335,6 +354,23 @@ desactivar los gates de `Stop`, poné en tu `settings.json`:
 ```
 
 Los hooks son scripts **bash** — en Windows necesitás Git Bash o WSL.
+
+## Requisitos para funcionar al 100%
+
+**No necesitás nada extra para usar los agentes y skills** — con Claude Code +
+`pnpm` ya tenés los 11 agentes, orquestador, subagentes, las 17 skills y los hooks
+de DoD. Los extras solo habilitan capacidades puntuales:
+
+| Capacidad | ¿Lista? | Para habilitarla |
+| --- | --- | --- |
+| Agentes · orquestador · subagentes · 17 skills | ✅ | — |
+| Gates de DoD + auto-lint | ✅ | **Windows:** Git Bash/WSL; el 1er lint baja `@sap/cds-dk` / `@ui5/linter` / `eslint` vía `pnpm dlx` (red) |
+| 4 MCP (CAP, UI5, Fiori Tools, GitHub) | ✅ | 1er uso baja el paquete (red); `GITHUB_TOKEN` sube el rate limit |
+| MCP `sap-adt` (ABAP del sistema **real**) | ⚠️ creds | `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
+| `/ses:sap-doc` — **contenido** | ✅ | — |
+| `/ses:sap-doc` — salida **Word/PPTX** | ➕ | `pandoc` + `python3` + `pip install python-pptx lxml` |
+| `/ses:sap-doc` — build **branded** | ➕ | companion [`sap-doc-toolkit`](https://github.com/DayronDLR/sap-doc-toolkit) + tus iconos SAP |
+| Optimización de contexto | ➕ | env vars en tu `settings.json` |
 
 ## Configuración que requiere acción
 
