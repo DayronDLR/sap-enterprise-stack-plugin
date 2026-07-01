@@ -7,9 +7,13 @@ FILE_PATH=$(cat | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.g
 
 # Solo correr si el archivo es .cds
 if echo "$FILE_PATH" | grep -q "\.cds$"; then
-    # Verificar que cds está disponible
-    if command -v pnpm dlx &> /dev/null; then
-        pnpm --package=@sap/cds-dk dlx cds lint 2>/dev/null
+    # Usa el `cds` LOCAL del proyecto (respeta su package manager); si no está,
+    # no hace nada (no impone pnpm ni descarga).
+    PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+    if [[ -x "${PROJECT_DIR}/node_modules/.bin/cds" ]]; then
+        "${PROJECT_DIR}/node_modules/.bin/cds" lint 2>/dev/null
+    elif command -v cds &> /dev/null; then
+        cds lint 2>/dev/null
     fi
 fi
 

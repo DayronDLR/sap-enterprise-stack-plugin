@@ -69,19 +69,37 @@ MANIFEST_CHANGED=$(echo "$CHANGED_FILES" | grep -E 'webapp/manifest\.json$' || t
 
 ERRORS=""
 
-# 1) CDS lint
+# Los linters respetan el PACKAGE MANAGER del proyecto: usan el binario LOCAL del
+# proyecto (node_modules/.bin — lo crean npm/yarn/pnpm por igual) o uno global si
+# existe. NO imponen pnpm ni descargan nada; si el linter no está instalado en el
+# proyecto, se OMITE (return 127 → el caller lo trata como skip, no como fallo).
+run_linter() {
+    local bin="$1"; shift
+    if [[ -x "${PROJECT_DIR}/node_modules/.bin/${bin}" ]]; then
+        "${PROJECT_DIR}/node_modules/.bin/${bin}" "$@"
+    elif command -v "$bin" >/dev/null 2>&1; then
+        "$bin" "$@"
+    else
+        return 127
+    fi
+}
+
+# 1) CDS lint (usa el `cds` del proyecto; si no está instalado, se omite)
 if [[ -n "$CDS_CHANGED" ]]; then
-    CDS_RESULT=$(pnpm --package=@sap/cds-dk dlx cds lint 2>&1) || ERRORS="${ERRORS}\n[CRITICAL] CDS lint fallo:\n${CDS_RESULT}"
+    CDS_RESULT=$(run_linter cds lint 2>&1); rc=$?
+    [[ $rc -ne 0 && $rc -ne 127 ]] && ERRORS="${ERRORS}\n[CRITICAL] CDS lint fallo:\n${CDS_RESULT}"
 fi
 
-# 2) UI5 linter
+# 2) UI5 linter (bin `ui5lint` del proyecto)
 if [[ -n "$UI5_CHANGED" ]]; then
-    UI5_RESULT=$(pnpm dlx @ui5/linter 2>&1) || ERRORS="${ERRORS}\n[CRITICAL] UI5 linter fallo:\n${UI5_RESULT}"
+    UI5_RESULT=$(run_linter ui5lint 2>&1); rc=$?
+    [[ $rc -ne 0 && $rc -ne 127 ]] && ERRORS="${ERRORS}\n[CRITICAL] UI5 linter fallo:\n${UI5_RESULT}"
 fi
 
-# 3) ESLint
+# 3) ESLint (`eslint` del proyecto)
 if [[ -n "$JS_CHANGED" ]]; then
-    ESLINT_RESULT=$(pnpm dlx eslint $JS_CHANGED 2>&1) || ERRORS="${ERRORS}\n[CRITICAL] ESLint fallo:\n${ESLINT_RESULT}"
+    ESLINT_RESULT=$(run_linter eslint $JS_CHANGED 2>&1); rc=$?
+    [[ $rc -ne 0 && $rc -ne 127 ]] && ERRORS="${ERRORS}\n[CRITICAL] ESLint fallo:\n${ESLINT_RESULT}"
 fi
 
 # 4) ABAP smell scan (CRITICAL/HIGH bloquea)

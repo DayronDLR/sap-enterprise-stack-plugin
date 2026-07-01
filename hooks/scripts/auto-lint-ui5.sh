@@ -7,9 +7,13 @@ FILE_PATH=$(cat | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.g
 
 # Solo correr si el archivo está dentro de webapp/ y es .js o .xml
 if echo "$FILE_PATH" | grep -q "webapp/.*\.\(js\|xml\)$"; then
-    # Verificar que el linter está disponible
-    if command -v pnpm dlx &> /dev/null; then
-        pnpm dlx @ui5/linter --file "$FILE_PATH" 2>/dev/null
+    # Usa el `ui5lint` LOCAL del proyecto (respeta su package manager); si no está,
+    # no hace nada (no impone pnpm ni descarga).
+    PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+    if [[ -x "${PROJECT_DIR}/node_modules/.bin/ui5lint" ]]; then
+        "${PROJECT_DIR}/node_modules/.bin/ui5lint" --file "$FILE_PATH" 2>/dev/null
+    elif command -v ui5lint &> /dev/null; then
+        ui5lint --file "$FILE_PATH" 2>/dev/null
     fi
 fi
 
