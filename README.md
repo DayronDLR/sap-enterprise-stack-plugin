@@ -213,11 +213,12 @@ your-project/
 
 > Never push client data to a public repo. Keep it in your (private) project.
 
-**Branded build (`.docx`/`.pptx` with theme + draw.io diagrams):** the toolchain
-(draw.io generator, `build-doc.sh`, the **SAP BTP icon library** and the example
-diagrams) is **not** distributed with this plugin — the icons are SAP assets under
-their own license. `/ses:sap-doc` produces the doc **content**; for the full
-branded build, use the toolchain from the stack's development repo.
+**Branded build (`.docx`/`.pptx` with theme + draw.io diagrams):** `/ses:sap-doc`
+produces the doc **content**; the branded-build toolchain (draw.io generator,
+`build-doc.sh`, `build-pptx.py`, theming) ships as a separate **MIT companion**:
+**[`sap-doc-toolkit`](https://github.com/DayronDLR/sap-doc-toolkit)**. The **SAP BTP
+icon library** is **not** included (proprietary SAP assets) — you provide your own;
+the generator degrades gracefully without it.
 
 ## Support
 
@@ -346,8 +347,10 @@ Los hooks son scripts **bash** — en Windows necesitás Git Bash o WSL.
 ## Insumos y documentación (`sap-doc`)
 
 Los insumos del cliente (tema, `reference.docx`, plantillas) van en **tu
-proyecto** (`docs/architecture/…`), no en el plugin. El build branded con iconos
-SAP BTP no se distribuye (assets de SAP); `sap-doc` genera el **contenido**.
+proyecto** (`docs/architecture/…`), no en el plugin. `sap-doc` genera el
+**contenido**; el toolchain de build branded es un **companion MIT**:
+**[`sap-doc-toolkit`](https://github.com/DayronDLR/sap-doc-toolkit)** (los iconos
+SAP BTP no van — assets propietarios de SAP, los ponés vos).
 
 ## Soporte
 
