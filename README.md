@@ -251,13 +251,13 @@ Issues and improvements: <https://github.com/DayronDLR/sap-enterprise-stack-plug
 
 [English](#sap-enterprise-stack--claude-code-plugin) · **Español**
 
-Un stack completo de desarrollo SAP dentro de Claude Code. Instalás el plugin y
-tenés **11 agentes SAP especializados**, un **orquestador** que enruta por
+Un stack completo de desarrollo SAP dentro de Claude Code. Instalas el plugin y
+tienes **11 agentes SAP especializados**, un **orquestador** que enruta por
 lenguaje natural, **subagentes** de apoyo, **skills SAP de referencia**, **gates
 de calidad (Definition of Done)** y **5 MCP servers SAP** — sin clonar ningún
 repo.
 
-> 🌐 **Los agentes responden en tu idioma.** Escribís en español → respondés en
+> 🌐 **Los agentes responden en tu idioma.** Escribes en español → respondes en
 > español; en inglés → inglés. Los términos SAP y el código quedan intactos.
 
 - **Agentes de desarrollo** (Opus): ABAP, CAP/BTP, Fiori/UI5, HANA, Integration.
@@ -266,7 +266,7 @@ repo.
 
 ## Licencia
 
-**GPL-3.0** (ver [`LICENSE`](LICENSE)). Es software libre **copyleft**: podés
+**GPL-3.0** (ver [`LICENSE`](LICENSE)). Es software libre **copyleft**: puedes
 usarlo, modificarlo y redistribuirlo, siempre que tus derivados **se mantengan
 bajo GPL-3.0 y publiques su código fuente**. No se puede cerrar ni integrar en un
 producto propietario.
@@ -284,7 +284,7 @@ Incluye componentes de terceros compatibles — atribuciones completas en
 ## Requisito: pnpm
 
 Todo lo de Node usa **pnpm** (los MCP corren con `pnpm dlx`, los linters de hooks
-también). Tenelo en el PATH:
+también). Tenlo en el PATH:
 
 ```bash
 corepack enable && corepack prepare pnpm@latest --activate   # o: brew install pnpm
@@ -310,7 +310,7 @@ El plugin se actualiza como cualquier plugin de Claude Code:
 
 Cada release publica una versión nueva del marketplace automáticamente, así que
 `/plugin update` te trae lo último — **sin re-clonar ni pasos manuales**. Después
-de actualizar, corré `/reload-plugins` para recargar comandos y hooks.
+de actualizar, corre `/reload-plugins` para recargar comandos y hooks.
 
 ## Uso — los 11 agentes
 
@@ -331,15 +331,15 @@ de actualizar, corré `/reload-plugins` para recargar comandos y hooks.
 > Todos prefijados con `/ses:`. Además: `:sap-techlead` y los subagentes
 > `reviewer` / `mentor` (vía `/agents` o por palabras clave).
 
-## Qué podés / Qué NO
+## Qué puedes / Qué NO
 
 **Podés:** usar los 11 agentes en cualquier proyecto SAP sin clonar; dejar que el
 orquestador enrute por lenguaje natural; correr los gates de DoD; consultar las
 skills; usar los 5 MCP; actualizar con `/plugin update` y forkear (bajo GPL-3.0).
 
-**No podés:** invocar comandos sin el prefijo `ses:` (namespacing obligatorio);
+**No puedes:** invocar comandos sin el prefijo `ses:` (namespacing obligatorio);
 desarrollar/regenerar el stack desde el plugin; el build branded de docs con
-iconos SAP (no se distribuye); que el plugin setee `env` por vos; relicenciar
+iconos SAP (no se distribuye); que el plugin configure `env` por ti; relicenciar
 fuera de GPL.
 
 ## Gates de calidad (Definition of Done)
@@ -347,18 +347,18 @@ fuera de GPL.
 El plugin instala hooks que aplican una *Definition of Done*: en `Stop` corre
 quality-gate + code review (**puede bloquear** el cierre si hay CRITICAL/HIGH),
 `PreToolUse` protege archivos sensibles, `PostToolUse` auto-lint. Para
-desactivar los gates de `Stop`, poné en tu `settings.json`:
+desactivar los gates de `Stop`, pon en tu `settings.json`:
 
 ```json
 { "env": { "SES_SKIP_DOD_GATES": "1" } }
 ```
 
-Los hooks son scripts **bash** — en Windows necesitás Git Bash o WSL.
+Los hooks son scripts **bash** — en Windows necesitas Git Bash o WSL.
 
 ## Requisitos para funcionar al 100%
 
-**No necesitás nada extra para usar los agentes y skills** — con Claude Code +
-`pnpm` ya tenés los 11 agentes, orquestador, subagentes, las 17 skills y los hooks
+**No necesitas nada extra para usar los agentes y skills** — con Claude Code +
+`pnpm` ya tienes los 11 agentes, orquestador, subagentes, las 17 skills y los hooks
 de DoD. Los extras solo habilitan capacidades puntuales:
 
 | Capacidad | ¿Lista? | Para habilitarla |
@@ -386,7 +386,7 @@ Los insumos del cliente (tema, `reference.docx`, plantillas) van en **tu
 proyecto** (`docs/architecture/…`), no en el plugin. `sap-doc` genera el
 **contenido**; el toolchain de build branded es un **companion MIT**:
 **[`sap-doc-toolkit`](https://github.com/DayronDLR/sap-doc-toolkit)** (los iconos
-SAP BTP no van — assets propietarios de SAP, los ponés vos).
+SAP BTP no van — assets propietarios de SAP, los pones tú).
 
 ## Soporte
 
