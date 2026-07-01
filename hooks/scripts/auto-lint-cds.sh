@@ -9,7 +9,7 @@ FILE_PATH=$(cat | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.g
 if echo "$FILE_PATH" | grep -q "\.cds$"; then
     # Verificar que cds está disponible
     if command -v pnpm dlx &> /dev/null; then
-        pnpm dlx @sap/cds-dk cds lint 2>/dev/null
+        pnpm --package=@sap/cds-dk dlx cds lint 2>/dev/null
     fi
 fi
 

@@ -71,7 +71,7 @@ ERRORS=""
 
 # 1) CDS lint
 if [[ -n "$CDS_CHANGED" ]]; then
-    CDS_RESULT=$(pnpm dlx @sap/cds-dk cds lint 2>&1) || ERRORS="${ERRORS}\n[CRITICAL] CDS lint fallo:\n${CDS_RESULT}"
+    CDS_RESULT=$(pnpm --package=@sap/cds-dk dlx cds lint 2>&1) || ERRORS="${ERRORS}\n[CRITICAL] CDS lint fallo:\n${CDS_RESULT}"
 fi
 
 # 2) UI5 linter

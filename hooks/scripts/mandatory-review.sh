@@ -4,7 +4,7 @@
 #
 # Gate 2 — Code Review: detecta diff de la sesion y exige al modelo correr al
 #                       agente `reviewer` sobre ese diff antes de cerrar.
-# Gate 3 — QA + NFR  : exige al agente `09-qa-testing` validar el checklist NFR.
+# Gate 3 — QA + NFR  : exige al agente QA `sap-qa` validar el checklist NFR.
 #
 # Este script NO invoca subagentes por si mismo (no puede). Lo que hace es:
 #   1) Detectar si hubo cambios productivos en la sesion (codigo o config ejecutable).
@@ -159,8 +159,8 @@ fi
 
 # 3) Construir mensaje de bloqueo
 MISSING=""
-[[ "$REVIEW_OK" = "false" ]] && MISSING="${MISSING}\\n- Gate 2 (Code Review): invocar agente 'reviewer' sobre el diff de la sesion. Tras completar, ejecutar: touch tmp/.review-done"
-[[ "$QA_OK" = "false" ]]     && MISSING="${MISSING}\\n- Gate 3 (QA + NFR): invocar agente '09-qa-testing' con el checklist 'agents/09-qa-testing/nfr-checklist.md'. Tras completar, ejecutar: touch tmp/.qa-nfr-done"
+[[ "$REVIEW_OK" = "false" ]] && MISSING="${MISSING}\\n- Gate 2 (Code Review): invocar el agente 'reviewer' sobre el diff de la sesion. Tras completar, ejecutar: touch ${REVIEW_FLAG}"
+[[ "$QA_OK" = "false" ]]     && MISSING="${MISSING}\\n- Gate 3 (QA + NFR): invocar el agente QA 'sap-qa' (/ses:sap-qa o /sap-qa) y validar el checklist NFR. Tras completar, ejecutar: touch ${QA_FLAG}"
 
 REASON="Definition of Done — gates pendientes antes de cerrar:${MISSING}\\n\\nArchivos productivos detectados: $(echo "$CHANGED" | tr '\n' ' ')\\n\\nReferencia: rules/DEFINITION-OF-DONE.md y shared/non-functional-requirements.md"
 
