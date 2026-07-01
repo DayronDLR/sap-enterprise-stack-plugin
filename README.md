@@ -2,14 +2,33 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-11 agentes SAP especializados (ABAP, CAP/BTP, Fiori, HANA, Integration, Basis,
-Migration, QA, DevOps, Requirements, Docs) como comandos auto-contenidos, un
-orquestador SAP que enruta por lenguaje natural, subagentes (reviewer, mentor,
-Fiori), **skills SAP de referencia**, hooks de **Definition of Done** y 5
-**MCP servers SAP**.
+Un stack completo de desarrollo SAP dentro de Claude Code. Instalás el plugin y
+tenés **11 agentes SAP especializados**, un **orquestador** que enruta por
+lenguaje natural, **subagentes** de apoyo, **skills SAP de referencia**, **gates
+de calidad (Definition of Done)** y **5 MCP servers SAP** — sin clonar ningún
+repo.
 
-> **Licencia:** GPL-3.0 (ver `LICENSE`). Incluye skills de referencia de
-> terceros; las atribuciones completas están en `NOTICE`.
+- **Agentes de desarrollo** (Opus): ABAP, CAP/BTP, Fiori/UI5, HANA, Integration.
+- **Agentes de soporte** (Sonnet): Basis, Migration, QA, DevOps, Requirements, Docs.
+- **Entorno asumido:** S/4HANA 2023 + BTP, landscape DEV→QAS→PRD, principios
+  Clean Core, español técnico.
+
+## Licencia
+
+**GPL-3.0** (ver [`LICENSE`](LICENSE)). Es software libre **copyleft**: podés
+usarlo, modificarlo y redistribuirlo, siempre que tus derivados **se mantengan
+bajo GPL-3.0 y publiques su código fuente**. No se puede cerrar ni integrar en un
+producto propietario.
+
+Incluye componentes de terceros compatibles — atribuciones completas en
+[`NOTICE`](NOTICE):
+
+| Componente | Origen | Licencia |
+| --- | --- | --- |
+| 10 skills SAP de referencia | [`secondsky/sap-skills`](https://github.com/secondsky/sap-skills) | GPL-3.0 |
+| `skill-creator` | Anthropic | Apache-2.0 |
+| `sapui5-freestyle` | upstream | MIT |
+| Todo lo demás (agentes, hooks, orquestador, comandos) | Insight Technologies | GPL-3.0 |
 
 ## Requisito: pnpm
 
@@ -28,7 +47,23 @@ corepack enable && corepack prepare pnpm@latest --activate   # o: brew install p
 /reload-plugins
 ```
 
-Los comandos quedan namespaced: `/ses:sap-abap …`.
+Los comandos quedan namespaced bajo `ses:` — p.ej. `/ses:sap-abap`.
+
+## Cómo actualizar
+
+El plugin se actualiza como cualquier plugin de Claude Code:
+
+```text
+/plugin update
+```
+
+Cada release publica una versión nueva del marketplace automáticamente, así que
+`/plugin update` te trae lo último — **sin re-clonar ni pasos manuales**. Después
+de actualizar, corré `/reload-plugins` para recargar comandos y hooks.
+
+> Detrás de escena: cada cambio en el stack reconstruye y republica este repo
+> (que es plugin **y** marketplace a la vez) bumpeando la versión — por eso
+> `/plugin update` detecta el cambio.
 
 ## Primeros pasos (2 minutos)
 
@@ -63,20 +98,44 @@ Los comandos quedan namespaced: `/ses:sap-abap …`.
 | `:sap-devops` | CI/CD, gCTS, ATC, pipelines | Pipeline de transporte con gate de ATC |
 | `:sap-doc` | Documentación técnica, Word, full-stack | Documento técnico del proyecto con arquitectura |
 
-> Todos prefijados con `/ses:`. Además: `:sap-techlead` (planifica
-> tareas multi-agente) y los subagentes `reviewer` / `mentor` (vía `/agents` o por
+> Todos prefijados con `/ses:`. Además: `:sap-techlead` (planifica tareas
+> multi-agente) y los subagentes `reviewer` / `mentor` (vía `/agents` o por
 > palabras clave como "review" / "explicame").
 
-## Qué queda activo al instalar
+## Funcionalidad completa — qué queda activo al instalar
 
-| Componente | Invocación | Activación |
+| Componente | Qué hace | Invocación |
 | --- | --- | --- |
-| 11 comandos de agente | `/ses:sap-abap …` | automática |
-| Orquestador (routing NL) | skill `sap-orchestrator` | automática |
-| Skills SAP de referencia (ABAP, CAP, SQLScript, BTP, …) | consulta on-demand del agente | automática |
-| Subagentes (reviewer, mentor, Fiori) | `/agents` → `ses:reviewer` | automática |
-| Hooks de Definition of Done | evento `Stop` (quality-gate + review) | tras `/reload-plugins` |
-| MCP servers (5) | herramientas `mcp__…` | al iniciar sesión |
+| 11 comandos de agente | Personas SAP auto-contenidas (persona + reglas + NFR + Clean Core inline) | `/ses:sap-abap …` |
+| Orquestador (skill) | Enruta tu petición en lenguaje natural al agente correcto | automático |
+| Subagentes | `reviewer` (code review), `mentor` (review educativo), Fiori (architect/implementer/debugger/tester) | `/agents` o keywords |
+| Skills SAP de referencia | Material técnico (ABAP, CDS, CAP, SQLScript, BTP, Fiori Tools, UI5) que el agente consulta on-demand | automático |
+| Hooks de Definition of Done | Gates de calidad en el evento `Stop` (quality-gate + code review), protección de archivos sensibles, auto-lint | tras `/reload-plugins` |
+| 5 MCP servers | `sap-cap-capire`, `sap-ui5`, `sap-fiori-tools`, `github`, `sap-adt` | herramientas `mcp__…` |
+
+## Qué podés hacer / Qué NO
+
+**Podés:**
+
+- Usar los 11 agentes en **cualquier proyecto SAP** sin clonar el repo.
+- Dejar que el **orquestador** enrute por lenguaje natural (sin recordar comandos).
+- Correr los **gates de Definition of Done** automáticamente al cerrar tareas.
+- Consultar las **skills SAP de referencia** on-demand.
+- Usar los **5 MCP servers** (4 sin credenciales; `sap-adt` con credenciales).
+- **Actualizar** con `/plugin update` y modificar/forkear (bajo GPL-3.0).
+
+**No podés (por diseño o límites de un plugin):**
+
+- Invocar comandos **sin el prefijo `ses:`** — el namespacing de plugins es
+  obligatorio en Claude Code (no hay `/sap-abap` pelado).
+- **Desarrollar o regenerar el stack** en sí (el generador, tests y CI viven en el
+  repo de desarrollo, no en el plugin).
+- El **build branded de documentación** (`.docx`/`.pptx` con tema del cliente +
+  diagramas con iconos SAP BTP) — no se distribuye (los iconos son assets
+  propietarios de SAP). `sap-doc` sí genera el **contenido** de la doc.
+- Que el plugin **setee env vars** por vos (un plugin no puede shippear `env`) —
+  los ponés a mano (ver abajo).
+- **Relicenciar** bajo una licencia no-GPL — es copyleft.
 
 ## Configuración que requiere acción del usuario
 
@@ -105,8 +164,7 @@ SQLScript, BTP, Fiori Tools, UI5, …) — material que los agentes consultan
 on-demand. Provienen del proyecto upstream
 [`secondsky/sap-skills`](https://github.com/secondsky/sap-skills) bajo **GPL-3.0**;
 por eso todo este plugin se distribuye bajo **GPL-3.0**. Ver `NOTICE` para las
-atribuciones completas (secondsky GPL-3.0, Anthropic `skill-creator` Apache-2.0,
-`sapui5-freestyle` MIT).
+atribuciones completas.
 
 ## Insumos y documentación (agente `sap-doc`)
 
@@ -129,10 +187,10 @@ tu-proyecto/
 
 **Build con identidad visual (branded `.docx`/`.pptx` + diagramas draw.io):**
 el toolchain (generador draw.io, `build-doc.sh`, la librería de **iconos SAP BTP**
-y los diagramas de ejemplo) **no** se distribuye con este plugin público — los
-iconos son assets de SAP con su propia licencia. `/ses:sap-doc` produce el
-**contenido** de la documentación; para el build branded completo, usá el
-toolchain del stack (repo de desarrollo) o el plugin privado.
+y los diagramas de ejemplo) **no** se distribuye con este plugin — los iconos son
+assets de SAP con su propia licencia. `/ses:sap-doc` produce el **contenido** de
+la documentación; para el build branded completo, usá el toolchain del repo de
+desarrollo del stack.
 
 ## Soporte
 
