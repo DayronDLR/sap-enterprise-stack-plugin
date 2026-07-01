@@ -239,6 +239,16 @@ produces the doc **content**; the branded-build toolchain (draw.io generator,
 icon library** is **not** included (proprietary SAP assets) — you provide your own;
 the generator degrades gracefully without it.
 
+## ☕ Support the project
+
+Built and maintained on personal time — free and open source. If it saves you
+time, you can send a coffee (or a beer 🍺):
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-dayrondlr-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/dayrondlr)
+[![PayPal](https://img.shields.io/badge/PayPal-dlrdayron-00457C?logo=paypal&logoColor=white)](https://paypal.me/dlrdayron)
+
+You can also just ⭐ the repo — it helps a lot. Thank you! 🙌
+
 ## Support
 
 Issues and improvements: <https://github.com/DayronDLR/sap-enterprise-stack-plugin/issues>
@@ -387,6 +397,16 @@ proyecto** (`docs/architecture/…`), no en el plugin. `sap-doc` genera el
 **contenido**; el toolchain de build branded es un **companion MIT**:
 **[`sap-doc-toolkit`](https://github.com/DayronDLR/sap-doc-toolkit)** (los iconos
 SAP BTP no van — assets propietarios de SAP, los pones tú).
+
+## ☕ Apoya el proyecto
+
+Hecho y mantenido en tiempo personal — gratis y open source. Si te ahorra tiempo,
+puedes invitarme un café (o una cerveza 🍺):
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-dayrondlr-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/dayrondlr)
+[![PayPal](https://img.shields.io/badge/PayPal-dlrdayron-00457C?logo=paypal&logoColor=white)](https://paypal.me/dlrdayron)
+
+También puedes darle una ⭐ al repo — ayuda un montón. ¡Gracias! 🙌
 
 ## Soporte
 
