@@ -37,20 +37,17 @@ It bundles compatible third-party components — full attributions in
 | `sapui5-freestyle` | upstream | MIT |
 | Everything else (agents, hooks, orchestrator, commands) | DayronDLR | GPL-3.0 |
 
-## Requirement: pnpm (for the MCP servers only)
+## Requirement: Node.js only (no pnpm)
 
-The plugin's **MCP servers** run via `pnpm dlx`, so have pnpm on your PATH if you
-want them:
+The plugin needs just **Node.js** — its MCP servers run via `npx`, which ships with
+Node/npm and is already present in SAP Business Application Studio, Cloud Foundry and
+any Node dev environment. **Nothing else to install** (no pnpm, no global packages).
 
-```bash
-corepack enable && corepack prepare pnpm@latest --activate   # or: brew install pnpm
-```
-
-> The plugin **never imposes pnpm on your project.** The DoD auto-lint hooks use
-> **only your** project's own linter (`node_modules/.bin`, created by npm/yarn/pnpm
-> alike) and skip silently if it isn't installed — nothing is downloaded, no global
-> tool is run against your project, and your package manager is left untouched. pnpm
-> is only for the plugin's own MCP tools.
+> The plugin **imposes no package manager anywhere.** Its own MCP servers use `npx`
+> (universally available). The DoD auto-lint hooks use **only your** project's own
+> linter (`node_modules/.bin`, created by npm/yarn/pnpm alike) and skip silently if it
+> isn't installed — nothing is downloaded, no global tool is run against your project,
+> and your package manager is left untouched.
 
 ## Install
 
@@ -127,14 +124,14 @@ updating, run `/reload-plugins` to reload commands and hooks.
 ## Prerequisites for full functionality (100%)
 
 **Nothing extra is required to use the agents and skills** — with just Claude Code
-and `pnpm` you get the 11 agents, orchestrator, subagents, all 17 skills and the
+and Node.js you get the 11 agents, orchestrator, subagents, all 17 skills and the
 DoD hooks. The table maps the few capabilities that need one extra thing:
 
 | Capability | Ready as-is? | To unlock it |
 | --- | --- | --- |
 | 11 agents · orchestrator · subagents · 17 SAP skills | ✅ | — |
 | DoD quality gates + auto-lint | ✅ | **Windows:** Git Bash or WSL (hooks are bash). Auto-lint uses **only** your project's own `cds` / `ui5lint` / `eslint` (`node_modules/.bin`) and skips if not installed — no download, no global tool, no imposed package manager |
-| 4 MCP servers (CAP, UI5, Fiori Tools, GitHub) | ✅ | first use downloads the package via `pnpm dlx` (network); `GITHUB_TOKEN` raises GitHub rate limits |
+| 4 MCP servers (CAP, UI5, Fiori Tools, GitHub) | ✅ | first use downloads the package via `npx` (network, needs only Node); `GITHUB_TOKEN` raises GitHub rate limits |
 | MCP `sap-adt` — read ABAP from a **live** system | ⚠️ creds | export `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
 | `/ses:sap-doc` — document **content** | ✅ | — |
 | `/ses:sap-doc` — **Word/PPTX** output | ➕ add-on | `pandoc` 3.x + `python3` + `pip install python-pptx lxml` |
@@ -209,7 +206,7 @@ this variable.)
    { "env": { "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60", "ENABLE_TOOL_SEARCH": "auto:5", "MAX_MCP_OUTPUT_TOKENS": "50000" } }
    ```
 
-3. **First use of each MCP downloads its package** (`pnpm dlx`, needs network).
+3. **First use of each MCP downloads its package** (`npx`, needs network + Node).
 
 ## SAP reference skills (included)
 
@@ -297,20 +294,17 @@ Incluye componentes de terceros compatibles — atribuciones completas en
 | `sapui5-freestyle` | upstream | MIT |
 | Todo lo demás (agentes, hooks, orquestador, comandos) | DayronDLR | GPL-3.0 |
 
-## Requisito: pnpm (solo para los MCP servers)
+## Requisito: solo Node.js (sin pnpm)
 
-Los **MCP servers** del plugin corren con `pnpm dlx`, así que ten pnpm en el PATH
-si quieres usarlos:
+El plugin necesita solo **Node.js** — sus MCP servers corren con `npx`, que viene con
+Node/npm y ya está presente en SAP Business Application Studio, Cloud Foundry y
+cualquier entorno Node. **Nada más que instalar** (ni pnpm, ni paquetes globales).
 
-```bash
-corepack enable && corepack prepare pnpm@latest --activate   # o: brew install pnpm
-```
-
-> El plugin **nunca impone pnpm en tu proyecto.** Los hooks de auto-lint de la DoD
-> usan **solo** el linter de **tu** proyecto (`node_modules/.bin`, que crean npm/yarn/pnpm
+> El plugin **no impone ningún package manager, en ningún lado.** Sus propios MCP
+> servers usan `npx` (universalmente disponible). Los hooks de auto-lint de la DoD usan
+> **solo** el linter de **tu** proyecto (`node_modules/.bin`, que crean npm/yarn/pnpm
 > por igual) y se omiten sin ruido si no está instalado — no descargan nada, no corren
-> una herramienta global contra tu proyecto, ni tocan tu gestor. pnpm es solo para las
-> herramientas MCP propias del plugin.
+> una herramienta global contra tu proyecto, ni tocan tu gestor.
 
 ## Instalación
 
@@ -380,7 +374,7 @@ Los hooks son scripts **bash** — en Windows necesitas Git Bash o WSL.
 ## Requisitos para funcionar al 100%
 
 **No necesitas nada extra para usar los agentes y skills** — con Claude Code +
-`pnpm` ya tienes los 11 agentes, orquestador, subagentes, las 17 skills y los hooks
+Node.js ya tienes los 11 agentes, orquestador, subagentes, las 17 skills y los hooks
 de DoD. Los extras solo habilitan capacidades puntuales:
 
 | Capacidad | ¿Lista? | Para habilitarla |
@@ -400,7 +394,7 @@ de DoD. Los extras solo habilitan capacidades puntuales:
    los otros 4 MCP arrancan sin secrets.
 2. **Env de optimización de contexto (opcional)** — se ponen a mano en tu
    `settings.json` (un plugin no puede shippear `env`).
-3. Primer uso de cada MCP descarga su paquete (`pnpm dlx`, requiere red).
+3. Primer uso de cada MCP descarga su paquete (`npx`, requiere red + Node).
 
 ## Insumos y documentación (`sap-doc`)
 

@@ -20,13 +20,14 @@ separate development repository. So:
 - 💡 **Ideas / features / new agents or skills** → *Feature request* issue.
 - ❓ **Questions** → an issue with the matching label.
 
-For bugs, include: **plugin version** (`/plugin` shows it), OS, `pnpm --version`,
+For bugs, include: **plugin version** (`/plugin` shows it), OS, `node --version`,
 steps to reproduce, and what you expected.
 
 ## Environment
 
-- `pnpm` on your PATH (the plugin's MCP servers use it; the hook linters use only
-  your project's own `node_modules/.bin` — never a global tool, never pnpm).
+- **Node.js** on your PATH — the plugin's MCP servers run via `npx` (no pnpm needed).
+  The hook linters use only your project's own `node_modules/.bin` — never a global
+  tool, never pnpm.
 - The quality hooks are **bash** scripts — on Windows you need Git Bash or WSL.
 
 ## License
@@ -53,7 +54,7 @@ sobrescriben en la próxima publicación).
 - ❓ **Preguntas** → un issue con la etiqueta correspondiente.
 
 Para bugs, incluí: versión del plugin (`/plugin`), sistema operativo,
-`pnpm --version`, pasos para reproducir y qué esperabas.
+`node --version`, pasos para reproducir y qué esperabas.
 
 Los hooks de calidad son scripts **bash** — en Windows necesitás Git Bash o WSL.
 Proyecto **GPL-3.0** (copyleft): las mejoras derivadas se distribuyen bajo la

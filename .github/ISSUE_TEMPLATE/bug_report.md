@@ -19,7 +19,7 @@ What happened vs. what you expected. / Qué pasó vs. qué esperabas.
 
 - Plugin version (`/plugin`):
 - OS / Sistema operativo:
-- `pnpm --version`:
+- `node --version`:
 - Affected MCP? / ¿MCP afectado?
 
 ## Logs / output

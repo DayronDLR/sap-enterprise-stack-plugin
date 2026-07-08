@@ -1,42 +1,42 @@
 {
   "mcpServers": {
     "sap-cap-capire": {
-      "command": "pnpm",
+      "command": "npx",
       "args": [
-        "dlx",
+        "-y",
         "@cap-js/mcp-server@0.0.5"
       ],
       "env": {}
     },
     "sap-ui5": {
-      "command": "pnpm",
+      "command": "npx",
       "args": [
-        "dlx",
+        "-y",
         "@ui5/mcp-server@0.2.14"
       ],
       "env": {}
     },
     "sap-fiori-tools": {
-      "command": "pnpm",
+      "command": "npx",
       "args": [
-        "dlx",
+        "-y",
         "@sap-ux/fiori-mcp-server@1.7.1",
         "fiori-mcp"
       ],
       "env": {}
     },
     "github": {
-      "command": "pnpm",
+      "command": "npx",
       "args": [
-        "dlx",
+        "-y",
         "@modelcontextprotocol/server-github@2025.4.8"
       ],
       "env": {}
     },
     "sap-adt": {
-      "command": "pnpm",
+      "command": "npx",
       "args": [
-        "dlx",
+        "-y",
         "@mcp-abap-adt/core@7.2.1"
       ],
       "env": {
