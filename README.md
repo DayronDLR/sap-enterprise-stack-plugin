@@ -37,14 +37,20 @@ It bundles compatible third-party components — full attributions in
 | `sapui5-freestyle` | upstream | MIT |
 | Everything else (agents, hooks, orchestrator, commands) | DayronDLR | GPL-3.0 |
 
-## Requirement: pnpm
+## Requirement: pnpm (for the MCP servers only)
 
-Everything Node-related uses **pnpm** (MCP servers run via `pnpm dlx`, and so do
-the hook linters). Have it on your PATH:
+The plugin's **MCP servers** run via `pnpm dlx`, so have pnpm on your PATH if you
+want them:
 
 ```bash
 corepack enable && corepack prepare pnpm@latest --activate   # or: brew install pnpm
 ```
+
+> The plugin **never imposes pnpm on your project.** The DoD auto-lint hooks prefer
+> **your** project's own linter (`node_modules/.bin`, created by npm/yarn/pnpm alike),
+> fall back to a global binary if one is on the PATH, and skip silently if neither
+> exists — nothing is downloaded and your package manager is left untouched. pnpm is
+> only for the plugin's own MCP tools.
 
 ## Install
 
@@ -127,7 +133,7 @@ DoD hooks. The table maps the few capabilities that need one extra thing:
 | Capability | Ready as-is? | To unlock it |
 | --- | --- | --- |
 | 11 agents · orchestrator · subagents · 17 SAP skills | ✅ | — |
-| DoD quality gates + auto-lint | ✅ | **Windows:** Git Bash or WSL (hooks are bash). First lint downloads `@sap/cds-dk` / `@ui5/linter` / `eslint` via `pnpm dlx` → needs network |
+| DoD quality gates + auto-lint | ✅ | **Windows:** Git Bash or WSL (hooks are bash). Auto-lint uses **your** project's own `cds` / `ui5lint` / `eslint` (`node_modules/.bin`, else a global one) and skips if neither is present — no download, no imposed package manager |
 | 4 MCP servers (CAP, UI5, Fiori Tools, GitHub) | ✅ | first use downloads the package via `pnpm dlx` (network); `GITHUB_TOKEN` raises GitHub rate limits |
 | MCP `sap-adt` — read ABAP from a **live** system | ⚠️ creds | export `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
 | `/ses:sap-doc` — document **content** | ✅ | — |
@@ -291,14 +297,20 @@ Incluye componentes de terceros compatibles — atribuciones completas en
 | `sapui5-freestyle` | upstream | MIT |
 | Todo lo demás (agentes, hooks, orquestador, comandos) | DayronDLR | GPL-3.0 |
 
-## Requisito: pnpm
+## Requisito: pnpm (solo para los MCP servers)
 
-Todo lo de Node usa **pnpm** (los MCP corren con `pnpm dlx`, los linters de hooks
-también). Tenlo en el PATH:
+Los **MCP servers** del plugin corren con `pnpm dlx`, así que ten pnpm en el PATH
+si quieres usarlos:
 
 ```bash
 corepack enable && corepack prepare pnpm@latest --activate   # o: brew install pnpm
 ```
+
+> El plugin **nunca impone pnpm en tu proyecto.** Los hooks de auto-lint de la DoD
+> prefieren el linter de **tu** proyecto (`node_modules/.bin`, que crean npm/yarn/pnpm
+> por igual), usan uno global si está en el PATH, y se omiten sin ruido si no hay
+> ninguno — no descargan nada ni tocan tu gestor. pnpm es solo para las herramientas
+> MCP propias del plugin.
 
 ## Instalación
 
@@ -374,7 +386,7 @@ de DoD. Los extras solo habilitan capacidades puntuales:
 | Capacidad | ¿Lista? | Para habilitarla |
 | --- | --- | --- |
 | Agentes · orquestador · subagentes · 17 skills | ✅ | — |
-| Gates de DoD + auto-lint | ✅ | **Windows:** Git Bash/WSL; el 1er lint baja `@sap/cds-dk` / `@ui5/linter` / `eslint` vía `pnpm dlx` (red) |
+| Gates de DoD + auto-lint | ✅ | **Windows:** Git Bash/WSL; el auto-lint usa el `cds` / `ui5lint` / `eslint` de **tu** proyecto (`node_modules/.bin`, o uno global) y se omite si no hay ninguno — no descarga nada ni impone gestor |
 | 4 MCP (CAP, UI5, Fiori Tools, GitHub) | ✅ | 1er uso baja el paquete (red); `GITHUB_TOKEN` sube el rate limit |
 | MCP `sap-adt` (ABAP del sistema **real**) | ⚠️ creds | `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
 | `/ses:sap-doc` — **contenido** | ✅ | — |
