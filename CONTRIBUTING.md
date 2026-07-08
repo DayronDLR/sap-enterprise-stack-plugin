@@ -25,8 +25,8 @@ steps to reproduce, and what you expected.
 
 ## Environment
 
-- `pnpm` on your PATH (the plugin's MCP servers use it; the hook linters use your
-  project's own `node_modules/.bin` first, then a global binary — never pnpm).
+- `pnpm` on your PATH (the plugin's MCP servers use it; the hook linters use only
+  your project's own `node_modules/.bin` — never a global tool, never pnpm).
 - The quality hooks are **bash** scripts — on Windows you need Git Bash or WSL.
 
 ## License

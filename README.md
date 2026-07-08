@@ -46,11 +46,11 @@ want them:
 corepack enable && corepack prepare pnpm@latest --activate   # or: brew install pnpm
 ```
 
-> The plugin **never imposes pnpm on your project.** The DoD auto-lint hooks prefer
-> **your** project's own linter (`node_modules/.bin`, created by npm/yarn/pnpm alike),
-> fall back to a global binary if one is on the PATH, and skip silently if neither
-> exists — nothing is downloaded and your package manager is left untouched. pnpm is
-> only for the plugin's own MCP tools.
+> The plugin **never imposes pnpm on your project.** The DoD auto-lint hooks use
+> **only your** project's own linter (`node_modules/.bin`, created by npm/yarn/pnpm
+> alike) and skip silently if it isn't installed — nothing is downloaded, no global
+> tool is run against your project, and your package manager is left untouched. pnpm
+> is only for the plugin's own MCP tools.
 
 ## Install
 
@@ -133,7 +133,7 @@ DoD hooks. The table maps the few capabilities that need one extra thing:
 | Capability | Ready as-is? | To unlock it |
 | --- | --- | --- |
 | 11 agents · orchestrator · subagents · 17 SAP skills | ✅ | — |
-| DoD quality gates + auto-lint | ✅ | **Windows:** Git Bash or WSL (hooks are bash). Auto-lint uses **your** project's own `cds` / `ui5lint` / `eslint` (`node_modules/.bin`, else a global one) and skips if neither is present — no download, no imposed package manager |
+| DoD quality gates + auto-lint | ✅ | **Windows:** Git Bash or WSL (hooks are bash). Auto-lint uses **only** your project's own `cds` / `ui5lint` / `eslint` (`node_modules/.bin`) and skips if not installed — no download, no global tool, no imposed package manager |
 | 4 MCP servers (CAP, UI5, Fiori Tools, GitHub) | ✅ | first use downloads the package via `pnpm dlx` (network); `GITHUB_TOKEN` raises GitHub rate limits |
 | MCP `sap-adt` — read ABAP from a **live** system | ⚠️ creds | export `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
 | `/ses:sap-doc` — document **content** | ✅ | — |
@@ -307,10 +307,10 @@ corepack enable && corepack prepare pnpm@latest --activate   # o: brew install p
 ```
 
 > El plugin **nunca impone pnpm en tu proyecto.** Los hooks de auto-lint de la DoD
-> prefieren el linter de **tu** proyecto (`node_modules/.bin`, que crean npm/yarn/pnpm
-> por igual), usan uno global si está en el PATH, y se omiten sin ruido si no hay
-> ninguno — no descargan nada ni tocan tu gestor. pnpm es solo para las herramientas
-> MCP propias del plugin.
+> usan **solo** el linter de **tu** proyecto (`node_modules/.bin`, que crean npm/yarn/pnpm
+> por igual) y se omiten sin ruido si no está instalado — no descargan nada, no corren
+> una herramienta global contra tu proyecto, ni tocan tu gestor. pnpm es solo para las
+> herramientas MCP propias del plugin.
 
 ## Instalación
 
@@ -386,7 +386,7 @@ de DoD. Los extras solo habilitan capacidades puntuales:
 | Capacidad | ¿Lista? | Para habilitarla |
 | --- | --- | --- |
 | Agentes · orquestador · subagentes · 17 skills | ✅ | — |
-| Gates de DoD + auto-lint | ✅ | **Windows:** Git Bash/WSL; el auto-lint usa el `cds` / `ui5lint` / `eslint` de **tu** proyecto (`node_modules/.bin`, o uno global) y se omite si no hay ninguno — no descarga nada ni impone gestor |
+| Gates de DoD + auto-lint | ✅ | **Windows:** Git Bash/WSL; el auto-lint usa **solo** el `cds` / `ui5lint` / `eslint` de **tu** proyecto (`node_modules/.bin`) y se omite si no está instalado — no descarga nada, no corre herramienta global, ni impone gestor |
 | 4 MCP (CAP, UI5, Fiori Tools, GitHub) | ✅ | 1er uso baja el paquete (red); `GITHUB_TOKEN` sube el rate limit |
 | MCP `sap-adt` (ABAP del sistema **real**) | ⚠️ creds | `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
 | `/ses:sap-doc` — **contenido** | ✅ | — |

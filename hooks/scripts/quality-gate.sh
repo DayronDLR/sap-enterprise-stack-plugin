@@ -69,16 +69,17 @@ MANIFEST_CHANGED=$(echo "$CHANGED_FILES" | grep -E 'webapp/manifest\.json$' || t
 
 ERRORS=""
 
-# Los linters respetan el PACKAGE MANAGER del proyecto: usan el binario LOCAL del
-# proyecto (node_modules/.bin — lo crean npm/yarn/pnpm por igual) o uno global si
-# existe. NO imponen pnpm ni descargan nada; si el linter no está instalado en el
-# proyecto, se OMITE (return 127 → el caller lo trata como skip, no como fallo).
+# Los linters corren SOLO desde el toolchain LOCAL del proyecto
+# (node_modules/.bin — lo crean npm/yarn/pnpm por igual). Un linter solo es fiable
+# con la config y los plugins del propio proyecto (eslint config, @sap/eslint-plugin-cds,
+# setup de ui5lint); un binario GLOBAL corriendo contra un proyecto ajeno produce
+# errores de infra (p.ej. `cds lint` global → "ESLint is not installed") que serían
+# CRITICAL falsos — otra forma de imponer toolchain. Por eso: si el linter no está
+# instalado en el proyecto, se OMITE (return 127 → el caller lo trata como skip).
 run_linter() {
     local bin="$1"; shift
     if [[ -x "${PROJECT_DIR}/node_modules/.bin/${bin}" ]]; then
         "${PROJECT_DIR}/node_modules/.bin/${bin}" "$@"
-    elif command -v "$bin" >/dev/null 2>&1; then
-        "$bin" "$@"
     else
         return 127
     fi

@@ -7,13 +7,12 @@ FILE_PATH=$(cat | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.g
 
 # Solo correr si el archivo es .cds
 if echo "$FILE_PATH" | grep -q "\.cds$"; then
-    # Usa el `cds` LOCAL del proyecto (respeta su package manager); si no está,
-    # no hace nada (no impone pnpm ni descarga).
+    # Usa SOLO el `cds` LOCAL del proyecto (su config + @sap/eslint-plugin-cds); si
+    # no está instalado, no hace nada (no usa un cds global — evita falsos errores de
+    # infra — ni impone pnpm ni descarga).
     PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
     if [[ -x "${PROJECT_DIR}/node_modules/.bin/cds" ]]; then
         "${PROJECT_DIR}/node_modules/.bin/cds" lint 2>/dev/null
-    elif command -v cds &> /dev/null; then
-        cds lint 2>/dev/null
     fi
 fi
 
