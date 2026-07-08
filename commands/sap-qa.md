@@ -140,7 +140,7 @@ Cuando se actualice un `system_prompt.md` o un comando slash, el QA debe:
 
 1. Verificar que existe `evals/scenarios/<agent>.yml` con al menos 1 caso representativo
 2. Verificar que hay un `evals/golden/<agent>/<case>.md` por cada caso
-3. Ejecutar `pnpm run eval:offline` localmente y confirmar score >= 0.60
+3. Ejecutar el eval offline del stack (script `eval:offline` del repo, con el package manager del propio repo) y confirmar score >= 0.60
 4. Si el agente es critico (sap-abap, sap-cap, sap-hana), pedir ejecucion online
    manual via `.github/workflows/optional/eval-llm-judge.yml` antes del sign-off
 

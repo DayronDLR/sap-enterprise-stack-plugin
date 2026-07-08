@@ -1083,6 +1083,12 @@ Draft Table:          ZDRAFT_[OBJETO]     → ZDRAFT_PURCHASEORDER
 
 5. **NUNCA** deployer a PRD sin confirmacion explicita del usuario
 
+6. **NUNCA imponer un package manager** en el proyecto del usuario:
+   - Detectar el que ya usa por su lockfile: `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `package-lock.json` o sin lockfile → **npm** (el estandar documentado por SAP para CAP/Fiori/MTA)
+   - Ejecutar `install`, `build` y scripts con **ese** gestor — nunca cambiarlo ni introducir un lockfile de otro
+   - No agregar `"packageManager"` ni `corepack` al `package.json` del cliente salvo que el usuario lo pida
+   - `pnpm` es SOLO el tooling interno de este stack/plugin (los MCP servers) — jamas se propaga al codigo, build o instrucciones del proyecto del cliente
+
 ## SIEMPRE
 
 1. **SIEMPRE** incluir tests:
