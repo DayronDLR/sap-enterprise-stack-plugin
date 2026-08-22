@@ -199,12 +199,36 @@ this variable.)
 
    The other 4 MCP (CAP, UI5, Fiori Tools, GitHub) start with no secrets.
 
-2. **Context optimization (optional)** — a plugin can't ship `env`; if you want
-   it, add to YOUR `settings.json`:
+2. **Context optimization (recommended)** — a plugin can't ship `env`, so these
+   have to go in YOUR `settings.json`:
 
    ```json
-   { "env": { "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60", "ENABLE_TOOL_SEARCH": "auto:5", "MAX_MCP_OUTPUT_TOKENS": "50000" } }
+   { "env": { "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "82", "MAX_MCP_OUTPUT_TOKENS": "8000" } }
    ```
+
+   Measured on this plugin's 5 MCP servers (205 tools):
+
+   | Tool search | Cost per request |
+   | --- | --- |
+   | on (the default — leave `ENABLE_TOOL_SEARCH` **unset**) | **1.3k tokens** |
+   | off (`ENABLE_TOOL_SEARCH=false`, a proxy `ANTHROPIC_BASE_URL`, or a pre-4.5 model) | **45.4k tokens** |
+
+   Optional context guards shipped with the plugin (all on by default, each
+   with an off switch):
+
+   | Hook | What it does | Disable with |
+   | --- | --- | --- |
+   | `shrink-input.sh` | Bounds noisy commands (`git diff`, test runs, builds) before they run | `SES_SHRINK=off` |
+   | `mcp-guard.sh` | Applies a default row/result cap to MCP calls that don't declare one | `SES_MCP_GUARD=off` |
+   | `delivery-gate.sh` | Runs the Definition of Done at `git commit`/`push`/PR | `SES_GATES=off` |
+
+   `SES_MODE=lite\|full\|ultra` grades how much the stack demands: `lite` runs
+   Gate 1 only (for spikes), `full` is the default, `ultra` is for code headed
+   to production.
+
+   Don't set `ENABLE_TOOL_SEARCH` to `auto:N`: that's threshold mode, which
+   loads the schemas upfront while they stay under N% of the context window.
+   Unset always defers.
 
 3. **First use of each MCP downloads its package** (`npx`, needs network + Node).
 

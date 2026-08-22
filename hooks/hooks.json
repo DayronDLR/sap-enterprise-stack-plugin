@@ -2,11 +2,20 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Skill",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "git pull origin main --quiet 2>&1 | grep -v 'Already up to date' || true"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/delivery-gate.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/shrink-input.sh\""
           }
         ]
       },
@@ -18,6 +27,15 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/protect-sensitive-files.sh\""
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/mcp-guard.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -26,25 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-lint-ui5.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-lint-cds.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-validate-manifest.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-lint.sh\""
           }
         ]
       }
@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "rm -f \"${CLAUDE_PROJECT_DIR:-.}/tmp/.active-sap-agent\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.review-done\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.qa-nfr-done\" 2>/dev/null; echo '# Contexto SAP Stack\\nSistema: SAP S/4HANA 2023 On-Premise + SAP BTP\\nLandscape: DEV > QAS > PRD | Principio: Clean Core\\nReglas: shared/core-dev-principles.md + rules/DEFINITION-OF-DONE.md + shared/non-functional-requirements.md\\nRouting: orchestrator/routing_rules.json\\nSi el contexto fue compactado, releer CLAUDE.md antes de continuar.'"
+            "command": "rm -f \"${CLAUDE_PROJECT_DIR:-.}/tmp/.active-sap-agent\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.review-done\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.qa-nfr-done\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.agent-turn-count\" 2>/dev/null; rm -f \"${CLAUDE_PROJECT_DIR:-.}\"/tmp/.close-note-* 2>/dev/null; echo '# Contexto SAP Stack\\nSistema: SAP S/4HANA 2023 On-Premise + SAP BTP\\nLandscape: DEV > QAS > PRD | Principio: Clean Core\\nGates DoD: corren al commitear/pushear, o con /sap-gates. No en cada turno.\\nRouting: orchestrator/routing_rules.json'"
           }
         ]
       }
@@ -94,15 +94,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'SAP Stack: Verificar TRs pendientes, sesiones de depuracion y commits antes de cerrar.'"
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/quality-gate.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/mandatory-review.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-close-note.sh\""
           }
         ]
       }

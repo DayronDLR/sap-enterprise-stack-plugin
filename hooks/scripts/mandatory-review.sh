@@ -1,171 +1,76 @@
 #!/bin/bash
-# mandatory-review.sh
-# Stop hook (Gate 2 + Gate 3 de la Definition of Done).
+# mandatory-review.sh — estado de los Gates 2 (Code Review) y 3 (QA + NFR).
 #
-# Gate 2 — Code Review: detecta diff de la sesion y exige al modelo correr al
-#                       agente `reviewer` sobre ese diff antes de cerrar.
-# Gate 3 — QA + NFR  : exige al agente QA `sap-qa` validar el checklist NFR.
+# HISTORIA: hasta ADR-008 este script era un hook `Stop` que devolvia
+# decision=block hasta que el modelo corriera los agentes `reviewer` y `sap-qa`.
+# Como `Stop` dispara al final de CADA TURNO, eso exigia dos subagentes completos
+# por prompt — 2-3x tokens por tarea, revisando codigo a medio escribir.
 #
-# Este script NO invoca subagentes por si mismo (no puede). Lo que hace es:
-#   1) Detectar si hubo cambios productivos en la sesion (codigo o config ejecutable).
-#   2) Verificar si en el contexto reciente del Stop ya se ejecutaron review + QA.
-#   3) Si NO se ejecutaron, devolver decision=block con instrucciones explicitas
-#      para que Claude corra los dos agentes antes de cerrar.
+# AHORA: no es un hook. Es un utilitario CLI que reporta que gates faltan.
+# Lo consumen:
+#   - hooks/scripts/delivery-gate.sh  (PreToolUse en git commit/push/gh pr create)
+#   - commands/sap-gates.md           (/sap-gates, invocacion explicita del dev)
+#   - .husky/pre-commit               (red de seguridad para commits fuera de Claude)
 #
-# La señal de "ya se ejecutaron" se basa en marcadores temporales escritos por
-# el modelo en tmp/.review-done y tmp/.qa-nfr-done (creados via Bash tras
-# completar cada gate). Edad maxima: 30 minutos (mas viejo = invalido).
+# Salida: texto plano. Exit code 0 = gates cubiertos, 1 = faltan gates.
+# Con --quiet solo devuelve el exit code.
 
 set -u
 
-# Opt-out para consumidores del PLUGIN: si el script corre desde .../plugins/...
-# (plugin instalado) y SES_SKIP_DOD_GATES=1, se omiten los gates. En el stack
-# clonado/interno la Definition of Done es politica — el bypass auditado es via
-# HOTFIX-OVERRIDE (ADR-005), no esta variable.
-case "${BASH_SOURCE[0]:-$0}" in
-  */plugins/*)
-    if [ "${SES_SKIP_DOD_GATES:-}" = "1" ]; then
-      echo "[DoD] SES_SKIP_DOD_GATES=1 -> code review/QA gate omitido (opt-out del plugin)." >&2
-      exit 0
-    fi
-    ;;
-esac
+QUIET=0
+for arg in "$@"; do
+    [[ "$arg" = "--quiet" ]] && QUIET=1
+done
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 TMP_DIR="${PROJECT_DIR}/tmp"
 REVIEW_FLAG="${TMP_DIR}/.review-done"
 QA_FLAG="${TMP_DIR}/.qa-nfr-done"
-HOTFIX_FLAG="${TMP_DIR}/.hotfix-override"
-HOTFIX_LOG="${PROJECT_DIR}/logs/hotfix-overrides.log"
-MAX_AGE_SECONDS=1800   # 30 min
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Stack observability + SLO timing
-HOOK_NAME="mandatory-review"
+if [[ ! -f "${SCRIPT_DIR}/lib/dod-common.sh" ]]; then
+    echo "[DoD] lib/dod-common.sh no encontrado — no se puede evaluar el estado de los gates." >&2
+    exit 0
+fi
 # shellcheck disable=SC1091
-[[ -f "${PROJECT_DIR}/hooks/scripts/lib/emit-stack-event.sh" ]] && \
-    source "${PROJECT_DIR}/hooks/scripts/lib/emit-stack-event.sh"
-type timed_section_start >/dev/null 2>&1 && timed_section_start
-type emit_stack_event >/dev/null 2>&1 && emit_stack_event "start" '{}'
+source "${SCRIPT_DIR}/lib/dod-common.sh"
 
-mkdir -p "$TMP_DIR" "${PROJECT_DIR}/logs" 2>/dev/null
+say() { [[ "$QUIET" = "1" ]] || printf '%s\n' "$1"; }
 
-# 0) HOTFIX-OVERRIDE: si existe tmp/.hotfix-override con razon valida +
-#    segundo aprobador, permitir cierre con WARNING (no con CRITICAL).
-#    Two-person rule: gap #6 — ver docs/adr/005-two-person-hotfix-approval.md
-#    Formato del archivo:
-#      REASON: <ticket + descripcion, min 20 chars>
-#      APPROVED_BY: <email distinto del solicitante git config user.email>
-if [[ -f "$HOTFIX_FLAG" ]]; then
-    REASON_LINE=$(head -1 "$HOTFIX_FLAG" 2>/dev/null)
-    APPROVER_LINE=$(grep -E '^APPROVED_BY: ' "$HOTFIX_FLAG" 2>/dev/null | head -1)
-    REQUESTER=$(git config user.email 2>/dev/null || echo "unknown")
-    APPROVER=$(echo "$APPROVER_LINE" | sed 's/^APPROVED_BY: *//')
-    HOTFIX_OK=0
-    if echo "$REASON_LINE" | grep -qE '^REASON: .{20,}' && [[ -n "$APPROVER" ]] && [[ "$APPROVER" != "$REQUESTER" ]]; then
-        HOTFIX_OK=1
+# Opt-out para consumidores del plugin.
+case "${BASH_SOURCE[0]:-$0}" in
+  */plugins/*)
+    if [ "${SES_SKIP_DOD_GATES:-}" = "1" ]; then
+      say "[DoD] SES_SKIP_DOD_GATES=1 -> gates 2+3 omitidos (opt-out del plugin)."
+      exit 0
     fi
-    if [[ "$HOTFIX_OK" = "1" ]]; then
-        TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-        USER_ID="${USER:-unknown}"
-        SESSION_ID="${CLAUDE_SESSION_ID:-no-session}"
-        # Rotacion: si log >1MB, mover a .1 (mantener 3 generaciones).
-        # NOTA: `stat -f %z` en Linux GNU NO falla — interpreta `-f` como
-        # `--file-system` y devuelve el block size (4096), causando que la
-        # rotacion nunca se dispare. Usamos `wc -c` que es portable.
-        if [[ -f "$HOTFIX_LOG" ]]; then
-            LOG_SIZE=$(wc -c < "$HOTFIX_LOG" 2>/dev/null | tr -d ' ')
-            LOG_SIZE=${LOG_SIZE:-0}
-            if [[ "$LOG_SIZE" -gt 1048576 ]]; then
-                [[ -f "${HOTFIX_LOG}.2" ]] && mv "${HOTFIX_LOG}.2" "${HOTFIX_LOG}.3"
-                [[ -f "${HOTFIX_LOG}.1" ]] && mv "${HOTFIX_LOG}.1" "${HOTFIX_LOG}.2"
-                mv "$HOTFIX_LOG" "${HOTFIX_LOG}.1"
-            fi
-        fi
-        echo "[$TS] user=$USER_ID approver=$APPROVER session=$SESSION_ID — $REASON_LINE" >> "$HOTFIX_LOG"
-        # consumir el flag (no reusable entre sesiones)
-        rm -f "$HOTFIX_FLAG" 2>/dev/null
-        WARN_MSG="HOTFIX-OVERRIDE activo. Solicitante: $REQUESTER, aprobador: $APPROVER. Gates 2+3 omitidos. Razon: ${REASON_LINE#REASON: }. Logged en logs/hotfix-overrides.log. Ambos asumen el riesgo."
-        type emit_stack_event >/dev/null 2>&1 && \
-            emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"approve\",\"hotfix\":1}"
-        printf '{"decision":"approve","systemMessage":"%s"}\n' "$WARN_MSG"
-        exit 0
-    fi
-fi
+    ;;
+esac
+[[ "${SES_GATES:-}" = "off" ]] && { say "[DoD] SES_GATES=off -> gates 2+3 omitidos."; exit 0; }
 
-
-# 1) Detectar archivos productivos modificados o nuevos
-CHANGED=$(
-    { git diff --name-only HEAD 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } \
-        | sort -u \
-        | grep -vE '^(\.claude/|tmp/|node_modules/|\.git/|docs/|client-docs/|README|CHANGELOG|\.md$|memory/)' \
-        | grep -E '\.(abap|prog|clas|cds|hdbcds|hdbcalculationview|hdbprocedure|hdbtable|js|ts|xml|json|yaml|yml|sh|sql|hdbtablefunction|hdbview|properties)$' \
-        || true
-)
-
-# Si no hay archivos productivos modificados, no aplica el DoD de codigo
+CHANGED=$(dod_changed_files)
 if [[ -z "$CHANGED" ]]; then
-    type emit_stack_event >/dev/null 2>&1 && \
-        emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"approve\",\"reason\":\"no_productive_files\"}"
-    echo '{"decision":"approve"}'
+    say "[DoD] Sin archivos productivos modificados — gates 2+3 no aplican."
     exit 0
 fi
 
-# Solo cambios en hooks/, scripts/, .claude config -> meta-stack, gates 2+3 no aplican
-META_ONLY=true
-for f in $CHANGED; do
-    case "$f" in
-        hooks/*|scripts/*|.github/*|orchestrator/*|config/*|rules/*|shared/*|agents/*|commands/*|plugins/*|settings.json|CLAUDE.md)
-            : # meta-stack
-            ;;
-        *)
-            META_ONLY=false
-            break
-            ;;
-    esac
-done
-
-if [[ "$META_ONLY" = "true" ]]; then
-    type emit_stack_event >/dev/null 2>&1 && \
-        emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"approve\",\"reason\":\"meta_only\"}"
-    echo '{"decision":"approve"}'
+if dod_is_meta_only "$CHANGED"; then
+    say "[DoD] Solo cambios al meta-stack — alcanza con Gate 1."
     exit 0
 fi
 
-# 2) Chequear flags de review/QA con edad maxima
-now=$(date +%s)
-is_fresh() {
-    local f="$1"
-    [[ -f "$f" ]] || return 1
-    local mtime
-    mtime=$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null)
-    [[ -z "$mtime" ]] && return 1
-    local age=$((now - mtime))
-    [[ "$age" -le "$MAX_AGE_SECONDS" ]]
-}
+MISSING=0
+dod_flag_fresh "$REVIEW_FLAG" || { MISSING=1; say "  PENDIENTE  Gate 2 (Code Review) — agente 'reviewer' sobre el diff"; }
+dod_flag_fresh "$QA_FLAG"     || { MISSING=1; say "  PENDIENTE  Gate 3 (QA + NFR)  — agente 'sap-qa' + shared/non-functional-requirements.md"; }
 
-REVIEW_OK=false
-QA_OK=false
-is_fresh "$REVIEW_FLAG" && REVIEW_OK=true
-is_fresh "$QA_FLAG"     && QA_OK=true
-
-if [[ "$REVIEW_OK" = "true" ]] && [[ "$QA_OK" = "true" ]]; then
-    # Limpiar flags para forzar nueva validacion en la proxima sesion
-    rm -f "$REVIEW_FLAG" "$QA_FLAG" 2>/dev/null
-    type emit_stack_event >/dev/null 2>&1 && \
-        emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"approve\"}"
-    echo '{"decision":"approve"}'
+if [[ "$MISSING" = "0" ]]; then
+    say "[DoD] Gates 2 y 3 cubiertos (validos por $((DOD_MAX_AGE_SECONDS / 60)) min)."
     exit 0
 fi
 
-# 3) Construir mensaje de bloqueo
-MISSING=""
-[[ "$REVIEW_OK" = "false" ]] && MISSING="${MISSING}\\n- Gate 2 (Code Review): invocar el agente 'reviewer' sobre el diff de la sesion. Tras completar, ejecutar: touch ${REVIEW_FLAG}"
-[[ "$QA_OK" = "false" ]]     && MISSING="${MISSING}\\n- Gate 3 (QA + NFR): invocar el agente QA 'sap-qa' (/ses:sap-qa o /sap-qa) y validar el checklist NFR. Tras completar, ejecutar: touch ${QA_FLAG}"
-
-REASON="Definition of Done — gates pendientes antes de cerrar:${MISSING}\\n\\nArchivos productivos detectados: $(echo "$CHANGED" | tr '\n' ' ')\\n\\nReferencia: rules/DEFINITION-OF-DONE.md y shared/non-functional-requirements.md"
-
-type emit_stack_event >/dev/null 2>&1 && \
-    emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"block\"}"
-# JSON escape (basico) — reemplazar saltos reales por \\n ya hechos arriba
-printf '{"decision":"block","reason":"%s"}\n' "$REASON"
-exit 0
+say ""
+say "Archivos productivos sin revisar:"
+say "$(echo "$CHANGED" | sed 's/^/  /')"
+say ""
+say "Corre /sap-gates para ejecutarlos."
+exit 1

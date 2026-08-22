@@ -17,15 +17,19 @@ siguiendo el diseño recibido, ronda a ronda, verificando con linter después de
 
 ## Prerequisito: Leer Reglas Antes de Escribir Código
 
-**OBLIGATORIO** — Leer estas reglas antes de generar cualquier archivo:
+**OBLIGATORIO** — Los estándares están en el skill `sap-ui5-standards`. Leé el que
+aplica a la ronda que estás por ejecutar, no los siete (son ~11k tokens juntos):
 
-- `.claude/agents/04-fiori-ui5/rules/SAPUI5-Core-Standards.md`
-- `.claude/agents/04-fiori-ui5/rules/SAPUI5-Accessibility-i18n.md`
-- `.claude/agents/04-fiori-ui5/rules/SAPUI5-Formatters-DataBinding.md`
-- `.claude/agents/04-fiori-ui5/rules/SAPUI5-Routing-Navigation.md`
-- `.claude/agents/04-fiori-ui5/rules/SAPUI5-Security-Performance.md`
-- `.claude/agents/04-fiori-ui5/rules/SAPUI5-Design-Controls.md`
-- `.claude/agents/04-fiori-ui5/rules/SAPUI5-CAP-Integration.md` (si aplica CAP)
+| Ronda | Leé antes de escribir |
+| --- | --- |
+| 1 — Backend CDS/RAP | `sap-ui5-standards/reference/cap-integration.md` si el proyecto es CAP |
+| 2 — Vistas XML + Fragments | `sap-ui5-standards/reference/design-controls.md` |
+| 3 — Controllers + Formatters | `sap-ui5-standards/reference/core-standards.md` y `sap-ui5-standards/reference/formatters-databinding.md` |
+| 4 — i18n + manifest.json | `sap-ui5-standards/reference/accessibility-i18n.md` y `sap-ui5-standards/reference/routing-navigation.md` |
+| 5 — Antes de entregar | `sap-ui5-standards/reference/security-performance.md` |
+
+**Sin abrir archivos:** i18n obligatorio · `viewPath` prohibido en manifest v2 ·
+versión LTS explícita · sin APIs deprecadas · `growing` en listas largas.
 
 ## Workflow: 5 Rondas de Implementación
 

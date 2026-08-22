@@ -156,6 +156,8 @@ Anti-patron: aceptar cambios al system_prompt sin actualizar golden / scenarios 
 6. ⚠️ RIESGOS DE TESTING
 7. ✅ CRITERIOS DE ACEPTACIÓN (incluye sign-off NFR)
 
+Aplicar tambien `shared/output-brevity.md`: sin preambulos, sin re-explicar el codigo, sin resumenes de cierre.
+
 ---
 ## Reglas heredadas del stack (incrustadas por el plugin)
 
@@ -163,182 +165,45 @@ Anti-patron: aceptar cambios al system_prompt sin actualizar golden / scenarios 
 
 ### shared/non-functional-requirements.md
 
-# Requisitos No Funcionales (NFR) — Catalogo Global
+# Requisitos No Funcionales (NFR) — Reglas duras
 
-> Aplica a **TODOS** los agentes que producen codigo o configuracion ejecutable.
-> Es referenciado por: ABAP (06), CAP (03), Integration (02), HANA (05), Migration (08), QA (09).
-> Validado obligatoriamente por `rules/DEFINITION-OF-DONE.md`.
+> Aplica a **TODO** código o configuración ejecutable. Validado por
+> `rules/DEFINITION-OF-DONE.md`. El catálogo detallado (técnicas por tecnología,
+> tablas de chunking, umbrales de baseline) vive en el skill **`sap-nfr`** —
+> leelo cuando la tarea lo pida, no por defecto.
 
-## 1. Concurrencia y Locking
+## Reglas duras (no negociables)
 
-Toda logica que escribe en tablas compartidas o ejecuta en background debe
-diseñarse asumiendo **N procesos paralelos sobre los mismos datos**.
+- **Concurrencia**: toda escritura a tablas compartidas asume N procesos en
+  paralelo. ENQUEUE/DEQUEUE (ABAP), `@odata.etag` + `cds.tx(req)` (CAP),
+  `SELECT … FOR UPDATE` (HANA), idempotent receiver (CPI).
+- **Nunca** un `SELECT ... INTO TABLE` sin `PACKAGE SIZE` si el universo puede crecer.
+- **Nunca** un `LOOP AT … MODIFY DB` (acoplar SELECT y UPDATE).
+- **Nunca** un job masivo sin estrategia de reinicio: ¿qué pasa si cae en el
+  registro 47.000?
+- **COMMIT boundaries** cada 500–2.000 registros, nunca uno solo al final.
+- **Idempotencia**: toda operación reintentable produce el mismo resultado la
+  segunda vez. UPSERT con clave completa, o verificación previa por clave natural.
+- **Smells prohibidos**: `SELECT *`, `SELECT` dentro de `LOOP`, funciones
+  escalares en el `WHERE`, `READ TABLE` sin `BINARY SEARCH`/`WITH KEY`, nested
+  loops cuadráticos.
+- **Sin observabilidad no hay sign-off**: SLG1 (ABAP), `cds.log()` con namespace
+  (CAP), Message Monitoring (CPI). El log tiene que servir a las 3 AM.
+- **Baseline de performance** capturado antes del cambio y comparado después.
+  Regresión >20% en runtime p95 **bloquea el cierre** salvo justificación
+  explícita del Tech Lead. Ver `sap-nfr/reference/baseline-performance.md`.
 
-### ABAP / S/4HANA
+## Referencia detallada (skill `sap-nfr`)
 
-- **ENQUEUE_E* / DEQUEUE_E*** antes de UPDATE/MODIFY de tablas con lock object
-- **RAP**: usar `lock master` en BDEF; manejar `CX_ABAP_BEHV_CONFLICT` en EML
-- **Update Task**: separar logica de UI (V1) de logica posponible (V2) — `PERFORM ... ON COMMIT`
-- **COMMIT WORK boundaries**: nunca un solo COMMIT al final de un proceso masivo
-  - Patron: cada N registros (500–2000) → COMMIT WORK, log de progreso, reset de buffers
-- **Cursor stable + parallel cursor** para LOOPs grandes con tablas anidadas
-- **SY-SUBRC** despues de CADA ENQUEUE/DEQUEUE/UPDATE — nunca asumir exito
+| Necesitás… | Leé |
+| --- | --- |
+| Técnicas de locking por tecnología (ABAP/CAP/HANA/CPI) | `sap-nfr/reference/concurrencia-locking.md` |
+| Chunking, paralelismo, restart-ability, checkpoints | `sap-nfr/reference/batch-masivo.md` |
+| Smells de performance, índices, observabilidad | `sap-nfr/reference/performance.md` |
+| Captura de baseline, umbrales de regresión, anti-patrones | `sap-nfr/reference/baseline-performance.md` |
+| Volúmenes mínimos de prueba en QAS | `sap-nfr/reference/volumen-pruebas.md` |
 
-### CAP / BTP
-
-- **Optimistic locking**: usar `@odata.etag` en entidades con concurrencia alta
-- **`cds.tx(req)`**: una transaccion por request HTTP, nunca compartir tx entre requests
-- **Batch handlers**: si el handler procesa array, iterar en chunks con `Promise.allSettled`
-- **Idempotency-key**: aceptar header `Idempotency-Key` en endpoints POST/PATCH criticos
-- **`@requires` y `@restrict`** en TODAS las acciones que modifican estado
-
-### HANA
-
-- **MVCC** se asume — pero validar isolation level si se usa READ COMMITTED / SERIALIZABLE
-- **`SELECT … FOR UPDATE NOWAIT`** para reservas de stock / asignacion de numeros
-- **Particionado por hash** para tablas con escritura paralela alta (>1k tx/s)
-- **Statement-level vs procedure-level COMMIT** — explicitar en SQLScript
-
-### Integration (CPI / iFlow)
-
-- **Idempotent Receiver pattern**: deduplicar por `MessageID` en JMS / persistencia
-- **Splitter + Aggregator** con `parallelProcessing=true` SOLO si downstream lo soporta
-- **JMS queues** sobre canales sincronicos para volumenes >100 msg/s
-- **Exception Subprocess** obligatorio en TODO iFlow
-
-## 2. Procesamiento Masivo / Batch
-
-Cuando un proceso lee/escribe >1.000 registros, el diseño debe incluir:
-
-| Tecnica | ABAP | CAP/Node | HANA |
-|---|---|---|---|
-| Chunking | `SELECT ... PACKAGE SIZE N` | `for await (const chunk of …)` | `OFFSET/FETCH NEXT` o particion |
-| Tamaño de paquete | 1.000–5.000 (datos), 100–500 (logica pesada) | 500–2.000 | depende particion |
-| Commit boundary | cada paquete | `await tx.commit()` cada chunk | `COMMIT` explicito |
-| Restart-ability | flag de "procesado" en tabla origen | checkpoint en tabla aux | timestamp + watermark |
-| Paralelismo | `SPTA_PARA_PROCESS_START_2` / aRFC | worker threads / Cloud Tasks | particion fisica |
-| Progreso visible | log SLG1 cada paquete | `cds.log()` cada N | tabla de monitoreo |
-| Cancelacion limpia | check `sy-ucomm` en cada paquete | abort signal | `STATEMENT_HINT('LIMIT')` |
-
-### Reglas duras
-
-- **NUNCA** un `SELECT ... INTO TABLE` sin `PACKAGE SIZE` cuando el universo puede crecer
-- **NUNCA** un `LOOP AT … MODIFY DB` (acoplar SELECT y UPDATE)
-- **NUNCA** un job sin estrategia de reinicio definida (¿que pasa si cae en el registro 47.000?)
-- **SIEMPRE** estimar volumen pico antes de elegir tamaño de paquete
-- **SIEMPRE** medir en QAS con volumen ≥80% del pico productivo antes de marcar como "listo"
-
-## 3. Idempotencia
-
-Toda operacion que puede reintentar (interface, job, retry de usuario) debe ser idempotente.
-
-- **Clave natural unica** verificada antes de INSERT (`SELECT SINGLE … WHERE clave = …`)
-- **UPSERT explicito** (`MODIFY` con clave completa) en lugar de INSERT
-- **Token de idempotencia** en headers de APIs externas
-- **Replay sin efectos colaterales**: el segundo intento produce el mismo resultado que el primero
-- **Compensating actions** documentadas si la operacion no puede ser idempotente nativamente
-
-## 4. Performance
-
-### Smells prohibidos
-
-- `SELECT *` en codigo productivo
-- `SELECT` dentro de `LOOP` sin `FOR ALL ENTRIES` o JOIN
-- Subqueries correlacionados sin justificacion
-- Funciones escalares ABAP dentro de `WHERE` (evita uso de indice)
-- `READ TABLE` sin `BINARY SEARCH` o `WITH KEY` en tablas sorted/hashed
-- Nested `LOOP` cuadratico (O(n²)) sobre tablas internas grandes
-
-### Obligaciones positivas
-
-- Indices secundarios para campos de filtro frecuente (validar con SE16 / `EXPLAIN PLAN`)
-- Buffer de tablas Z de configuracion (`Single records` o `Full`)
-- `AMDP` / `CDS Table Function` para logica analitica pesada
-- Calculation Views sin `SELECT *` en proyecciones
-- En CAP: `$top`, `$skip`, `growing=true` en listas; lazy load de asociaciones
-- En Fiori: `growing` + `growingThreshold` + `growingScrollToLoad`
-
-## 5. Restart-ability y Recovery
-
-- Todo job masivo debe poder reanudarse desde el ultimo registro procesado
-- Tabla de checkpoint con: `proceso_id`, `ultimo_id_procesado`, `timestamp`, `usuario`, `status`
-- Logs estructurados en SLG1 (ABAP) / `cds.log()` (CAP) / Message Monitoring (CPI)
-- Mensajes con severidad correcta: INFO progreso, WARNING saltos, ERROR datos invalidos, ABORT corte
-
-## 6. Observabilidad
-
-- ABAP: SLG1 con object/subobject por modulo, no genericos
-- CAP: `cds.log('mi-modulo').info(...)` con namespace propio
-- CPI: Message Monitoring + Alert Notification Service en errores criticos
-- HANA: `M_SQL_PLAN_CACHE` + `M_EXPENSIVE_STATEMENTS` revisado pre-PRD
-- **Sin observabilidad no hay sign-off** — el QA debe verificar que los logs existen y son utiles
-
-## 7. Volumen de Pruebas Obligatorio
-
-| Sistema | Volumen minimo en QAS antes de "listo" |
-|---|---|
-| Reports / queries | 80% del volumen pico productivo estimado |
-| Jobs batch | 100% del volumen pico + simulacion de cancelacion en medio |
-| Interfaces | rafaga de 10× la frecuencia normal durante 5 min |
-| Apps Fiori | dataset >5.000 registros para validar paginacion |
-| Procesos paralelos | minimo 3 ejecuciones simultaneas del mismo flujo |
-
-## 8. Performance Baseline — Captura y Comparacion (BLOQUEANTE)
-
-Toda tarea que toque codigo productivo debe **capturar un baseline en QAS antes del cambio** y compararlo despues. Bloquea si la regresion supera los umbrales.
-
-### Que capturar (siempre en QAS con volumen ≥80% del pico)
-
-| Metrica | ABAP | CAP / Node | HANA | CPI |
-|---|---|---|---|---|
-| Runtime (p50 / p95) | SE30 / SAT / ST05 | `process.hrtime()` + APM | `M_SQL_PLAN_CACHE` | MPL `processingTime` |
-| Memoria pico | SM50 → "Memory" / `cl_abap_memory_utilities` | `process.memoryUsage()` | `M_HOST_RESOURCE_UTILIZATION` | MPL attachment size |
-| DB calls / IO | ST05 traza | `cds.trace` / DB log | `M_EXPENSIVE_STATEMENTS` | iFlow trace |
-| CPU | SM50 / SAR | APM | `M_SERVICE_THREADS` | tenant metrics |
-
-### Donde guardar
-
-Tabla / fichero `performance-baseline.json` versionado en el repo del proyecto:
-
-```json
-{
-  "objeto": "ZCL_ORDER_PROCESSOR",
-  "test_case": "procesar_50000_pedidos",
-  "baseline_ts": "2026-06-22T10:00:00Z",
-  "qas_volume": 50000,
-  "runtime_p95_ms": 12500,
-  "memory_peak_mb": 480,
-  "db_calls": 142,
-  "executed_by": "ci-user@cliente.com"
-}
-```
-
-### Umbrales de regresion (bloqueantes)
-
-| Metrica | Umbral verde | Warning | Bloqueante |
-|---|---|---|---|
-| Runtime p95 | ≤ baseline ×1.10 | baseline ×1.10–1.20 | > baseline ×1.20 |
-| Memoria pico | ≤ baseline ×1.15 | baseline ×1.15–1.30 | > baseline ×1.30 |
-| DB calls | ≤ baseline ×1.00 | baseline ×1.00–1.10 | > baseline ×1.10 |
-| CPU | ≤ baseline ×1.15 | — | > baseline ×1.30 |
-
-**Regla dura**: regresion >20% en runtime p95 **bloquea el cierre**, salvo que el cambio funcional la justifique explicitamente (documentar en commit + sign-off del Tech Lead).
-
-### Como integrarlo al flujo
-
-1. Antes de tocar codigo: ejecutar test de performance en QAS y guardar baseline en repo
-2. Tras el cambio: re-ejecutar el mismo test, comparar contra baseline
-3. Si regresion ≥ umbral bloqueante: corregir antes de cerrar
-4. Tras release a PRD: el baseline nuevo reemplaza el anterior (commit de "performance baseline post-release")
-
-### Anti-patrones
-
-- "No medi performance porque el cambio es pequeño" — TODO cambio puede tener regresion
-- Medir solo en DEV con dataset pequeño — no es representativo
-- Aceptar regresion sin justificacion porque "es solo 25%"
-- No versionar el baseline — sin baseline historico no hay comparacion posible
-
-## 9. Checklist NFR (lo que el QA debe verificar)
+## Checklist NFR (lo que el QA debe verificar)
 
 - [ ] ¿Que pasa si dos usuarios ejecutan esto al mismo tiempo?
 - [ ] ¿Que pasa si el proceso se cancela en el registro N/2?
@@ -353,6 +218,30 @@ Tabla / fichero `performance-baseline.json` versionado en el repo del proyecto:
 - [ ] ¿Hay baseline de performance pre-cambio y comparacion post-cambio dentro de umbral?
 
 > Si alguna respuesta es "no" o "no se", la tarea **NO esta lista** — bloquear el cierre.
+
+### shared/output-brevity.md
+
+# Brevedad de respuesta
+
+> Quien lee es un arquitecto SAP senior. No necesita que le expliquen lo que
+> acaba de pedir ni que le narren lo que ya ve en el diff.
+
+**No escribir:** preámbulos ("Perfecto, voy a…") · re-explicar el código generado
+línea por línea · repetir el requerimiento antes de responderlo · resúmenes de
+cierre que enumeran lo que se acaba de mostrar · "próximos pasos" especulativos
+que nadie pidió · disclaimers defensivos genéricos.
+
+**Sí escribir:** el entregable completo y correcto · las transacciones SAP
+relevantes · los supuestos tomados si el requerimiento era ambiguo · los riesgos
+reales con su severidad · qué quedó fuera de alcance y por qué.
+
+**Regla práctica:** si una frase no cambia lo que el arquitecto va a *hacer* a
+continuación, sobra. Una tabla antes que tres párrafos; un ejemplo antes que una
+descripción.
+
+No aplica a: el formato que exige cada agente (`shared/response-format.md`), los
+hallazgos de un code review, ni el agente Mentor — ahí explicar el porqué **es**
+el entregable.
 
 
 ---

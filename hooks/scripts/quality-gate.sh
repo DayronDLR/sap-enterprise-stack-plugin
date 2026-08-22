@@ -1,7 +1,18 @@
 #!/bin/bash
 # quality-gate.sh — Gate 1 de la Definition of Done.
-# Stop hook: verifica linters/smells antes de permitir que Claude cierre la sesion.
-# Si CUALQUIER chequeo falla con CRITICAL/HIGH, bloquea con decision=block.
+#
+# Verifica linters/smells/Clean Core sobre los archivos cambiados.
+#
+# Ya NO es un hook `Stop`. Corria al final de cada turno, lo que significaba
+# ejecutar cds lint / ui5lint / eslint / ATC scan en cada prompt y volcar su
+# salida al contexto cada vez. Ahora se invoca en tres momentos:
+#   - delivery-gate.sh, al commitear/pushear
+#   - .husky/pre-commit, para commits hechos fuera de Claude
+#   - /sap-gates, cuando el dev lo pide
+#
+# Contrato: texto plano por stdout + exit code (0 sin hallazgos, 1 con hallazgos).
+# Acepta --mode=cli por compatibilidad con invocaciones existentes; es el unico
+# modo que hay.
 
 set -u
 
@@ -29,6 +40,26 @@ HOOK_NAME="quality-gate"
 type timed_section_start >/dev/null 2>&1 && timed_section_start
 type emit_stack_event >/dev/null 2>&1 && emit_stack_event "start" '{}'
 
+# shellcheck disable=SC1091
+[[ -f "$(dirname "${BASH_SOURCE[0]}")/lib/dod-common.sh" ]] && \
+    source "$(dirname "${BASH_SOURCE[0]}")/lib/dod-common.sh"
+
+# El exit code es el contrato: lo consumen delivery-gate.sh y .husky/pre-commit.
+gate_pass() {
+    local msg="${1:-}"
+    type emit_stack_event >/dev/null 2>&1 && \
+        emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"approve\"}"
+    [[ -n "$msg" ]] && printf '%s\n' "$msg"
+    exit 0
+}
+
+gate_fail() {
+    type emit_stack_event >/dev/null 2>&1 && \
+        emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"block\"}"
+    printf '%s\n' "$1"
+    exit 1
+}
+
 # HOTFIX-OVERRIDE: en Gate 1 sigue bloqueando CRITICAL (security/regresion grave)
 # pero los HIGH se degradan a WARNING. El override requiere razon valida +
 # segundo aprobador (gap #6 — two-person rule). Ver docs/adr/005-two-person-hotfix-approval.md
@@ -42,12 +73,10 @@ if [[ -f "$HOTFIX_FLAG" ]]; then
         HOTFIX_ACTIVE=1
     elif echo "$REASON_LINE" | grep -qE '^REASON: .{20,}'; then
         # Razon valida pero falta segundo aprobador → rechazar con mensaje claro
-        REASON_NO_APP="HOTFIX-OVERRIDE inválido: falta APPROVED_BY (segundo aprobador). Formato requerido en tmp/.hotfix-override:\nREASON: <ticket + descripcion + aprobador CAB, min 20 chars>\nAPPROVED_BY: <email distinto del solicitante ($REQUESTER)>\nVer docs/adr/005-two-person-hotfix-approval.md"
-        REASON_ESC=$(printf '%s' "$REASON_NO_APP" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
-        type emit_stack_event >/dev/null 2>&1 && \
-            emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"block\",\"reason\":\"hotfix_missing_approver\"}"
-        printf '{"decision":"block","reason":%s}\n' "$REASON_ESC"
-        exit 0
+        gate_fail "HOTFIX-OVERRIDE inválido: falta APPROVED_BY (segundo aprobador). Formato requerido en tmp/.hotfix-override:
+REASON: <ticket + descripcion + aprobador CAB, min 20 chars>
+APPROVED_BY: <email distinto del solicitante ($REQUESTER)>
+Ver docs/adr/005-two-person-hotfix-approval.md"
     fi
 fi
 
@@ -152,24 +181,11 @@ if [[ -n "$ERRORS" ]]; then
     if [[ "$HOTFIX_ACTIVE" = "1" ]]; then
         CRIT_ONLY=$(printf '%b' "$ERRORS" | grep -E '\[CRITICAL\]' || true)
         if [[ -z "$CRIT_ONLY" ]]; then
-            WARN_MSG="HOTFIX-OVERRIDE activo: Gate 1 detecto HIGH pero NO CRITICAL. Permitiendo cierre con warning. Findings: $(printf '%b' "$ERRORS" | tr '\n' ' ' | head -c 500)"
-            REASON_ESC=$(printf '%s' "$WARN_MSG" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
-            type emit_stack_event >/dev/null 2>&1 && \
-                emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"approve\",\"hotfix\":1}"
-            printf '{"decision":"approve","systemMessage":%s}\n' "$REASON_ESC"
-            exit 0
+            gate_pass "HOTFIX-OVERRIDE activo: Gate 1 detecto HIGH pero NO CRITICAL. Permitiendo entrega con warning. Findings: $(printf '%b' "$ERRORS" | tr '\n' ' ' | head -c 500)"
         fi
         # Si hay CRITICAL, ni siquiera HOTFIX lo permite
     fi
-    REASON=$(printf "Gate 1 (Quality) fallo. Resolver antes de cerrar:%s" "$ERRORS")
-    REASON_ESC=$(printf '%s' "$REASON" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
-    type emit_stack_event >/dev/null 2>&1 && \
-        emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"block\"}"
-    printf '{"decision":"block","reason":%s}\n' "$REASON_ESC"
-    exit 0
+    gate_fail "$(printf "Gate 1 (Quality) fallo:%b" "$ERRORS")"
 fi
 
-type emit_stack_event >/dev/null 2>&1 && \
-    emit_stack_event "end" "{\"duration_ms\":$(timed_section_end_ms),\"decision\":\"approve\"}"
-echo '{"decision":"approve"}'
-exit 0
+gate_pass

@@ -36,12 +36,12 @@ Antes de proponer cualquier diseño, invocar:
 - `mcp__fiori-mcp__list_fiori_apps` — apps existentes para evitar duplicados
 - `mcp__ui5-mcp__get_api_reference` — cuando el diseño dependa de controles específicos
 
-Leer reglas relevantes en `.claude/agents/04-fiori-ui5/rules/`:
+Leer reglas relevantes en el skill `sap-ui5-standards`:
 
-- `SAPUI5-Core-Standards.md` — siempre
-- `SAPUI5-Routing-Navigation.md` — si hay múltiples vistas
-- `SAPUI5-CAP-Integration.md` — si es proyecto CAP+UI5
-- `SAPUI5-Security-Performance.md` — siempre para apps en producción
+- `sap-ui5-standards/reference/core-standards.md` — siempre
+- `sap-ui5-standards/reference/routing-navigation.md` — si hay múltiples vistas
+- `sap-ui5-standards/reference/cap-integration.md` — si es proyecto CAP+UI5
+- `sap-ui5-standards/reference/security-performance.md` — siempre para apps en producción
 
 ### 3. VALIDAR — Evaluar SIEMPRE 2 Alternativas
 

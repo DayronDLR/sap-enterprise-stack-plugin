@@ -74,571 +74,23 @@ Tier 2 antes que Tier 3. Nunca modificar el estándar (Tier 0 = modificación = 
 > **Gap de tooling conocido:** no hay MCP oficial SAP para validar release-state de forma
 > automática (ver `docs/MCP-ROADMAP.md`). Hoy se cubre con ADT + skills `sap-abap`/`sap-abap-cds`.
 
-## EXPERTISE TÉCNICO
-
-### ABAP Clásico y OO
-
-> Para reports ALV clásicos y patrones ABAP legacy, consultar `reference/classic-abap.md`
-
-- ABAP OO: Clases, Interfaces, herencia, polimorfismo, Design Patterns (Factory, Strategy, Observer)
-- Enhancement Framework: BAdIs (GET_BADI/CALL_BADI), Enhancement Spots, Implicit/Explicit Points
-- DDIC: Tablas Z, Estructuras, Type Groups, Data Elements, Domains, Search Helps, Views
-- Performance: SELECT optimizado, FOR ALL ENTRIES, índices secundarios, SET/GET parameters, buffering
-
-### CDS Views (Core Data Services)
-
-```abap
-"-- CDS Base View (Interface View):
-@AbapCatalog.viewEnhancementCategory: [#NONE]
-@AccessControl.authorizationCheck: #CHECK
-@Metadata.ignorePropagatedAnnotations: true
-@ObjectModel.usageType:{
-  serviceQuality: #X,
-  sizeCategory: #M,
-  dataClass: #TRANSACTIONAL
-}
-define view entity ZI_PurchaseOrder
-  as select from ekko as header
-  association [0..1] to ekpo as _item on $projection.PurchaseOrder = _item.ebeln
-  association [0..1] to lfa1 as _Vendor  on $projection.Vendor = _Vendor.lifnr
-{
-  key header.ebeln          as PurchaseOrder,
-      header.lifnr          as Vendor,
-      header.bedat          as DocumentDate,
-      header.bukrs          as CompanyCode,
-      header.waers          as Currency,
-      @Semantics.amount.currencyCode: 'Currency'
-      header.netwr          as NetAmount,
-      header.ernam          as CreatedBy,
-      @Semantics.systemDateTime.lastChangedAt: true
-      header.aedat          as LastChangedDate,
-      -- Associations expuestas
-      _item,
-      _Vendor
-}
-
-"-- CDS Projection View (Consumption View para RAP/OData):
-@EndUserText.label: 'Purchase Order'
-@AccessControl.authorizationCheck: #NOT_REQUIRED
-@Metadata.allowExtensions: true
-define root view entity ZC_PurchaseOrder
-  provider contract transactional_query
-  as projection on ZI_PurchaseOrder
-{
-  key PurchaseOrder,
-      Vendor,
-      DocumentDate,
-      CompanyCode,
-      Currency,
-      NetAmount,
-      CreatedBy,
-      LastChangedDate,
-      _item : redirected to composition child ZC_PurchaseOrderItem,
-      _Vendor
-}
-
-"-- CDS con @Analytics para HANA / embedded analytics:
-@Analytics.dataCategory: #FACT
-@Analytics.dataExtraction.enabled: true
-define view entity ZA_PurchaseOrderFact
-  as select from ZI_PurchaseOrder
-{
-  @AnalyticsDetails.query.axis: #ROWS
-  PurchaseOrder,
-  CompanyCode,
-  @AnalyticsDetails.query.axis: #COLUMNS
-  @Aggregation.default: #SUM
-  NetAmount,
-  Currency
-}
-```
-
-### AMDP (ABAP Managed Database Procedures)
-
-```abap
-CLASS zcl_po_analytics DEFINITION PUBLIC FINAL CREATE PUBLIC.
-  PUBLIC SECTION.
-    INTERFACES if_amdp_marker_hdb.
-    CLASS-METHODS get_po_summary
-      IMPORTING
-        VALUE(iv_bukrs) TYPE bukrs
-      EXPORTING
-        VALUE(et_result) TYPE STANDARD TABLE OF zs_po_summary
-      RAISING cx_amdp_error.
-ENDCLASS.
-
-CLASS zcl_po_analytics IMPLEMENTATION.
-  METHOD get_po_summary BY DATABASE PROCEDURE
-        FOR HDB LANGUAGE SQLSCRIPT
-        OPTIONS READ-ONLY
-        USING ekko ekpo.
-    et_result = SELECT
-      h.bukrs    AS company_code,
-      h.lifnr    AS vendor,
-      SUM(h.netwr) AS total_amount,
-      COUNT(*)     AS doc_count
-    FROM ekko AS h
-    WHERE h.bukrs = :iv_bukrs
-      AND h.loekz = ''
-    GROUP BY h.bukrs, h.lifnr
-    ORDER BY total_amount DESC;
-  ENDMETHOD.
-ENDCLASS.
-```
-
-### RAP — RESTful ABAP Programming Model (COMPLETO)
-
-> Referencia RAP completa en `shared/rap-reference.md`
-
-#### Tipos de RAP Business Objects
-
-- **Managed**: SAP gestiona CRUD automáticamente sobre tabla persistente. Usar para entidades nuevas.
-- **Unmanaged**: Lógica CRUD propia (legado). Usar para wrapping de BAPIs/FMs existentes.
-- **Abstract**: Sin persistencia, para servicios de cálculo/acción.
-
-#### CDS para RAP — Capas Completas
-
-```abap
-"-- Tabla persistente del BO:
-@EndUserText.label: 'Z Purchase Order Extension'
-define table zpurchord_ext {
-  key client      : abap.clnt not null;
-  key po_number   : abap.char(10) not null;
-  approval_status : abap.char(1);
-  approved_by     : abap.char(12);
-  local_last_changed_at : abp_lastchange_tstmpl;
-  last_changed_at : abp_lastchange_tstmpl;
-  created_at      : abp_creation_tstmpl;
-}
-
-"-- Draft table (para Draft handling):
-define table zdraft_purchord {
-  key mandt         : abap.clnt not null;
-  key draftUUID     : sysuuid_x16 not null;
-  po_number         : abap.char(10);
-  approval_status   : abap.char(1);
-  draftEntityCreationDateTime : abp_creation_tstmpl;
-  draftEntityLastChangedDateTime : abp_lastchange_tstmpl;
-  draftIsCreatedByMe : abp_boolean;
-}
-```
-
-#### Behavior Definition Managed con Draft
-
-```abap
-managed implementation in class zbp_c_purchaseorder unique;
-strict ( 2 );
-with draft;
-
-define behavior for ZC_PurchaseOrder alias PurchaseOrder
-persistent table zpurchord_ext
-draft table zdraft_purchord
-etag master LocalLastChangedAt
-lock master total etag LastChangedAt
-authorization master ( global )
-{
-  -- Campos de sistema (read-only siempre):
-  field ( readonly )
-    PurchaseOrder, CreatedBy, LastChangedDate, LocalLastChangedAt;
-
-  -- Campos obligatorios:
-  field ( mandatory : create )
-    Vendor, CompanyCode;
-
-  -- Feature control (habilita/deshabilita campos por estado):
-  field ( features : instance )
-    ApprovalStatus;
-
-  -- Operaciones estándar:
-  create;
-  update;
-  delete;
-
-  -- Draft workflow:
-  draft action Edit;
-  draft action Activate optimized;
-  draft action Discard;
-  draft action Resume;
-  draft determine action Prepare;
-
-  -- Acciones de negocio:
-  action ( features : instance ) Approve
-    result [1] $self;
-  action ( features : instance ) Reject
-    parameter zs_reject_param
-    result [1] $self;
-
-  -- Determinaciones (se ejecutan automáticamente):
-  determination setInitialStatus on modify { create; }
-  determination recalculateTotals on modify { field NetAmount; }
-
-  -- Validaciones (se ejecutan en Save):
-  validation validateVendor   on save { create; update; }
-  validation validateAmount   on save { create; update; }
-
-  -- Side effects (refresca campos en UI cuando otro cambia):
-  side effects {
-    field Vendor affects field VendorName;
-    field CompanyCode affects field Currency;
-    action Approve affects field ApprovalStatus;
-  }
-
-  -- Mapeo a tabla persistente:
-  mapping for zpurchord_ext corresponding including additional fields
-  {
-    PurchaseOrder   = po_number;
-    ApprovalStatus  = approval_status;
-    ApprovedBy      = approved_by;
-    LocalLastChangedAt = local_last_changed_at;
-    LastChangedAt   = last_changed_at;
-    CreatedAt       = created_at;
-  }
-}
-
-"-- Child entity (composición):
-define behavior for ZC_PurchaseOrderItem alias POItem
-persistent table zpurchord_item_ext
-draft table zdraft_purchord_item
-lock dependent by _PurchaseOrder
-authorization dependent by _PurchaseOrder
-etag master LocalLastChangedAt
-{
-  field ( readonly ) PurchaseOrder, ItemNo;
-  update;
-  delete;
-  field ( mandatory : create ) Material, Quantity;
-  validation validateMaterial on save { create; update; }
-  mapping for zpurchord_item_ext corresponding;
-}
-```
-
-#### Behavior Implementation — Clase Global
-
-```abap
-CLASS zbp_c_purchaseorder DEFINITION PUBLIC ABSTRACT FINAL
-  FOR BEHAVIOR OF ZC_PurchaseOrder.
-ENDCLASS.
-CLASS zbp_c_purchaseorder IMPLEMENTATION.
-ENDCLASS.
-
-"-- Local handler class (dentro del global class include):
-CLASS lhc_purchaseorder DEFINITION INHERITING FROM cl_abap_behavior_handler.
-  PRIVATE SECTION.
-    METHODS:
-      "-- Authorization
-      get_global_authorizations FOR GLOBAL AUTHORIZATION
-        IMPORTING REQUEST requested_authorizations FOR PurchaseOrder RESULT result,
-      get_instance_features FOR INSTANCE FEATURES
-        IMPORTING keys REQUEST requested_features FOR PurchaseOrder RESULT result,
-
-      "-- Determinations
-      setInitialStatus FOR DETERMINE ON MODIFY
-        IMPORTING keys FOR PurchaseOrder~setInitialStatus,
-      recalculateTotals FOR DETERMINE ON MODIFY
-        IMPORTING keys FOR PurchaseOrder~recalculateTotals,
-
-      "-- Validations
-      validateVendor FOR VALIDATE ON SAVE
-        IMPORTING keys FOR PurchaseOrder~validateVendor,
-      validateAmount FOR VALIDATE ON SAVE
-        IMPORTING keys FOR PurchaseOrder~validateAmount,
-
-      "-- Actions
-      approve FOR MODIFY
-        IMPORTING keys FOR ACTION PurchaseOrder~Approve RESULT result,
-      reject FOR MODIFY
-        IMPORTING keys FOR ACTION PurchaseOrder~Reject RESULT result.
-ENDCLASS.
-
-CLASS lhc_purchaseorder IMPLEMENTATION.
-
-  METHOD get_global_authorizations.
-    AUTHORITY-CHECK OBJECT 'M_BEST_BSA' ID 'ACTVT' FIELD '01'.
-    result-%create = COND #( WHEN sy-subrc = 0
-      THEN if_abap_behv=>auth-allowed ELSE if_abap_behv=>auth-unauthorized ).
-    result-%update = result-%create.
-    result-%delete = result-%create.
-  ENDMETHOD.
-
-  METHOD get_instance_features.
-    READ ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
-      ENTITY PurchaseOrder FIELDS ( ApprovalStatus ) WITH CORRESPONDING #( keys )
-      RESULT DATA(lt_po) FAILED DATA(failed).
-
-    result = VALUE #( FOR po IN lt_po
-      ( %tky                           = po-%tky
-        %action-Approve                = COND #( WHEN po-ApprovalStatus = 'A'
-                                           THEN if_abap_behv=>fc-o-disabled
-                                           ELSE if_abap_behv=>fc-o-enabled )
-        %action-Reject                 = COND #( WHEN po-ApprovalStatus = 'R'
-                                           THEN if_abap_behv=>fc-o-disabled
-                                           ELSE if_abap_behv=>fc-o-enabled )
-        %field-ApprovalStatus          = if_abap_behv=>fc-f-read_only ) ).
-  ENDMETHOD.
-
-  METHOD setInitialStatus.
-    MODIFY ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
-      ENTITY PurchaseOrder UPDATE FIELDS ( ApprovalStatus )
-        WITH VALUE #( FOR key IN keys ( %tky = key-%tky ApprovalStatus = 'P' ) )
-      REPORTED DATA(reported) FAILED DATA(failed).
-  ENDMETHOD.
-
-  METHOD validateVendor.
-    READ ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
-      ENTITY PurchaseOrder FIELDS ( Vendor ) WITH CORRESPONDING #( keys )
-      RESULT DATA(lt_po) FAILED DATA(failed).
-
-    SELECT lifnr FROM lfa1
-      FOR ALL ENTRIES IN @lt_po
-      WHERE lifnr = @lt_po-Vendor
-      INTO TABLE @DATA(lt_vendors).
-
-    LOOP AT lt_po INTO DATA(lo_po).
-      IF NOT line_exists( lt_vendors[ lifnr = lo_po-Vendor ] ).
-        APPEND VALUE #( %tky = lo_po-%tky ) TO failed-purchaseorder.
-        APPEND VALUE #(
-          %tky           = lo_po-%tky
-          %msg           = new_message_with_text(
-                             severity = if_abap_behv_message=>severity-error
-                             text     = |Vendor { lo_po-Vendor } does not exist| )
-          %element-Vendor = if_abap_behv=>mk-on
-        ) TO reported-purchaseorder.
-      ENDIF.
-    ENDLOOP.
-  ENDMETHOD.
-
-  METHOD approve.
-    READ ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
-      ENTITY PurchaseOrder FIELDS ( ApprovalStatus ) WITH CORRESPONDING #( keys )
-      RESULT DATA(lt_po) FAILED DATA(failed).
-
-    MODIFY ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
-      ENTITY PurchaseOrder UPDATE FIELDS ( ApprovalStatus ApprovedBy )
-        WITH VALUE #( FOR po IN lt_po
-          ( %tky           = po-%tky
-            ApprovalStatus = 'A'
-            ApprovedBy     = sy-uname ) )
-      REPORTED DATA(rep) FAILED DATA(fail).
-
-    result = VALUE #( FOR po IN lt_po
-      ( %tky    = po-%tky
-        %param  = CORRESPONDING #( po ) ) ).
-  ENDMETHOD.
-
-  METHOD reject.
-    MODIFY ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
-      ENTITY PurchaseOrder UPDATE FIELDS ( ApprovalStatus )
-        WITH VALUE #( FOR key IN keys
-          ( %tky = key-%tky ApprovalStatus = 'R' ) )
-      REPORTED DATA(rep) FAILED DATA(fail).
-    result = VALUE #( FOR key IN keys ( %tky = key-%tky %param = VALUE #( ) ) ).
-  ENDMETHOD.
-
-ENDCLASS.
-
-"-- Local Saver class (COMMIT/ROLLBACK para Unmanaged):
-CLASS lsc_purchaseorder DEFINITION INHERITING FROM cl_abap_behavior_saver.
-  PROTECTED SECTION.
-    METHODS check_before_save REDEFINITION.
-    METHODS finalize          REDEFINITION.
-    METHODS save              REDEFINITION.
-    METHODS cleanup           REDEFINITION.
-ENDCLASS.
-```
-
-#### EML (Entity Manipulation Language) — Uso desde ABAP
-
-```abap
-"-- READ ENTITIES:
-READ ENTITIES OF ZC_PurchaseOrder
-  ENTITY PurchaseOrder
-    FIELDS ( PurchaseOrder Vendor NetAmount ApprovalStatus )
-    WITH VALUE #( ( %key-PurchaseOrder = '4500000001' ) )
-  RESULT DATA(lt_po)
-  FAILED DATA(lt_failed)
-  REPORTED DATA(lt_reported).
-
-"-- READ con ALL FIELDS:
-READ ENTITIES OF ZC_PurchaseOrder
-  ENTITY PurchaseOrder ALL FIELDS
-    WITH CORRESPONDING #( lt_keys )
-  RESULT DATA(lt_result).
-
-"-- MODIFY — CREATE:
-MODIFY ENTITIES OF ZC_PurchaseOrder
-  ENTITY PurchaseOrder
-    CREATE FIELDS ( Vendor CompanyCode DocumentDate )
-      WITH VALUE #( ( %cid       = 'CID_1'
-                      Vendor     = '0001000001'
-                      CompanyCode = '1000'
-                      DocumentDate = sy-datum ) )
-  MAPPED   DATA(lt_mapped)
-  FAILED   DATA(lt_failed)
-  REPORTED DATA(lt_reported).
-COMMIT ENTITIES
-  RESPONSE OF ZC_PurchaseOrder
-  FAILED   DATA(lt_commit_failed)
-  REPORTED DATA(lt_commit_reported).
-
-"-- MODIFY — EXECUTE ACTION:
-MODIFY ENTITIES OF ZC_PurchaseOrder
-  ENTITY PurchaseOrder
-    EXECUTE Approve
-      FROM VALUE #( ( %key-PurchaseOrder = '4500000001' ) )
-  RESULT   DATA(lt_result)
-  FAILED   DATA(lt_failed)
-  REPORTED DATA(lt_reported).
-COMMIT ENTITIES.
-
-"-- DEEP INSERT (con composición hijo):
-MODIFY ENTITIES OF ZC_PurchaseOrder
-  ENTITY PurchaseOrder
-    CREATE FIELDS ( Vendor CompanyCode )
-      WITH VALUE #( ( %cid = 'PO1' Vendor = '1000' CompanyCode = '1000' ) )
-  ENTITY POItem
-    CREATE BY \_POItem
-      FROM VALUE #( ( %cid_ref = 'PO1'
-                      %target  = VALUE #(
-                        ( %cid = 'ITEM1' Material = 'MAT001' Quantity = '10' ) ) ) )
-  MAPPED DATA(mapped) FAILED DATA(failed) REPORTED DATA(reported).
-COMMIT ENTITIES.
-```
-
-#### ABAP Unit Tests para RAP (CL_ABAP_BEHV_TEST_ENVIRONMENT)
-
-```abap
-CLASS ztc_po_behavior DEFINITION FINAL FOR TESTING
-  DURATION SHORT RISK LEVEL HARMLESS.
-
-  PRIVATE SECTION.
-    CLASS-DATA: mo_env TYPE REF TO if_abap_behv_test_environment.
-    CLASS-METHODS: class_setup RAISING cx_static_check.
-    CLASS-METHODS: class_teardown.
-
-    METHODS: test_approve_changes_status FOR TESTING RAISING cx_static_check.
-    METHODS: test_validate_vendor_fails  FOR TESTING RAISING cx_static_check.
-ENDCLASS.
-
-CLASS ztc_po_behavior IMPLEMENTATION.
-  METHOD class_setup.
-    mo_env = cl_abap_behv_test_environment=>create(
-               entity_name = 'ZC_PURCHASEORDER' ).
-  ENDMETHOD.
-
-  METHOD class_teardown.
-    mo_env->destroy( ).
-  ENDMETHOD.
-
-  METHOD test_approve_changes_status.
-    "-- Arrange: crear PO de prueba
-    mo_env->insert_test_data( EXPORTING instances = VALUE zpurchord_ext#(
-      ( po_number = '4500000001' approval_status = 'P' ) ) ).
-
-    "-- Act: ejecutar acción Approve via EML
-    MODIFY ENTITIES OF ZC_PurchaseOrder
-      ENTITY PurchaseOrder EXECUTE Approve
-        FROM VALUE #( ( %key-PurchaseOrder = '4500000001' ) )
-      FAILED DATA(failed) REPORTED DATA(reported).
-    COMMIT ENTITIES.
-
-    "-- Assert: verificar estado
-    READ ENTITIES OF ZC_PurchaseOrder
-      ENTITY PurchaseOrder FIELDS ( ApprovalStatus )
-        WITH VALUE #( ( %key-PurchaseOrder = '4500000001' ) )
-      RESULT DATA(lt_result).
-
-    cl_abap_unit_assert=>assert_equals(
-      act = lt_result[ 1 ]-ApprovalStatus exp = 'A'
-      msg = 'Status should be Approved' ).
-  ENDMETHOD.
-
-ENDCLASS.
-```
-
-### Reports y ALV Moderno
-
-### Extensibilidad Clean Core (BAdIs)
-
-#### Implementar BAdI con Enhancement Spot
-
-```abap
-"-- 1. Definir Enhancement Spot (SE18/ADT):
-ENHANCEMENT-POINT zep_po_processing
-  SPOTS zbadi_po_processing
-  STATIC.
-
-"-- 2. Definir BAdI dentro del spot:
-ENHANCEMENT-SECTION zbadi_po_header
-  FOR SPOT zbadi_po_processing.
-  INTERFACE zbadi_if_po_header.
-  METHODS:
-    validate_po_header
-      IMPORTING is_header    TYPE zs_po_header
-      EXPORTING ev_rejected  TYPE abap_bool
-                ev_message   TYPE string,
-    enrich_po_header
-      CHANGING  cs_header    TYPE zs_po_header.
-ENDENHANCEMENT-SECTION.
-
-"-- 3. Implementar BAdI (BADI_IMPL en SE19/ADT):
-CLASS zbadi_impl_po_header DEFINITION PUBLIC
-  INHERITING FROM cl_badi_default_implementation FINAL
-  CREATE PUBLIC.
-  PUBLIC SECTION.
-    INTERFACES zbadi_if_po_header.
-ENDCLASS.
-
-CLASS zbadi_impl_po_header IMPLEMENTATION.
-  METHOD zbadi_if_po_header~validate_po_header.
-    ev_rejected = abap_false.
-    IF is_header-netwr > 1000000.
-      ev_rejected = abap_true.
-      ev_message  = 'PO amount exceeds approval limit'.
-    ENDIF.
-  ENDMETHOD.
-
-  METHOD zbadi_if_po_header~enrich_po_header.
-    "-- Enriquecer con datos adicionales
-    SELECT SINGLE name1 FROM lfa1 WHERE lifnr = @cs_header-lifnr
-      INTO @cs_header-vendor_name.
-  ENDMETHOD.
-ENDCLASS.
-
-"-- 4. Llamar BAdI desde el código (consumidor):
-DATA(lo_badi) = zbadi_if_po_header~get_badi( ).
-CALL BADI lo_badi->validate_po_header
-  EXPORTING is_header   = ls_header
-  IMPORTING ev_rejected = DATA(lv_rejected)
-            ev_message  = DATA(lv_msg).
-```
-
-### Access Control (CDS DCL)
-
-```abap
-"-- Access Control para CDS View:
-@EndUserText.label: 'PO Access Control'
-@MappingRole: true
-define role ZI_PurchaseOrder {
-  grant select on ZI_PurchaseOrder
-    where ( CompanyCode ) = aspect pfcg_auth( M_BEST_BSA, BUKRS, ACTVT = '03' );
-}
-```
-
-### Service Definition y Binding
-
-```abap
-"-- Service Definition:
-@EndUserText.label: 'Purchase Order Service'
-define service ZUI_PurchaseOrder_O4 {
-  expose ZC_PurchaseOrder    as PurchaseOrder;
-  expose ZC_PurchaseOrderItem as PurchaseOrderItem;
-}
-
-"-- Service Binding:
-"-- Tipo: OData V4 - UI (para Fiori Elements con Draft)
-"-- Tipo: OData V4 - Web API (para APIs REST consumidas por BTP/CAP)
-"-- Publicar → genera URL: /sap/opu/odata4/...
-```
+## EXPERTISE TÉCNICO — referencia bajo demanda
+
+El material técnico completo (patrones RAP, CDS, AMDP, BAdIs, ejemplos de código)
+vive en el skill **`sap-abap-standards`**. Son ~4k tokens: cargá solo el archivo
+que la tarea pide.
+
+| Necesitás… | Leé del skill |
+| --- | --- |
+| RAP: behavior definitions, draft, EML, service binding | `sap-abap-standards/reference/rap.md` |
+| CDS views, AMDP, access control DCL | `sap-abap-standards/reference/cds-amdp.md` |
+| Extensibilidad Clean Core, BAdIs, puntos de extensión | `sap-abap-standards/reference/clean-core-badis.md` |
+| ABAP clásico/OO, reports, ALV | `sap-abap-standards/reference/abap-oo-reports.md` |
+
+**Siempre aplican, sin abrir archivos:** Clean Core (nunca modificar estándar SAP) ·
+`SELECT *` prohibido · nada de `SELECT` dentro de `LOOP` · `sy-subrc` después de
+cada operación · ENQUEUE/DEQUEUE en escrituras concurrentes · `COMMIT WORK` por
+paquete en procesos masivos, nunca uno solo al final.
 
 ## CONVENTION NAMING (S/4HANA Clean)
 
@@ -807,7 +259,7 @@ solo para conflictos de etag, no para errores funcionales.
 
 ## CHECKLIST PARA RAP BO COMPLETO
 
-> Ver `shared/rap-reference.md` §Checklist RAP BO Completo.
+> Ver `sap-abap-standards/reference/rap-shared.md` §Checklist RAP BO Completo.
 
 ## EXPLICACION ACTIVA
 
@@ -815,244 +267,12 @@ solo para conflictos de etag, no para errores funcionales.
 
 ## FORMATO DE RESPUESTA
 
-> Ver `shared/response-format.md`. Adicional para ABAP: incluir 🔐 ACCESS CONTROL (DCL + autorización), 🧪 ABAP UNIT TESTS, 📦 LISTA DE OBJETOS (DDIC/clases/CDS), ⚡ PERFORMANCE (índices/AMDP), 🚀 INSTRUCCIONES TRANSPORT.
+> Ver `shared/response-format.md` y `shared/output-brevity.md`. Adicional para ABAP: incluir 🔐 ACCESS CONTROL (DCL + autorización), 🧪 ABAP UNIT TESTS, 📦 LISTA DE OBJETOS (DDIC/clases/CDS), ⚡ PERFORMANCE (índices/AMDP), 🚀 INSTRUCCIONES TRANSPORT.
 
 ---
 ## Reglas heredadas del stack (incrustadas por el plugin)
 
 > Un plugin no auto-carga `shared/` ni `CLAUDE.md`; estas reglas van inline.
-
-### shared/rap-reference.md
-
-# RAP — RESTful ABAP Programming Model (Referencia Compartida)
-
-> **Uso:** Referencia consolidada para Agente 04 (Fiori/UI5) y Agente 06 (ABAP Developer).
-> Contiene los patrones RAP esenciales: CDS, BDEF, Service, EML.
-
-## Tipos de RAP Business Objects
-
-- **Managed**: SAP gestiona CRUD automáticamente sobre tabla persistente. Usar para entidades nuevas.
-- **Unmanaged**: Lógica CRUD propia (legado). Usar para wrapping de BAPIs/FMs existentes.
-- **Abstract**: Sin persistencia, para servicios de cálculo/acción.
-
-## CDS Interface View (Base View)
-
-```abap
-@AbapCatalog.viewEnhancementCategory: [#NONE]
-@AccessControl.authorizationCheck: #CHECK
-@Metadata.ignorePropagatedAnnotations: true
-@ObjectModel.usageType:{
-  serviceQuality: #X,
-  sizeCategory: #M,
-  dataClass: #TRANSACTIONAL
-}
-define view entity ZI_<Entity>
-  as select from <db_table> as header
-  association [0..1] to <related> as _Child on $projection.Key = _Child.key_field
-{
-  key header.key_field       as KeyField,
-      header.field1          as Field1,
-      header.field2          as Field2,
-      @Semantics.amount.currencyCode: 'Currency'
-      header.amount          as Amount,
-      header.waers           as Currency,
-      @Semantics.systemDateTime.lastChangedAt: true
-      header.last_changed    as LastChangedAt,
-      -- Associations expuestas
-      _Child
-}
-```
-
-## CDS Projection View (Consumption View)
-
-```abap
-@EndUserText.label: '<Entity Label>'
-@AccessControl.authorizationCheck: #NOT_REQUIRED
-@Metadata.allowExtensions: true
-define root view entity ZC_<Entity>
-  provider contract transactional_query
-  as projection on ZI_<Entity>
-{
-  key KeyField,
-      Field1,
-      Field2,
-      Amount,
-      Currency,
-      LastChangedAt,
-      _Child : redirected to composition child ZC_<ChildEntity>
-}
-```
-
-## Behavior Definition (Managed con Draft)
-
-```abap
-managed implementation in class ZBP_<Entity> unique;
-strict ( 2 );
-with draft;
-
-define behavior for ZC_<Entity> alias <Alias>
-persistent table <z_table>
-draft table <z_draft_table>
-etag master LocalLastChangedAt
-lock master total etag LastChangedAt
-authorization master ( global )
-{
-  -- Campos de sistema (read-only):
-  field ( readonly ) KeyField, CreatedBy, LastChangedAt, LocalLastChangedAt;
-
-  -- Campos obligatorios:
-  field ( mandatory : create ) Field1, Field2;
-
-  -- Feature control:
-  field ( features : instance ) Status;
-
-  -- Operaciones estándar:
-  create;
-  update;
-  delete;
-
-  -- Draft workflow:
-  draft action Edit;
-  draft action Activate optimized;
-  draft action Discard;
-  draft action Resume;
-  draft determine action Prepare;
-
-  -- Acciones de negocio:
-  action ( features : instance ) Approve result [1] $self;
-  action ( features : instance ) Reject
-    parameter <z_param_structure>
-    result [1] $self;
-
-  -- Determinaciones:
-  determination setInitialStatus on modify { create; }
-
-  -- Validaciones:
-  validation validateField1 on save { create; update; }
-
-  -- Side effects:
-  side effects {
-    field Field1 affects field Field2;
-    action Approve affects field Status;
-  }
-
-  -- Mapeo a tabla persistente:
-  mapping for <z_table> corresponding including additional fields
-  {
-    KeyField = key_field;
-    Status   = status;
-  }
-}
-
-"-- Child entity (composicion):
-define behavior for ZC_<ChildEntity> alias <ChildAlias>
-persistent table <z_child_table>
-draft table <z_draft_child_table>
-lock dependent by _Parent
-authorization dependent by _Parent
-etag master LocalLastChangedAt
-{
-  field ( readonly ) KeyField, ItemNo;
-  update;
-  delete;
-  field ( mandatory : create ) Material, Quantity;
-  validation validateMaterial on save { create; update; }
-  mapping for <z_child_table> corresponding;
-}
-```
-
-## Service Definition + Service Binding
-
-```abap
-"-- Service Definition:
-@EndUserText.label: '<Entity> Service'
-define service ZUI_<Entity>_O4 {
-  expose ZC_<Entity>      as <Entity>;
-  expose ZC_<ChildEntity> as <ChildEntity>;
-}
-
-"-- Service Binding:
-"-- Tipo: OData V4 - UI (para Fiori Elements con Draft)
-"-- Tipo: OData V4 - Web API (para APIs REST consumidas por BTP/CAP)
-"-- Publicar → genera URL: /sap/opu/odata4/...
-```
-
-## EML (Entity Manipulation Language) — Ejemplos Basicos
-
-```abap
-"-- READ ENTITIES:
-READ ENTITIES OF ZC_<Entity>
-  ENTITY <Alias>
-    FIELDS ( KeyField Field1 Amount Status )
-    WITH VALUE #( ( %key-KeyField = '<value>' ) )
-  RESULT DATA(lt_result)
-  FAILED DATA(lt_failed)
-  REPORTED DATA(lt_reported).
-
-"-- MODIFY — CREATE:
-MODIFY ENTITIES OF ZC_<Entity>
-  ENTITY <Alias>
-    CREATE FIELDS ( Field1 Field2 )
-      WITH VALUE #( ( %cid       = 'CID_1'
-                      Field1     = 'value1'
-                      Field2     = 'value2' ) )
-  MAPPED   DATA(lt_mapped)
-  FAILED   DATA(lt_failed)
-  REPORTED DATA(lt_reported).
-COMMIT ENTITIES
-  RESPONSE OF ZC_<Entity>
-  FAILED   DATA(lt_commit_failed)
-  REPORTED DATA(lt_commit_reported).
-
-"-- MODIFY — EXECUTE ACTION:
-MODIFY ENTITIES OF ZC_<Entity>
-  ENTITY <Alias>
-    EXECUTE Approve
-      FROM VALUE #( ( %key-KeyField = '<value>' ) )
-  RESULT   DATA(lt_result)
-  FAILED   DATA(lt_failed)
-  REPORTED DATA(lt_reported).
-COMMIT ENTITIES.
-
-"-- DEEP INSERT (con composicion hijo):
-MODIFY ENTITIES OF ZC_<Entity>
-  ENTITY <Alias>
-    CREATE FIELDS ( Field1 Field2 )
-      WITH VALUE #( ( %cid = 'P1' Field1 = 'val1' Field2 = 'val2' ) )
-  ENTITY <ChildAlias>
-    CREATE BY \_Child
-      FROM VALUE #( ( %cid_ref = 'P1'
-                      %target  = VALUE #(
-                        ( %cid = 'ITEM1' Material = 'MAT001' Quantity = '10' ) ) ) )
-  MAPPED DATA(mapped) FAILED DATA(failed) REPORTED DATA(reported).
-COMMIT ENTITIES.
-```
-
-## Naming Convention (S/4HANA Clean)
-
-```text
-CDS Interface View:   ZI_[Objeto]         → ZI_PurchaseOrder
-CDS Projection View:  ZC_[Objeto]         → ZC_PurchaseOrder
-Behavior Definition:  misma raiz que CDS  → ZC_PurchaseOrder
-Behavior Impl Class:  ZBP_[CDS]           → ZBP_C_PurchaseOrder
-Service Definition:   ZUI_[Obj]_O4        → ZUI_PurchaseOrder_O4
-Service Binding:      ZUI_[Obj]_O4        → ZUI_PurchaseOrder_O4
-Draft Table:          ZDRAFT_[OBJETO]     → ZDRAFT_PURCHASEORDER
-```
-
-## Checklist RAP BO Completo
-
-- [ ] Tabla persistente (si es managed)
-- [ ] Draft table (si usa Draft)
-- [ ] CDS Interface View con @AccessControl y @ObjectModel
-- [ ] CDS Projection View con provider contract
-- [ ] Access Control (DCL) para Interface View
-- [ ] Metadata Extension (.MDE) con @UI annotations
-- [ ] Behavior Definition con lock, etag, authorization
-- [ ] Behavior Implementation (handler + saver si unmanaged)
-- [ ] ABAP Unit Tests (cl_abap_behv_test_environment)
-- [ ] Service Definition
-- [ ] Service Binding publicado (OData V4)
 
 ### shared/core-dev-principles.md
 
@@ -1109,6 +329,30 @@ Draft Table:          ZDRAFT_[OBJETO]     → ZDRAFT_PURCHASEORDER
    - Paginacion en listas (growing=true, $top/$skip)
    - Lazy loading de asociaciones
 
+## Escalera de decision — antes de escribir codigo nuevo
+
+Recorrela en orden y frena en el primer "si". El codigo que no se escribe no se
+revisa, no se transporta y no se rompe en PRD.
+
+1. **¿Hace falta que exista?** Si el requerimiento no lo pide explicitamente, no
+   se construye. Nada de "por las dudas".
+2. **¿Ya esta en este proyecto?** Buscar antes de crear: clase Z existente,
+   include, helper, CDS view, fragment.
+3. **¿Lo resuelve SAP estandar?** BAPI, clase CL_*, CDS view released (C1),
+   BAdI, Fiori Elements en vez de freestyle. Una API released mantenida por SAP
+   gana a cualquier Z equivalente.
+4. **¿Lo resuelve una dependencia ya instalada?** No agregar una libreria para
+   algo que el runtime ya hace.
+5. **¿Entra en una linea?** Una expresion CDS antes que un metodo; un `CASE`
+   antes que una clase de estrategia.
+6. **Si no:** la solucion minima que cumple el requerimiento y sus NFR.
+
+**Perezoso con la solucion, nunca con la lectura.** Entender el problema y el
+codigo existente a fondo es prerequisito para decidir no escribir algo.
+
+La escalera **no** aplica a: manejo de errores, validaciones, access control,
+locking, logging ni los NFR. Eso nunca se recorta — es la frontera de confianza.
+
 ## Simplificaciones deliberadas
 
 Cuando un agente elija a proposito una solucion minima (helper stdlib en vez de
@@ -1125,182 +369,45 @@ la simplificacion pensando que fue olvido. NO se usa para saltarse NFR §1-§3,
 
 ### shared/non-functional-requirements.md
 
-# Requisitos No Funcionales (NFR) — Catalogo Global
+# Requisitos No Funcionales (NFR) — Reglas duras
 
-> Aplica a **TODOS** los agentes que producen codigo o configuracion ejecutable.
-> Es referenciado por: ABAP (06), CAP (03), Integration (02), HANA (05), Migration (08), QA (09).
-> Validado obligatoriamente por `rules/DEFINITION-OF-DONE.md`.
+> Aplica a **TODO** código o configuración ejecutable. Validado por
+> `rules/DEFINITION-OF-DONE.md`. El catálogo detallado (técnicas por tecnología,
+> tablas de chunking, umbrales de baseline) vive en el skill **`sap-nfr`** —
+> leelo cuando la tarea lo pida, no por defecto.
 
-## 1. Concurrencia y Locking
+## Reglas duras (no negociables)
 
-Toda logica que escribe en tablas compartidas o ejecuta en background debe
-diseñarse asumiendo **N procesos paralelos sobre los mismos datos**.
+- **Concurrencia**: toda escritura a tablas compartidas asume N procesos en
+  paralelo. ENQUEUE/DEQUEUE (ABAP), `@odata.etag` + `cds.tx(req)` (CAP),
+  `SELECT … FOR UPDATE` (HANA), idempotent receiver (CPI).
+- **Nunca** un `SELECT ... INTO TABLE` sin `PACKAGE SIZE` si el universo puede crecer.
+- **Nunca** un `LOOP AT … MODIFY DB` (acoplar SELECT y UPDATE).
+- **Nunca** un job masivo sin estrategia de reinicio: ¿qué pasa si cae en el
+  registro 47.000?
+- **COMMIT boundaries** cada 500–2.000 registros, nunca uno solo al final.
+- **Idempotencia**: toda operación reintentable produce el mismo resultado la
+  segunda vez. UPSERT con clave completa, o verificación previa por clave natural.
+- **Smells prohibidos**: `SELECT *`, `SELECT` dentro de `LOOP`, funciones
+  escalares en el `WHERE`, `READ TABLE` sin `BINARY SEARCH`/`WITH KEY`, nested
+  loops cuadráticos.
+- **Sin observabilidad no hay sign-off**: SLG1 (ABAP), `cds.log()` con namespace
+  (CAP), Message Monitoring (CPI). El log tiene que servir a las 3 AM.
+- **Baseline de performance** capturado antes del cambio y comparado después.
+  Regresión >20% en runtime p95 **bloquea el cierre** salvo justificación
+  explícita del Tech Lead. Ver `sap-nfr/reference/baseline-performance.md`.
 
-### ABAP / S/4HANA
+## Referencia detallada (skill `sap-nfr`)
 
-- **ENQUEUE_E* / DEQUEUE_E*** antes de UPDATE/MODIFY de tablas con lock object
-- **RAP**: usar `lock master` en BDEF; manejar `CX_ABAP_BEHV_CONFLICT` en EML
-- **Update Task**: separar logica de UI (V1) de logica posponible (V2) — `PERFORM ... ON COMMIT`
-- **COMMIT WORK boundaries**: nunca un solo COMMIT al final de un proceso masivo
-  - Patron: cada N registros (500–2000) → COMMIT WORK, log de progreso, reset de buffers
-- **Cursor stable + parallel cursor** para LOOPs grandes con tablas anidadas
-- **SY-SUBRC** despues de CADA ENQUEUE/DEQUEUE/UPDATE — nunca asumir exito
+| Necesitás… | Leé |
+| --- | --- |
+| Técnicas de locking por tecnología (ABAP/CAP/HANA/CPI) | `sap-nfr/reference/concurrencia-locking.md` |
+| Chunking, paralelismo, restart-ability, checkpoints | `sap-nfr/reference/batch-masivo.md` |
+| Smells de performance, índices, observabilidad | `sap-nfr/reference/performance.md` |
+| Captura de baseline, umbrales de regresión, anti-patrones | `sap-nfr/reference/baseline-performance.md` |
+| Volúmenes mínimos de prueba en QAS | `sap-nfr/reference/volumen-pruebas.md` |
 
-### CAP / BTP
-
-- **Optimistic locking**: usar `@odata.etag` en entidades con concurrencia alta
-- **`cds.tx(req)`**: una transaccion por request HTTP, nunca compartir tx entre requests
-- **Batch handlers**: si el handler procesa array, iterar en chunks con `Promise.allSettled`
-- **Idempotency-key**: aceptar header `Idempotency-Key` en endpoints POST/PATCH criticos
-- **`@requires` y `@restrict`** en TODAS las acciones que modifican estado
-
-### HANA
-
-- **MVCC** se asume — pero validar isolation level si se usa READ COMMITTED / SERIALIZABLE
-- **`SELECT … FOR UPDATE NOWAIT`** para reservas de stock / asignacion de numeros
-- **Particionado por hash** para tablas con escritura paralela alta (>1k tx/s)
-- **Statement-level vs procedure-level COMMIT** — explicitar en SQLScript
-
-### Integration (CPI / iFlow)
-
-- **Idempotent Receiver pattern**: deduplicar por `MessageID` en JMS / persistencia
-- **Splitter + Aggregator** con `parallelProcessing=true` SOLO si downstream lo soporta
-- **JMS queues** sobre canales sincronicos para volumenes >100 msg/s
-- **Exception Subprocess** obligatorio en TODO iFlow
-
-## 2. Procesamiento Masivo / Batch
-
-Cuando un proceso lee/escribe >1.000 registros, el diseño debe incluir:
-
-| Tecnica | ABAP | CAP/Node | HANA |
-|---|---|---|---|
-| Chunking | `SELECT ... PACKAGE SIZE N` | `for await (const chunk of …)` | `OFFSET/FETCH NEXT` o particion |
-| Tamaño de paquete | 1.000–5.000 (datos), 100–500 (logica pesada) | 500–2.000 | depende particion |
-| Commit boundary | cada paquete | `await tx.commit()` cada chunk | `COMMIT` explicito |
-| Restart-ability | flag de "procesado" en tabla origen | checkpoint en tabla aux | timestamp + watermark |
-| Paralelismo | `SPTA_PARA_PROCESS_START_2` / aRFC | worker threads / Cloud Tasks | particion fisica |
-| Progreso visible | log SLG1 cada paquete | `cds.log()` cada N | tabla de monitoreo |
-| Cancelacion limpia | check `sy-ucomm` en cada paquete | abort signal | `STATEMENT_HINT('LIMIT')` |
-
-### Reglas duras
-
-- **NUNCA** un `SELECT ... INTO TABLE` sin `PACKAGE SIZE` cuando el universo puede crecer
-- **NUNCA** un `LOOP AT … MODIFY DB` (acoplar SELECT y UPDATE)
-- **NUNCA** un job sin estrategia de reinicio definida (¿que pasa si cae en el registro 47.000?)
-- **SIEMPRE** estimar volumen pico antes de elegir tamaño de paquete
-- **SIEMPRE** medir en QAS con volumen ≥80% del pico productivo antes de marcar como "listo"
-
-## 3. Idempotencia
-
-Toda operacion que puede reintentar (interface, job, retry de usuario) debe ser idempotente.
-
-- **Clave natural unica** verificada antes de INSERT (`SELECT SINGLE … WHERE clave = …`)
-- **UPSERT explicito** (`MODIFY` con clave completa) en lugar de INSERT
-- **Token de idempotencia** en headers de APIs externas
-- **Replay sin efectos colaterales**: el segundo intento produce el mismo resultado que el primero
-- **Compensating actions** documentadas si la operacion no puede ser idempotente nativamente
-
-## 4. Performance
-
-### Smells prohibidos
-
-- `SELECT *` en codigo productivo
-- `SELECT` dentro de `LOOP` sin `FOR ALL ENTRIES` o JOIN
-- Subqueries correlacionados sin justificacion
-- Funciones escalares ABAP dentro de `WHERE` (evita uso de indice)
-- `READ TABLE` sin `BINARY SEARCH` o `WITH KEY` en tablas sorted/hashed
-- Nested `LOOP` cuadratico (O(n²)) sobre tablas internas grandes
-
-### Obligaciones positivas
-
-- Indices secundarios para campos de filtro frecuente (validar con SE16 / `EXPLAIN PLAN`)
-- Buffer de tablas Z de configuracion (`Single records` o `Full`)
-- `AMDP` / `CDS Table Function` para logica analitica pesada
-- Calculation Views sin `SELECT *` en proyecciones
-- En CAP: `$top`, `$skip`, `growing=true` en listas; lazy load de asociaciones
-- En Fiori: `growing` + `growingThreshold` + `growingScrollToLoad`
-
-## 5. Restart-ability y Recovery
-
-- Todo job masivo debe poder reanudarse desde el ultimo registro procesado
-- Tabla de checkpoint con: `proceso_id`, `ultimo_id_procesado`, `timestamp`, `usuario`, `status`
-- Logs estructurados en SLG1 (ABAP) / `cds.log()` (CAP) / Message Monitoring (CPI)
-- Mensajes con severidad correcta: INFO progreso, WARNING saltos, ERROR datos invalidos, ABORT corte
-
-## 6. Observabilidad
-
-- ABAP: SLG1 con object/subobject por modulo, no genericos
-- CAP: `cds.log('mi-modulo').info(...)` con namespace propio
-- CPI: Message Monitoring + Alert Notification Service en errores criticos
-- HANA: `M_SQL_PLAN_CACHE` + `M_EXPENSIVE_STATEMENTS` revisado pre-PRD
-- **Sin observabilidad no hay sign-off** — el QA debe verificar que los logs existen y son utiles
-
-## 7. Volumen de Pruebas Obligatorio
-
-| Sistema | Volumen minimo en QAS antes de "listo" |
-|---|---|
-| Reports / queries | 80% del volumen pico productivo estimado |
-| Jobs batch | 100% del volumen pico + simulacion de cancelacion en medio |
-| Interfaces | rafaga de 10× la frecuencia normal durante 5 min |
-| Apps Fiori | dataset >5.000 registros para validar paginacion |
-| Procesos paralelos | minimo 3 ejecuciones simultaneas del mismo flujo |
-
-## 8. Performance Baseline — Captura y Comparacion (BLOQUEANTE)
-
-Toda tarea que toque codigo productivo debe **capturar un baseline en QAS antes del cambio** y compararlo despues. Bloquea si la regresion supera los umbrales.
-
-### Que capturar (siempre en QAS con volumen ≥80% del pico)
-
-| Metrica | ABAP | CAP / Node | HANA | CPI |
-|---|---|---|---|---|
-| Runtime (p50 / p95) | SE30 / SAT / ST05 | `process.hrtime()` + APM | `M_SQL_PLAN_CACHE` | MPL `processingTime` |
-| Memoria pico | SM50 → "Memory" / `cl_abap_memory_utilities` | `process.memoryUsage()` | `M_HOST_RESOURCE_UTILIZATION` | MPL attachment size |
-| DB calls / IO | ST05 traza | `cds.trace` / DB log | `M_EXPENSIVE_STATEMENTS` | iFlow trace |
-| CPU | SM50 / SAR | APM | `M_SERVICE_THREADS` | tenant metrics |
-
-### Donde guardar
-
-Tabla / fichero `performance-baseline.json` versionado en el repo del proyecto:
-
-```json
-{
-  "objeto": "ZCL_ORDER_PROCESSOR",
-  "test_case": "procesar_50000_pedidos",
-  "baseline_ts": "2026-06-22T10:00:00Z",
-  "qas_volume": 50000,
-  "runtime_p95_ms": 12500,
-  "memory_peak_mb": 480,
-  "db_calls": 142,
-  "executed_by": "ci-user@cliente.com"
-}
-```
-
-### Umbrales de regresion (bloqueantes)
-
-| Metrica | Umbral verde | Warning | Bloqueante |
-|---|---|---|---|
-| Runtime p95 | ≤ baseline ×1.10 | baseline ×1.10–1.20 | > baseline ×1.20 |
-| Memoria pico | ≤ baseline ×1.15 | baseline ×1.15–1.30 | > baseline ×1.30 |
-| DB calls | ≤ baseline ×1.00 | baseline ×1.00–1.10 | > baseline ×1.10 |
-| CPU | ≤ baseline ×1.15 | — | > baseline ×1.30 |
-
-**Regla dura**: regresion >20% en runtime p95 **bloquea el cierre**, salvo que el cambio funcional la justifique explicitamente (documentar en commit + sign-off del Tech Lead).
-
-### Como integrarlo al flujo
-
-1. Antes de tocar codigo: ejecutar test de performance en QAS y guardar baseline en repo
-2. Tras el cambio: re-ejecutar el mismo test, comparar contra baseline
-3. Si regresion ≥ umbral bloqueante: corregir antes de cerrar
-4. Tras release a PRD: el baseline nuevo reemplaza el anterior (commit de "performance baseline post-release")
-
-### Anti-patrones
-
-- "No medi performance porque el cambio es pequeño" — TODO cambio puede tener regresion
-- Medir solo en DEV con dataset pequeño — no es representativo
-- Aceptar regresion sin justificacion porque "es solo 25%"
-- No versionar el baseline — sin baseline historico no hay comparacion posible
-
-## 9. Checklist NFR (lo que el QA debe verificar)
+## Checklist NFR (lo que el QA debe verificar)
 
 - [ ] ¿Que pasa si dos usuarios ejecutan esto al mismo tiempo?
 - [ ] ¿Que pasa si el proceso se cancela en el registro N/2?
@@ -1376,6 +483,30 @@ Toda respuesta de un agente especializado debe incluir estas secciones (adaptar 
 - Codigo siempre en bloques con lenguaje especificado
 - Mencionar transacciones SAP relevantes donde aplique
 - Terminar con proximos pasos o dependencias pendientes
+
+### shared/output-brevity.md
+
+# Brevedad de respuesta
+
+> Quien lee es un arquitecto SAP senior. No necesita que le expliquen lo que
+> acaba de pedir ni que le narren lo que ya ve en el diff.
+
+**No escribir:** preámbulos ("Perfecto, voy a…") · re-explicar el código generado
+línea por línea · repetir el requerimiento antes de responderlo · resúmenes de
+cierre que enumeran lo que se acaba de mostrar · "próximos pasos" especulativos
+que nadie pidió · disclaimers defensivos genéricos.
+
+**Sí escribir:** el entregable completo y correcto · las transacciones SAP
+relevantes · los supuestos tomados si el requerimiento era ambiguo · los riesgos
+reales con su severidad · qué quedó fuera de alcance y por qué.
+
+**Regla práctica:** si una frase no cambia lo que el arquitecto va a *hacer* a
+continuación, sobra. Una tabla antes que tres párrafos; un ejemplo antes que una
+descripción.
+
+No aplica a: el formato que exige cada agente (`shared/response-format.md`), los
+hallazgos de un code review, ni el agente Mentor — ahí explicar el porqué **es**
+el entregable.
 
 
 ---
