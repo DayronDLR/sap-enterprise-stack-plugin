@@ -1,6 +1,6 @@
 ---
 name: team-refactor
-description: "Orquesta un equipo de agents para refactors grandes que tocan múltiples capas del proyecto (backend, frontend, tests). Usa Agent Teams experimental de Claude Code."
+description: "Orquesta un equipo de agents para refactors grandes que tocan múltiples capas del proyecto (backend, frontend, tests). Usa la ejecucion de agentes en paralelo del host cuando existe; en un host sin subagentes, degrada a un plan secuencial."
 disable-model-invocation: true
 ---
 
@@ -13,7 +13,7 @@ Orquestar un equipo de teammates para refactors que tocan múltiples capas simul
 Agent Teams debe estar habilitado. Si no lo está, indicar al usuario:
 
 ```bash
-# Agregar a .claude/settings.json o como variable de entorno
+# Agregar a settings.json o como variable de entorno
 # "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" }
 ```
 
@@ -32,7 +32,7 @@ Entender qué capas están involucradas:
 
 Spawnar teammates según las capas involucradas. Ejemplo para un refactor full-stack:
 
-```
+```text
 Creá un agent team para este refactor:
 
 - Teammate "backend": responsable de cambios en db/ y srv/.

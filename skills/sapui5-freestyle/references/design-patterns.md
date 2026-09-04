@@ -189,7 +189,7 @@ public onExit(): void {
 
 ## Deprecated Controls — Never Use
 
-```
+```text
 ❌ sap.ui.commons.*   (obsolete library)
 ❌ sap.ui.ux3.*       (obsolete library)
 ❌ sap.ca.*           (obsolete library)

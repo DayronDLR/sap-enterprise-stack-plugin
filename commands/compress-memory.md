@@ -1,6 +1,6 @@
 ---
 description: Comprime archivos memory/*.md para reducir uso de ventana de contexto
-model: sonnet
+model: claude-sonnet-4-6
 ---
 
 Usa el skill `memory-compress` para comprimir todos los archivos `.md` en el directorio `memory/`.

@@ -64,9 +64,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "rm -f \"${CLAUDE_PROJECT_DIR:-.}/tmp/.active-sap-agent\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.review-done\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.qa-nfr-done\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.agent-turn-count\" 2>/dev/null; rm -f \"${CLAUDE_PROJECT_DIR:-.}\"/tmp/.close-note-* 2>/dev/null; echo '# Contexto SAP Stack\\nSistema: SAP S/4HANA 2023 On-Premise + SAP BTP\\nLandscape: DEV > QAS > PRD | Principio: Clean Core\\nGates DoD: corren al commitear/pushear, o con /sap-gates. No en cada turno.\\nRouting: orchestrator/routing_rules.json'"
+            "command": "rm -f \"${CLAUDE_PROJECT_DIR:-.}/tmp/.active-sap-agent\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.review-done\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.qa-nfr-done\" \"${CLAUDE_PROJECT_DIR:-.}\"/tmp/.agent-turn-count-* 2>/dev/null; rm -f \"${CLAUDE_PROJECT_DIR:-.}\"/tmp/.close-note-* 2>/dev/null; echo '# Contexto SAP Stack\\nSistema: SAP S/4HANA 2023 On-Premise + SAP BTP\\nLandscape: DEV > QAS > PRD | Principio: Clean Core\\nGates DoD: corren al commitear/pushear, o con /sap-gates. No en cada turno.\\nRouting: orchestrator/routing_rules.json'"
           }
-        ]
+        ],
+        "matcher": "startup|clear"
       }
     ],
     "PostCompact": [

@@ -124,7 +124,7 @@ this.getRouter().attachBypassed(function(oEvent) {
 
 **NUNCA usar `viewPath` en `routing.config` ni en targets.** Este campo está deprecado desde manifest v2 y causa `LaunchpadError` en FLP:
 
-```
+```text
 LaunchpadError: sap.ui5/routing/targets/viewPath is deprecated and not supported
 with manifest version 2. Use the option 'path' instead.
 ```

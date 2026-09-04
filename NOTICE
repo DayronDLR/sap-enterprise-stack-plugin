@@ -29,6 +29,28 @@ skills/sapui5-freestyle
   License: MIT (declared in its SKILL.md front matter)
 
 -------------------------------------------------------------------------------
+sap-diagrams — técnica derivada de Archify (MIT)
+-------------------------------------------------------------------------------
+skills/sap-diagrams/
+
+Implementación original de Insight Technologies (GPL-3.0). NO redistribuye
+código de Archify: es una reimplementación en Node ESM, con schemas, layout,
+router y emisores propios orientados a SAP (zonas BTP, iconografía SAP BTP,
+salida .drawio + .svg).
+
+Se derivan de Archify el diseño del contrato de diagnóstico
+({code, severity, subject, evidence, supportedFixes}), el conjunto y los
+umbrales de los checks de composición (cruce propio, corredor ambiguo, corrida
+sobre borde, ritmo de segmentos, ajuste de texto, legibilidad proyectada), el
+contrato de perfiles standard/showcase y el patrón de entrega congelada con
+receipt SHA-256. Los archivos que aplican cada técnica la citan en su encabezado.
+
+  Fuente:  https://github.com/tt-a1i/archify
+  Licencia: MIT
+  Copyright (c) 2026 tt-a1i (Archify)
+  Copyright (c) 2025 Cocoon AI (original "architecture-diagram-generator")
+
+-------------------------------------------------------------------------------
 Original stack content — GPL-3.0
 -------------------------------------------------------------------------------
 Everything else in this repository (the 11 agent prompts, 6 subagents, slash

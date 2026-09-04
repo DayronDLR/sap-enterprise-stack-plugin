@@ -6,15 +6,26 @@
 
 set -u
 
+# AUDITORIA A3 — el descubrimiento pasa por `dod_git_paths`, que FALLA CERRADO:
+# un error de git ya no se ve igual que un repo sin cambios.
+SCRIPT_DIR_CC="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+# shellcheck disable=SC1091
+. "${SCRIPT_DIR_CC}/lib/dod-common.sh"
+
+if [ "${ABAP_SCAN_INCLUDE_SMOKETEST:-0}" = "1" ]; then
+    ALL_PATHS_CC=$(dod_git_paths --con-fixtures)
+else
+    ALL_PATHS_CC=$(dod_git_paths)
+fi
+if [ $? -ne 0 ]; then
+    echo "[CRITICAL] clean-core-scan: no se pudo determinar que archivos revisar. El scan NO se ejecuto." >&2
+    exit 1
+fi
+
 CHANGED_FILES=$(
-    {
-        git diff --name-only HEAD 2>/dev/null
-        git ls-files --others --exclude-standard 2>/dev/null
-        if [ "${ABAP_SCAN_INCLUDE_SMOKETEST:-0}" = "1" ]; then
-            git ls-files 'hooks/scripts/__smoketest__/fixtures/*' 2>/dev/null
-        fi
-    } \
-        | sort -u | grep -E '\.(abap|prog|clas|fugr|cds|ddls|bdef|behv|asfc|asinc|asinf)(\.|$)' \
+    printf '%s\n' "$ALL_PATHS_CC" \
+        | grep -vE "$DOD_GENERADOS_RE" \
+        | grep -E '\.(abap|prog|clas|fugr|cds|ddls|bdef|behv|asfc|asinc|asinf)(\.|$)' \
         | { if [ "${ABAP_SCAN_INCLUDE_SMOKETEST:-0}" = "1" ]; then cat; else grep -v '__smoketest__/'; fi; } \
         || true
 )
@@ -74,9 +85,20 @@ scan() {
     fi
 }
 
+ILEGIBLES_CC=""
 for f in $CHANGED_FILES; do
+    # Un archivo que existe y no se puede leer no es un archivo limpio: el scan
+    # de Clean Core no ocurrio sobre el (auditoria A3).
+    if dod_no_legible "$f"; then ILEGIBLES_CC="${ILEGIBLES_CC} $f"; continue; fi
+    [ -r "$f" ] || continue
     scan "$f"
 done
+
+if [ -n "$ILEGIBLES_CC" ]; then
+    echo "[CRITICAL] clean-core-scan: estos archivos existen y no se pudieron leer, asi que NO se escanearon:" >&2
+    for f in $ILEGIBLES_CC; do echo "    $f" >&2; done
+    exit 1
+fi
 
 if [ -n "$FINDINGS" ]; then
     if echo -e "$FINDINGS" | grep -qE '^\[(CRITICAL|HIGH)\]'; then

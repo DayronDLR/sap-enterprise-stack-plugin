@@ -1,8 +1,7 @@
 ---
 name: fiori-tester
 description: "INTERNAL subagent of /sap-fiori — never invoke directly. Only called by the Fiori parent agent during the testing phase. Crea y ejecuta tests para apps Fiori/UI5: OPA5 journeys y QUnit formatters. No se detiene hasta que todos los tests pasen."
-tools: Read, Write, Edit, Bash, Grep, Glob, mcp__ui5-mcp__run_ui5_linter,
-  mcp__ui5-mcp__run_manifest_validation
+tools: Read, Write, Edit, Grep, Glob, Bash, mcp__plugin_ses_sap-ui5__run_manifest_validation, mcp__plugin_ses_sap-ui5__run_ui5_linter
 model: claude-opus-4-7
 ---
 
@@ -37,7 +36,7 @@ Recopilar información sobre qué testear:
 
 Antes de escribir código, definir:
 
-```
+```text
 Tests QUnit:
   - formatter.js → [lista de casos: input/expected output]
   - validators → [casos de validación]
@@ -51,7 +50,7 @@ Tests OPA5:
 
 #### Estructura de directorios
 
-```
+```text
 webapp/test/
 ├── integration/
 │   ├── opaTests.qunit.html          ← Runner HTML de OPA5

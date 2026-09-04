@@ -1,20 +1,51 @@
-# Política de diagramas: guidelines SAP, draw.io, niveles L0-L2
+# Política de diagramas: motor validado, Mermaid y niveles L0-L2
 
 > Referencia del agente de documentación. Se lee bajo demanda.
 
-## Regla 1: Mermaid en el Markdown (SIEMPRE)
+## Regla 1: arquitectura y secuencia van por el motor `sap-diagrams`
 
-- **Todos los diagramas** en el `.md` deben ser bloques ` ```mermaid `.
-- **NUNCA** diagramas ASCII (`┌──`, `│`, `└──`, etc.) — estos se eliminan.
-- GitHub renderiza Mermaid nativamente en `.md`.
-- Tipos de diagramas a usar:
-  - `graph TB` / `graph LR` para arquitectura de componentes
-  - `sequenceDiagram` para flujos de secuencia (llamadas entre servicios)
-  - `flowchart LR` para pipelines y decisiones
-  - `erDiagram` para modelos de datos
-  - `classDiagram` para estructura de clases/servicios
+Un diagrama de arquitectura de solución o una secuencia de llamadas **no se
+escriben a mano** — ni en Mermaid, ni en XML de draw.io, ni colocando
+coordenadas. Se declaran en un `.sapdiag.json` y el skill `sap-diagrams` calcula
+la geometría y **la mide** antes de aceptarla.
 
-## Regla 2: Mermaid → PNG para Word (.docx)
+```bash
+# $SAPDIAG se resuelve una vez por sesión — ver skills/sap-diagrams/SKILL.md
+node "$SAPDIAG" validate <spec>.sapdiag.json --quality showcase
+node "$SAPDIAG" deliver  <spec>.sapdiag.json --quality showcase
+```
+
+`deliver --png` produce el `.drawio` (editable por el cliente), el `.svg` (lo que
+se referencia desde el `.md`) y el `.png` (lo que entra al `.docx`), los tres
+desde la misma escena validada. Leé `skills/sap-diagrams/SKILL.md` antes de
+escribir el primer spec.
+
+**Convención en el `.md`:** referenciá el `.svg` — GitHub lo renderiza nativo —
+y `build-doc.sh` lo cambia por el `.png` en la copia que consume pandoc:
+
+```markdown
+![Arquitectura de solución (L1)](arquitectura.svg)
+```
+
+`build-doc.sh` regenera todos los `.sapdiag.json` de la carpeta antes de armar el
+`.docx` y **aborta si alguno no pasa `showcase`**: un documento con un diagrama
+ilegible es peor que un build fallido, porque el ilegible llega al cliente.
+
+**Por qué:** Mermaid decide el layout por su cuenta y nadie mide el resultado; el
+generador Python exigía tipear x/y a mano. Las dos vías producían cajas
+solapadas, conectores cruzados y etiquetas encima de las líneas, sin ninguna
+señal de que el diagrama estaba mal.
+
+## Regla 2: Mermaid, solo donde el motor no llega
+
+- Modelos de datos: `erDiagram`
+- Estructura de clases/servicios: `classDiagram`
+- Flujos triviales de 3-4 cajas dentro del `.md`: `flowchart LR`
+- **NUNCA** diagramas ASCII (`┌──`, `│`, `└──`) — se eliminan.
+- Para arquitectura (`graph TB`/`graph LR`), secuencia (`sequenceDiagram`),
+  iFlows de CPI y rutas de transporte: usá el motor, no Mermaid.
+
+## Regla 3: Mermaid → PNG para Word (.docx)
 
 Para que los diagramas aparezcan en el `.docx` como imágenes:
 
@@ -41,7 +72,11 @@ Para que los diagramas aparezcan en el `.docx` como imágenes:
 
 El `build-doc.sh` debe automatizar todo este proceso.
 
-## Regla 3: Draw.io con SAP BTP Solution Diagrams (SIEMPRE)
+## Regla 4: draw.io heredado (solo mantenimiento de diagramas viejos)
+
+> Para diagramas **nuevos** usá el motor `sap-diagrams` (Regla 1). Esta sección
+> queda para mantener diagramas `.drawio` preexistentes que todavía no se
+> migraron a `.sapdiag.json`.
 
 Genera un archivo `.drawio` siguiendo las guidelines oficiales SAP BTP Solution Diagrams (Horizon 2023).
 

@@ -1,7 +1,7 @@
 ---
 name: memory-compress
 description: "Comprime archivos .md en memory/ para reducir uso de contexto. Preserva frontmatter YAML, bloques de código, términos SAP técnicos, paths y URLs. Hace backup de originales."
-model: sonnet
+model: claude-sonnet-4-6
 ---
 
 # Memory Compress
@@ -55,7 +55,7 @@ cp memory/ARCHIVO.md memory/ARCHIVO.original.md
 
 Para cada archivo procesado, mostrar:
 
-```
+```text
 ✓ memory/ARCHIVO.md: XXX → YYY líneas (−ZZ%)
   Backup: memory/ARCHIVO.original.md
 ```

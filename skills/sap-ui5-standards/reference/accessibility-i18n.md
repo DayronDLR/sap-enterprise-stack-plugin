@@ -79,7 +79,7 @@ sap.ui.define([
 
 ### Estructura de archivos i18n
 
-```
+```text
 webapp/i18n/
 ├── i18n.properties       # Inglés (fallback)
 ├── i18n_es.properties    # Español

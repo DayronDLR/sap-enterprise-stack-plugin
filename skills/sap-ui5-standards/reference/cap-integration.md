@@ -8,7 +8,7 @@
 
 ### ✅ CORRECTO: App UI5 dentro del proyecto CAP
 
-```
+```text
 my-cap-project/          ← Root del proyecto CAP
 ├── app/                 ← ✅ AQUÍ van las apps UI5
 │   └── my-ui5-app/
@@ -28,7 +28,7 @@ my-cap-project/          ← Root del proyecto CAP
 
 ### ❌ PROHIBIDO: App UI5 fuera de la carpeta `app/`
 
-```
+```text
 my-cap-project/
 ├── my-ui5-app/          ← ❌ NUNCA en el root del proyecto CAP
 ├── frontend/            ← ❌ NUNCA en carpeta con nombre personalizado

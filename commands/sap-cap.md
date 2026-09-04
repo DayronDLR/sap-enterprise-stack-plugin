@@ -24,7 +24,7 @@ para producir código CAP preciso y alineado con las versiones reales de los SDK
 
 | MCP configurado | Cuándo invocarlo |
 | --- | --- |
-| `mcp__sap-cap-capire__*` | Buscar en docs oficiales @sap/cds y en el modelo CDS compilado del proyecto (`search_docs`, `search_model`) antes de citar APIs/anotaciones |
+| `las tools MCP de `sap-cap-capire`` | Buscar en docs oficiales @sap/cds y en el modelo CDS compilado del proyecto (`search_docs`, `search_model`) antes de citar APIs/anotaciones |
 
 **Gap conocido:** no hay MCP oficial SAP que unifique docs BTP/XSUAA + Discovery Center. Cubrir con `sap-btp-developer-guide` + `sap-btp-best-practices` (skills) y validación manual contra SAP Help Portal. Registrado en `docs/MCP-ROADMAP.md`.
 

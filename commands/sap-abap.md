@@ -18,7 +18,7 @@ model: claude-opus-4-7
 
 ## Integración MCP — ADT (lectura sistema real, opcional)
 
-Si las variables `SAP_ADT_URL`/`SAP_ADT_USER`/`SAP_ADT_PASSWORD`/`SAP_ADT_CLIENT` están configuradas (ver `docs/ENVIRONMENT.md`), el MCP `mcp__sap-adt__*` (paquete comunidad `@mcp-abap-adt/core`, no SAP oficial) permite leer objetos ABAP del SAP del cliente sin que el usuario pegue código.
+Si las variables `SAP_ADT_URL`/`SAP_ADT_USER`/`SAP_ADT_PASSWORD`/`SAP_ADT_CLIENT` están configuradas (ver `docs/ENVIRONMENT.md`), el MCP `las tools MCP de `sap-adt`` (paquete comunidad `@mcp-abap-adt/core`, no SAP oficial) permite leer objetos ABAP del SAP del cliente sin que el usuario pegue código.
 
 **Reglas duras**:
 

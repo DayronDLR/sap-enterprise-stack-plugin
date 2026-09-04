@@ -7,16 +7,27 @@
 set -u
 
 # Archivos ABAP modificados o nuevos (incluye .abap y .clas/.prog si fueran texto)
+# AUDITORIA A3 — el descubrimiento pasa por `dod_git_paths`, que FALLA CERRADO:
+# si git no puede listar, el scan no puede concluir "no hay ABAP que revisar".
+# Antes un error de git se veia igual que un repo limpio.
+SCRIPT_DIR_ABAP="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+# shellcheck disable=SC1091
+. "${SCRIPT_DIR_ABAP}/lib/dod-common.sh"
+
+if [ "${ABAP_SCAN_INCLUDE_SMOKETEST:-0}" = "1" ]; then
+    ALL_PATHS=$(dod_git_paths --con-fixtures)
+else
+    ALL_PATHS=$(dod_git_paths)
+fi
+if [ $? -ne 0 ]; then
+    echo "[CRITICAL] abap-smell-scan: no se pudo determinar que archivos revisar. El scan NO se ejecuto." >&2
+    exit 1
+fi
+
 ABAP_FILES=$(
-    {
-        git diff --name-only HEAD 2>/dev/null
-        git ls-files --others --exclude-standard 2>/dev/null
-        # En smoketest, incluir fixtures aunque ya esten commiteados (caso CI)
-        if [ "${ABAP_SCAN_INCLUDE_SMOKETEST:-0}" = "1" ]; then
-            git ls-files 'hooks/scripts/__smoketest__/fixtures/*' 2>/dev/null
-        fi
-    } \
-        | sort -u | grep -E '\.(abap|prog|clas|fugr|asfc|asinc|asinf)(\.|$)' \
+    printf '%s\n' "$ALL_PATHS" \
+        | grep -vE "$DOD_GENERADOS_RE" \
+        | grep -E '\.(abap|prog|clas|fugr|asfc|asinc|asinf)(\.|$)' \
         | { if [ "${ABAP_SCAN_INCLUDE_SMOKETEST:-0}" = "1" ]; then cat; else grep -v '__smoketest__/'; fi; } \
         || true
 )
@@ -127,9 +138,22 @@ scan_file() {
     done < <(grep -niE "= '\s*X\s*'" "$f" 2>/dev/null || true)
 }
 
+ILEGIBLES=""
 for f in $ABAP_FILES; do
+    # Un archivo BORRADO sigue apareciendo en el diff: no leerlo es lo esperado.
+    # Uno que EXISTE y no se puede leer es distinto: el scan no ocurrio, y
+    # decir "limpio" seria falso (auditoria A3).
+    if dod_no_legible "$f"; then ILEGIBLES="${ILEGIBLES} $f"; continue; fi
+    [ -r "$f" ] || continue
     scan_file "$f"
 done
+
+# Un archivo que no se pudo leer no paso el scan: bloquea, con el nombre.
+if [ -n "$ILEGIBLES" ]; then
+    echo "[CRITICAL] abap-smell-scan: estos archivos existen y no se pudieron leer, asi que NO se escanearon:" >&2
+    for f in $ILEGIBLES; do echo "    $f" >&2; done
+    exit 1
+fi
 
 if [ -n "$FINDINGS" ]; then
     # Si hay CRITICAL o HIGH, bloquear

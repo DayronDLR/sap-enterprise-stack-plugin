@@ -46,38 +46,38 @@ para generar apps Fiori y código UI5 alineado con las herramientas y versiones 
 
 ## Integración MCP — Herramientas en Vivo
 
-Cuando las herramientas MCP `mcp__fiori-mcp__*` estén disponibles, **úsalas activamente** antes de generar código desde memoria:
+Cuando las herramientas MCP `las tools MCP de `sap-fiori-tools`` estén disponibles, **úsalas activamente** antes de generar código desde memoria:
 
 | Herramienta MCP | Cuándo invocarla |
 | --- | --- |
-| `mcp__fiori-mcp__search_docs` | Responder preguntas sobre Fiori Elements, annotations, floorplans, Building Blocks — consulta documentación actualizada |
-| `mcp__fiori-mcp__list_fiori_apps` | Detectar apps Fiori existentes en el workspace antes de crear nuevas |
-| `mcp__fiori-mcp__list_functionality` | Ver funcionalidades disponibles para implementar en el proyecto activo |
-| `mcp__fiori-mcp__get_functionality_details` | Obtener detalles de una funcionalidad específica antes de implementarla |
-| `mcp__fiori-mcp__execute_functionality` | Ejecutar generación automática de código Fiori (preferido sobre escritura manual) |
+| `mcp__plugin_ses_sap-fiori-tools__search_docs` | Responder preguntas sobre Fiori Elements, annotations, floorplans, Building Blocks — consulta documentación actualizada |
+| `mcp__plugin_ses_sap-fiori-tools__list_fiori_apps` | Detectar apps Fiori existentes en el workspace antes de crear nuevas |
+| `mcp__plugin_ses_sap-fiori-tools__list_functionality` | Ver funcionalidades disponibles para implementar en el proyecto activo |
+| `mcp__plugin_ses_sap-fiori-tools__get_functionality_details` | Obtener detalles de una funcionalidad específica antes de implementarla |
+| `mcp__plugin_ses_sap-fiori-tools__execute_functionality` | Ejecutar generación automática de código Fiori (preferido sobre escritura manual) |
 
 **Regla:** Si el usuario pregunta sobre documentación Fiori o quiere generar una app, invoca primero las herramientas MCP. Solo genera desde memoria si las herramientas no están disponibles o no retornan resultados útiles.
 
 ## Integración MCP — UI5 Framework Tools
 
-Cuando las herramientas MCP `mcp__ui5-mcp__*` estén disponibles, **úsalas activamente** para validar, generar y consultar APIs del framework UI5:
+Cuando las herramientas MCP `las tools MCP de `sap-ui5`` estén disponibles, **úsalas activamente** para validar, generar y consultar APIs del framework UI5:
 
 | Herramienta MCP | Cuándo invocarla |
 | --- | --- |
-| `mcp__ui5-mcp__get_guidelines` | Consultar buenas prácticas UI5 antes de iniciar cualquier proyecto |
-| `mcp__ui5-mcp__get_project_info` | Analizar estructura y configuración de un proyecto UI5 existente |
-| `mcp__ui5-mcp__create_ui5_app` | Generar un nuevo proyecto UI5/SAPUI5 con scaffolding moderno |
-| `mcp__ui5-mcp__get_api_reference` | Consultar firmas de API y documentación de controles o módulos específicos |
-| `mcp__ui5-mcp__get_version_info` | Verificar versiones disponibles de SAPUI5/OpenUI5 antes de fijar versión en manifest |
-| `mcp__ui5-mcp__run_ui5_linter` | Detectar APIs deprecadas y errores de codificación antes de entregar |
-| `mcp__ui5-mcp__run_manifest_validation` | Validar manifest.json antes de desplegar (on-premise o BTP) |
-| `mcp__ui5-mcp__get_typescript_conversion_guidelines` | Obtener guía paso a paso para migrar proyectos JS a TypeScript |
-| `mcp__ui5-mcp__create_integration_card` | Generar UI Integration Cards reutilizables |
-| `mcp__ui5-mcp__get_integration_cards_guidelines` | Consultar patrones y mejores prácticas para Integration Cards |
+| `mcp__plugin_ses_sap-ui5__get_guidelines` | Consultar buenas prácticas UI5 antes de iniciar cualquier proyecto |
+| `mcp__plugin_ses_sap-ui5__get_project_info` | Analizar estructura y configuración de un proyecto UI5 existente |
+| `mcp__plugin_ses_sap-ui5__create_ui5_app` | Generar un nuevo proyecto UI5/SAPUI5 con scaffolding moderno |
+| `mcp__plugin_ses_sap-ui5__get_api_reference` | Consultar firmas de API y documentación de controles o módulos específicos |
+| `mcp__plugin_ses_sap-ui5__get_version_info` | Verificar versiones disponibles de SAPUI5/OpenUI5 antes de fijar versión en manifest |
+| `mcp__plugin_ses_sap-ui5__run_ui5_linter` | Detectar APIs deprecadas y errores de codificación antes de entregar |
+| `mcp__plugin_ses_sap-ui5__run_manifest_validation` | Validar manifest.json antes de desplegar (on-premise o BTP) |
+| `mcp__plugin_ses_sap-ui5__get_typescript_conversion_guidelines` | Obtener guía paso a paso para migrar proyectos JS a TypeScript |
+| `mcp__plugin_ses_sap-ui5__create_integration_card` | Generar UI Integration Cards reutilizables |
+| `mcp__plugin_ses_sap-ui5__get_integration_cards_guidelines` | Consultar patrones y mejores prácticas para Integration Cards |
 
 **Regla:** Al crear o modificar apps UI5/SAPUI5: (1) comienza con `get_guidelines` y `get_project_info`; (2) usa `get_api_reference` antes de invocar controles desconocidos; (3) ejecuta `run_ui5_linter` y `run_manifest_validation` antes de entregar código; (4) prefiere `create_ui5_app` sobre scaffolding manual.
 
-**Gap conocido:** no hay MCP oficial SAP que indexe el SAP Help Portal completo. Para validar APIs UI5 fuera del catálogo `@ui5/mcp-server`, recurrir a `mcp__sap-fiori-tools__search_docs` y al SAP Help manual. Registrado en `docs/MCP-ROADMAP.md`.
+**Gap conocido:** no hay MCP oficial SAP que indexe el SAP Help Portal completo. Para validar APIs UI5 fuera del catálogo `@ui5/mcp-server`, recurrir a `mcp__plugin_ses_sap-fiori-tools__search_docs` y al SAP Help manual. Registrado en `docs/MCP-ROADMAP.md`.
 
 ---
 
@@ -94,10 +94,10 @@ Para TODA tarea de desarrollo Fiori/UI5, ejecutar en este orden:
 
 ### 2. CONSULTAR (OBLIGATORIO — no generar desde memoria)
 
-- `mcp__ui5-mcp__get_guidelines` — buenas prácticas UI5 actualizadas
-- `mcp__ui5-mcp__get_api_reference` — firmas de controles a usar
-- `mcp__fiori-mcp__search_docs` — documentación Fiori Elements / annotations
-- `mcp__fiori-mcp__list_fiori_apps` — apps existentes en el workspace
+- `mcp__plugin_ses_sap-ui5__get_guidelines` — buenas prácticas UI5 actualizadas
+- `mcp__plugin_ses_sap-ui5__get_api_reference` — firmas de controles a usar
+- `mcp__plugin_ses_sap-fiori-tools__search_docs` — documentación Fiori Elements / annotations
+- `mcp__plugin_ses_sap-fiori-tools__list_fiori_apps` — apps existentes en el workspace
 - Leer reglas en el skill `sap-ui5-standards` que apliquen al caso
 - NUNCA inventar APIs — siempre verificar contra MCP o documentación oficial
 
@@ -107,7 +107,7 @@ Para TODA tarea de desarrollo Fiori/UI5, ejecutar en este orden:
 - Para tareas >5 archivos: evaluar 2 alternativas de diseño antes de elegir
 - Verificar que el floorplan soporta el caso de uso
 - Confirmar que no existen apps similares ya creadas
-- Validar versión SAPUI5: `mcp__ui5-mcp__get_version_info`
+- Validar versión SAPUI5: `mcp__plugin_ses_sap-ui5__get_version_info`
 
 ### 4. PLANIFICAR — Dividir por Capas
 
@@ -132,8 +132,8 @@ Listar archivos a crear/modificar. Identificar dependencias entre rondas.
 
 ### 6. VERIFICAR — Por Ronda
 
-- Después de cada ronda: `mcp__ui5-mcp__run_ui5_linter` sobre archivos modificados
-- Al finalizar: `mcp__ui5-mcp__run_manifest_validation`
+- Después de cada ronda: `mcp__plugin_ses_sap-ui5__run_ui5_linter` sobre archivos modificados
+- Al finalizar: `mcp__plugin_ses_sap-ui5__run_manifest_validation`
 - Confirmar i18n completo — ningún texto hardcodeado
 - Confirmar manejo de errores OData en todos los paths
 - Si algo falla: volver al paso correspondiente, NO continuar
@@ -263,8 +263,8 @@ los pida, no "por las dudas".
 
 ### Validacion pre-entrega (obligatoria)
 
-- `mcp__ui5-mcp__run_ui5_linter` sin findings de severidad alta
-- `mcp__ui5-mcp__run_manifest_validation` OK
+- `mcp__plugin_ses_sap-ui5__run_ui5_linter` sin findings de severidad alta
+- `mcp__plugin_ses_sap-ui5__run_manifest_validation` OK
 - Lighthouse / accessibility audit en QAS: Accessibility ≥ 90, Performance ≥ 70 con dataset real
 - Dataset de prueba: minimo 5.000 registros para validar paginacion y rendering
 

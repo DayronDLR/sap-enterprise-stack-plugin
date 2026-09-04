@@ -12,7 +12,8 @@ tokens en total: leé el archivo que la tarea pide, no todos.
 | --- | --- |
 | Armar o revisar el documento de arquitectura completo | `sap-doc-standards/reference/estructura-maestra.md` |
 | Buscar un template, script o guía del toolkit | `sap-doc-standards/reference/archivos-referencia.md` |
-| Generar cualquier diagrama (draw.io, niveles L0-L2, colores SAP) | `sap-doc-standards/reference/diagramas.md` |
+| Generar un diagrama de arquitectura o de secuencia | el skill **`sap-diagrams`** (motor validado) |
+| Política de diagramas: cuándo motor, cuándo Mermaid, niveles L0-L2 | `sap-doc-standards/reference/diagramas.md` |
 | Revisar un entregable antes de mandarlo al cliente | `sap-doc-standards/reference/errores-comunes.md` |
 
 ## Reglas que aplican siempre

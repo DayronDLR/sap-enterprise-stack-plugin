@@ -30,7 +30,7 @@ const sMsg = this.getResourceBundle().getText("itemCount", [iCount]);
 
 ## i18n File Structure
 
-```
+```text
 webapp/i18n/
 ├── i18n.properties       ← English (fallback — ALWAYS required)
 ├── i18n_es.properties    ← Spanish

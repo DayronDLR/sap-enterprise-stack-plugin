@@ -1,6 +1,5 @@
 ---
 name: sapui5-freestyle
-model: claude-opus-4-7
 description: Creates and extends SAPUI5 FreeStyle applications using ui5-mcp and fiori-mcp tools. Use this skill when creating a new SAPUI5 app from scratch, scaffolding views/controllers/routes, building dashboards, forms, list/detail apps, or any custom Fiori/UI5 development not based on Fiori Elements generators. Trigger for requests like "crea una app SAPUI5", "nueva aplicación UI5 FreeStyle", "necesito un dashboard SAP", "formulario UI5", "app de aprobaciones SAPUI5", or adding new views/features to an existing SAPUI5 FreeStyle project — even if the user doesn't say "FreeStyle" explicitly.
 license: MIT
 metadata:
@@ -8,16 +7,17 @@ metadata:
   lastUpdated: 2026-03-11
 compatibility:
   tools:
-    - mcp__ui5-mcp__get_guidelines
-    - mcp__ui5-mcp__create_ui5_app
-    - mcp__ui5-mcp__get_api_reference
-    - mcp__ui5-mcp__run_ui5_linter
-    - mcp__ui5-mcp__run_manifest_validation
-    - mcp__ui5-mcp__get_version_info
-    - mcp__fiori-mcp__list_functionality
-    - mcp__fiori-mcp__get_functionality_details
-    - mcp__fiori-mcp__execute_functionality
-    - mcp__fiori-mcp__search_docs
+    - mcp__plugin_ses_sap-ui5__get_guidelines
+    - mcp__plugin_ses_sap-ui5__create_ui5_app
+    - mcp__plugin_ses_sap-ui5__get_api_reference
+    - mcp__plugin_ses_sap-ui5__run_ui5_linter
+    - mcp__plugin_ses_sap-ui5__run_manifest_validation
+    - mcp__plugin_ses_sap-ui5__get_version_info
+    - mcp__plugin_ses_sap-fiori-tools__list_functionality
+    - mcp__plugin_ses_sap-fiori-tools__get_functionality_details
+    - mcp__plugin_ses_sap-fiori-tools__execute_functionality
+    - mcp__plugin_ses_sap-fiori-tools__search_docs
+model: claude-opus-4-7
 ---
 
 # SAPUI5 FreeStyle Application Builder
@@ -26,7 +26,7 @@ Senior SAP Fiori/SAPUI5 developer workflow. Creates production-ready apps follow
 
 ## Step 0 — Mandatory Before Any Code
 
-Call `mcp__ui5-mcp__get_guidelines` first. Always. Apply the output throughout the entire task.
+Call `mcp__plugin_ses_sap-ui5__get_guidelines` first. Always. Apply the output throughout the entire task.
 
 ---
 
@@ -48,12 +48,12 @@ Collect what's needed. Infer from context when obvious — don't over-ask.
 
 ## Phase 2: Scaffold with MCP Tools
 
-```
-1. mcp__ui5-mcp__get_version_info { frameworkName: "SAPUI5" }
-2. mcp__ui5-mcp__create_ui5_app { appNamespace, basePath, typescript: true, framework: "SAPUI5", runNpmInstall: true }
-3. mcp__fiori-mcp__list_functionality { appPath }
-   → mcp__fiori-mcp__get_functionality_details { appPath, functionalityId }
-   → mcp__fiori-mcp__execute_functionality { appPath, functionalityId, parameters }
+```text
+1. mcp__plugin_ses_sap-ui5__get_version_info { frameworkName: "SAPUI5" }
+2. mcp__plugin_ses_sap-ui5__create_ui5_app { appNamespace, basePath, typescript: true, framework: "SAPUI5", runNpmInstall: true }
+3. mcp__plugin_ses_sap-fiori-tools__list_functionality { appPath }
+   → mcp__plugin_ses_sap-fiori-tools__get_functionality_details { appPath, functionalityId }
+   → mcp__plugin_ses_sap-fiori-tools__execute_functionality { appPath, functionalityId, parameters }
 ```
 
 CAP projects: `basePath` = `app/` folder, `createAppDirectory: true`.
@@ -64,7 +64,7 @@ CAP projects: `basePath` = `app/` folder, `createAppDirectory: true`.
 
 ### Mandatory file structure
 
-```
+```text
 webapp/
 ├── Component.ts
 ├── manifest.json
@@ -93,7 +93,7 @@ webapp/
 | CSP, XSS, lazy load, batch requests | `references/security-performance.md` | Pre-delivery |
 | CAP folder, cds watch, manifest URI | `references/cap-integration.md` | CAP projects only |
 
-When unsure about a UI5 API: `mcp__ui5-mcp__get_api_reference` or `mcp__fiori-mcp__search_docs`.
+When unsure about a UI5 API: `mcp__plugin_ses_sap-ui5__get_api_reference` or `mcp__plugin_ses_sap-fiori-tools__search_docs`.
 
 ### Master-Detail with SplitApp
 
@@ -119,9 +119,9 @@ When unsure about a UI5 API: `mcp__ui5-mcp__get_api_reference` or `mcp__fiori-mc
 
 ## Phase 4: Validate
 
-```
-mcp__ui5-mcp__run_ui5_linter { projectDir }          ← fix all findings
-mcp__ui5-mcp__run_manifest_validation { projectDir }
+```text
+mcp__plugin_ses_sap-ui5__run_ui5_linter { projectDir }          ← fix all findings
+mcp__plugin_ses_sap-ui5__run_manifest_validation { projectDir }
 ```
 
 Quick checklist:

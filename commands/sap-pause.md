@@ -87,7 +87,7 @@ Crear o sobrescribir `.planning/HANDOFF.json` con el siguiente formato:
 
 Mostrar un resumen del HANDOFF guardado:
 
-```
+```text
 ✅ Checkpoint guardado en .planning/HANDOFF.json
 
 Estado de la sesión:

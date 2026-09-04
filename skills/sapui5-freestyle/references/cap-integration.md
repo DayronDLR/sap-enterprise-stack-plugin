@@ -2,7 +2,7 @@
 
 ## Mandatory Project Structure
 
-```
+```text
 my-cap-project/            ← CAP root
 ├── app/                   ← UI5 apps go HERE
 │   └── my-ui5-app/
@@ -22,7 +22,7 @@ my-cap-project/            ← CAP root
 
 ❌ Never place UI5 app outside `app/`:
 
-```
+```text
 my-cap-project/
 ├── my-ui5-app/   ← NEVER in CAP root
 ├── frontend/     ← NEVER

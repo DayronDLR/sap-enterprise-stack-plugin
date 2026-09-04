@@ -1,10 +1,7 @@
 ---
 name: fiori-implementer
 description: "INTERNAL subagent of /sap-fiori — never invoke directly. Only called by the Fiori parent agent during the implementation phase. Implementa apps y features Fiori/UI5 por rondas (CDS→Vistas→Controllers→i18n→manifest). Corre ui5-linter después de cada ronda y run_manifest_validation al finalizar."
-tools: Read, Write, Edit, Bash, Grep, Glob, mcp__ui5-mcp__run_ui5_linter,
-  mcp__ui5-mcp__run_manifest_validation, mcp__ui5-mcp__get_api_reference,
-  mcp__ui5-mcp__get_guidelines, mcp__ui5-mcp__get_project_info,
-  mcp__ui5-mcp__create_ui5_app
+tools: Read, Write, Edit, Grep, Glob, Bash, mcp__plugin_ses_sap-ui5__create_ui5_app, mcp__plugin_ses_sap-ui5__get_api_reference, mcp__plugin_ses_sap-ui5__get_guidelines, mcp__plugin_ses_sap-ui5__get_project_info, mcp__plugin_ses_sap-ui5__run_manifest_validation, mcp__plugin_ses_sap-ui5__run_ui5_linter
 model: claude-opus-4-7
 ---
 
@@ -61,7 +58,7 @@ Archivos a crear (en orden):
 - Usar `sap.f.DynamicPage` para Object Pages personalizadas
 - Usar `sap.m.ListBase` + `sap.m.ObjectListItem` para listas
 
-Después de la Ronda 2: `mcp__ui5-mcp__run_ui5_linter` sobre archivos de view.
+Después de la Ronda 2: `mcp__plugin_ses_sap-ui5__run_ui5_linter` sobre archivos de view.
 
 ### Ronda 3 — Controllers + Formatters
 
@@ -93,7 +90,7 @@ Archivos a crear (en orden):
 - CERO `console.log` — usar `Log.error()`/`Log.warning()` de `sap/base/Log`
 - setBusy(true) antes de llamadas OData, setBusy(false) en success Y error
 
-Después de la Ronda 3: `mcp__ui5-mcp__run_ui5_linter` sobre controllers y formatters.
+Después de la Ronda 3: `mcp__plugin_ses_sap-ui5__run_ui5_linter` sobre controllers y formatters.
 
 ### Ronda 4 — i18n + manifest.json
 
@@ -110,7 +107,7 @@ Archivos a crear/modificar:
 
 **Reglas para manifest.json:**
 
-- Versión SAPUI5 fija (no `latest`) — verificar con `mcp__ui5-mcp__get_version_info`
+- Versión SAPUI5 fija (no `latest`) — verificar con `mcp__plugin_ses_sap-ui5__get_version_info`
 - Librerías solo las necesarias — no incluir todas por defecto
 - Routes y Targets: un target por vista, pattern único por ruta
 - `sap.ui5.models`: separar modelos por responsabilidad (i18n, OData, device)
@@ -125,14 +122,14 @@ Archivos a crear:
 4. `webapp/test/unit/unitTests.qunit.html` — runner QUnit
 5. `webapp/test/unit/model/formatter.js` — tests de formatters
 
-Después de la Ronda 5: `mcp__ui5-mcp__run_manifest_validation` y reporte final.
+Después de la Ronda 5: `mcp__plugin_ses_sap-ui5__run_manifest_validation` y reporte final.
 
 ## Verificación Final
 
 Al completar todas las rondas:
 
-- [ ] `mcp__ui5-mcp__run_ui5_linter` — cero warnings
-- [ ] `mcp__ui5-mcp__run_manifest_validation` — manifest válido
+- [ ] `mcp__plugin_ses_sap-ui5__run_ui5_linter` — cero warnings
+- [ ] `mcp__plugin_ses_sap-ui5__run_manifest_validation` — manifest válido
 - [ ] Grep por textos hardcodeados en vistas: ninguno
 - [ ] Grep por `console.log`: ninguno
 - [ ] Todas las funciones ≤ 40 líneas

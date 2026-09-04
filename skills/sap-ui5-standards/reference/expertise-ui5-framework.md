@@ -17,8 +17,8 @@
 - MessageManager: usar `sap/ui/core/Messaging` (el acceso vía `sap.ui.getCore().getMessageManager()` está **deprecado** desde 1.118 — verificar con UI5 Linter)
 - Busy indicators: BusyDialog, setBusy() en vista/control
 - Theming: SAP Horizon (por defecto S/4HANA 2023+), Quartz, Belize
-- **Versión del framework**: fijar versión LTS explícita en `manifest.json` (LTS vigente **1.136**; mínimo soportado ~1.120) — NUNCA `latest`; validar con `mcp__ui5-mcp__get_version_info` (ver `rules/SAPUI5-CAP-Integration.md`)
-- **TypeScript-first** en proyectos nuevos: tipos UI5 (`@sapui5/types`), controllers/formatters en `.ts`, build con UI5 Tooling — ver `mcp__ui5-mcp__get_typescript_conversion_guidelines`
+- **Versión del framework**: fijar versión LTS explícita en `manifest.json` (LTS vigente **1.136**; mínimo soportado ~1.120) — NUNCA `latest`; validar con `mcp__plugin_ses_sap-ui5__get_version_info` (ver `rules/SAPUI5-CAP-Integration.md`)
+- **TypeScript-first** en proyectos nuevos: tipos UI5 (`@sapui5/types`), controllers/formatters en `.ts`, build con UI5 Tooling — ver `mcp__plugin_ses_sap-ui5__get_typescript_conversion_guidelines`
 - **UI5 Tooling v3** (`@ui5/cli`): build/serve/test; **UI5 Linter** como gate de APIs deprecadas antes de entregar
 
 ## SAPUI5 Freestyle — Patrones Completos

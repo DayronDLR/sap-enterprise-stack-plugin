@@ -29,10 +29,11 @@ Invocá el agente `reviewer` sobre el diff de la sesión (`git diff HEAD` más l
 archivos sin trackear). Que reporte hallazgos inline con severidad, sin generar
 archivos.
 
-Bloquea si reporta CRITICAL o HIGH. Si el resultado es aceptable:
+Bloquea si reporta CRITICAL o HIGH. Si el resultado es aceptable, **anotá el
+hash del árbol revisado** — no un `touch` pelado:
 
 ```bash
-touch tmp/.review-done
+git write-tree >> tmp/.review-done
 ```
 
 ## Paso 3 — Gate 3: QA + NFR
@@ -44,13 +45,23 @@ volumen, idempotencia, restart-ability, observabilidad y locking.
 Si pasa:
 
 ```bash
-touch tmp/.qa-nfr-done
+git write-tree >> tmp/.qa-nfr-done
 ```
 
 ## Cierre
 
 Reportá al dev, en una tabla corta: gate, resultado, hallazgos abiertos.
 
-Los flags valen **30 minutos** y se consumen en la primera entrega. Un commit
-posterior con código nuevo vuelve a pedir los gates — que es la intención: se
-revisa lo que se entrega, no lo que se revisó hace media hora.
+El flag guarda los **hashes de árbol** revisados, uno por línea, y solo cubre esos.
+Se **agrega** (`>>`), no se pisa: así dos sesiones trabajando en paralelo sobre el
+mismo repo no se invalidan la una a la otra.
+Cualquier edición posterior —aunque sea una línea— lo invalida, porque el árbol
+cambia. Es a propósito: "revisé esto" tiene que significar esto y no otra cosa.
+
+El flujo es: **correr los gates → no tocar nada → entregar.** Si el gate rechaza
+diciendo "corrió, pero sobre OTRO árbol", es que hubo una edición en el medio.
+
+Hay además un vencimiento por tiempo de 24 h, pero es una red, no el control:
+evita que un flag olvidado aplique tras un cambio de base o de dependencias que
+el árbol no captura. Los flags se consumen cuando la entrega efectivamente
+ocurre (hook `post-commit`).

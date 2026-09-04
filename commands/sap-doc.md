@@ -270,14 +270,18 @@ pandoc PROYECTO-doc.md \
 4. **Nombres reales** — usa los nombres reales del proyecto (entidades, roles, servicios).
    Si no se tienen, usa placeholders explícitos: `[NOMBRE_ENTIDAD]`.
 
-5. **Diagramas Mermaid obligatorios** — toda arquitectura debe tener diagramas definidos
-   en Mermaid (no ASCII). En el `.md` se definen como bloques ` ```mermaid `. Para el `.docx`
-   se renderizan como imágenes PNG usando `mmdc` (mermaid-cli) y se embeben con `![](img.png)`.
-   **NUNCA uses diagramas ASCII** — siempre Mermaid.
+5. **Arquitectura y secuencia: motor `sap-diagrams`, nunca a mano** — todo diagrama de
+   arquitectura de solución y toda secuencia de llamadas se produce con el skill
+   `sap-diagrams`: escribís un `.sapdiag.json` con la semántica y el motor calcula
+   layout, ruteo y etiquetas, y **mide el resultado** antes de aceptarlo. Perfil
+   `showcase` obligatorio para cualquier entregable a cliente. Prohibido escribir
+   coordenadas, waypoints o XML de draw.io a mano: es la causa raíz de los diagramas
+   con cajas solapadas y flechas cruzadas.
 
-6. **Diagramas draw.io con SAP BTP icons** — además del Mermaid, genera siempre un archivo
-   `.drawio` con diagramas usando los componentes oficiales SAP BTP Solution Diagrams (Horizon 2023).
-   Ver sección DRAW.IO SAP BTP GUIDELINES abajo.
+6. **Mermaid solo donde aporta** — queda para lo que el motor no cubre: modelos de
+   datos (`erDiagram`), estructura de clases (`classDiagram`) y flujos triviales de
+   3-4 cajas dentro del `.md`. Para el `.docx` se renderizan a PNG con `mmdc`.
+   **NUNCA uses diagramas ASCII.**
 
 7. **Tabla de objetos en Apéndice A** — siempre presente si hay desarrollo custom.
 
@@ -294,9 +298,19 @@ Al completar una tarea de documentación, genera:
 
 El documento completo en Markdown con diagramas Mermaid (NUNCA ASCII).
 
-### Archivo 2: `[PROYECTO]-architecture.drawio`
+### Archivo 2: `[PROYECTO]-architecture.sapdiag.json` (+ `.drawio` y `.svg` generados)
 
-Archivo draw.io con diagramas SAP BTP Horizon 2023. Mínimo 1 página de arquitectura L1.
+La especificación del diagrama de arquitectura (mínimo un L1) más los artefactos que
+produce `sapdiag deliver`: el `.drawio` que el cliente edita y el `.svg` que alimenta
+al `.docx`. **El `.sapdiag.json` es el fuente y va al repo**; los otros dos se regeneran.
+
+```bash
+# $SAPDIAG se resuelve una vez por sesión — ver skills/sap-diagrams/SKILL.md
+node "$SAPDIAG" deliver [PROYECTO]-architecture.sapdiag.json --quality showcase
+```
+
+Adjuntá el receipt (SHA-256 + bytes) en el reporte de la tarea: es la prueba de que
+el diagrama del Word y el que abre el cliente son el mismo.
 
 ### Archivo 3: `build-doc.sh`
 

@@ -57,6 +57,7 @@ case "$FILE_PATH" in
         OUT=$("$BIN" lint 2>/dev/null); RC=$?
         [[ "$RC" -ne 0 && -n "$OUT" ]] && emit "[cds lint] $FILE_PATH" "$OUT"
         ;;
+    *) ;;   # Sin linter local para esta extension.
 esac
 
 # manifest.json: no hay linter local, se pide validacion via MCP.
@@ -64,6 +65,7 @@ case "$FILE_PATH" in
     */manifest.json|manifest.json)
         echo "manifest.json modificado — ejecutar run_manifest_validation (ui5 MCP) para verificar routing, targets y dependencias."
         ;;
+    *) ;;   # Cualquier otro archivo: nada que avisar.
 esac
 
 exit 0

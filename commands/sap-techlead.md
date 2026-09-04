@@ -22,7 +22,7 @@ cat .planning/HANDOFF.json 2>/dev/null
 
 **Si el archivo existe:** Mostrar al usuario:
 
-```
+```text
 📋 Se encontró un checkpoint de sesión anterior:
    Sesión: [timestamp del HANDOFF]
    Estado: [session_summary del HANDOFF]
@@ -60,7 +60,7 @@ Si hay ambigüedades críticas que bloqueen el diseño, usa `AskUserQuestion` co
 
 Usa Read tool en **paralelo** para cargar UNICAMENTE los system_prompt.md de los agentes que identificaste en 1.1:
 
-```
+```text
 agents/{NN-nombre}/system_prompt.md   ← SOLO los agentes que aplican a esta tarea
 ```
 

@@ -46,7 +46,7 @@ Estas son las que más se violan, y son baratas de tener presentes:
 - **`viewPath` está PROHIBIDO** en `manifest.json` v2; usá `routing.config.viewPath`
   solo en v1 legacy.
 - **Versión LTS explícita** en `manifest.json` — nunca `latest`.
-- **Sin APIs deprecadas** — validá con `mcp__sap-ui5__get_api_reference` ante la duda.
+- **Sin APIs deprecadas** — validá con `mcp__plugin_ses_sap-ui5__get_api_reference` ante la duda.
 - **`growing` + `growingThreshold`** en toda lista que pueda superar unos cientos
   de registros.
 - **Nada de `sap.ui.getCore()`** en código nuevo.
@@ -56,7 +56,7 @@ Estas son las que más se violan, y son baratas de tener presentes:
 Después de escribir código UI5, corré siempre:
 
 ```bash
-ui5lint                      # o mcp__sap-ui5__run_ui5_linter
+ui5lint                      # o mcp__plugin_ses_sap-ui5__run_ui5_linter
 ```
 
-Y `mcp__sap-ui5__run_manifest_validation` si tocaste `manifest.json`.
+Y `mcp__plugin_ses_sap-ui5__run_manifest_validation` si tocaste `manifest.json`.

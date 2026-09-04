@@ -51,6 +51,7 @@ case "$PROMPT" in
     /sap-migration*)   DETECTED_AGENT="sap-migration" ;;
     /sap-devops*)      DETECTED_AGENT="sap-devops" ;;
     /sap-techlead*)    DETECTED_AGENT="sap-techlead" ;;
+    *) ;;   # Sin slash command: no se fuerza ningun agente.
 esac
 
 PREVIOUS=""
