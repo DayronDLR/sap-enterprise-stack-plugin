@@ -596,6 +596,30 @@ dod_commit_files() {
     fi
 }
 
+# El comando que la herramienta va a ejecutar, sea cual sea el host.
+#
+# Cada host nombra distinto el mismo dato: Claude Code usa `tool_input.command`,
+# Codex usa `tool_input.cmd` para `exec_command`, y algunos mandan `argv` como
+# lista. Leer solo `command` —que es lo que hacia `delivery-gate.sh`— devolvia
+# vacio en Codex, el gate no veia ningun `git commit` y PERMITIA la entrega.
+#
+# La lista es la misma que `lib/hook-contract.mjs` usa para `ses guard`. Si un
+# host suma otra clave se agrega ACA y en el contrato, no en cada script.
+dod_tool_command() {
+    local entrada="$1" cmd=""
+    if command -v python3 >/dev/null 2>&1; then
+        cmd=$(printf '%s' "$entrada" | python3 -c "
+import json,sys
+try:
+    i = json.load(sys.stdin).get('tool_input') or {}
+    v = i.get('command') or i.get('cmd') or i.get('argv') or ''
+    print(' '.join(v) if isinstance(v, list) else v)
+except Exception:
+    print('')" 2>/dev/null)
+    fi
+    printf '%s' "$cmd"
+}
+
 # 0 (true) si el flag existe y es mas reciente que DOD_MAX_AGE_SECONDS.
 dod_flag_fresh() {
     local f="$1"

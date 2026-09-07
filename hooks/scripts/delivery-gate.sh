@@ -70,13 +70,7 @@ deny() {
 # Extraer el comando real. Solo llegamos aca en entregas, asi que el costo del
 # parseo es irrelevante. Si no hay parser disponible, se usa el JSON crudo:
 # degradar a "revisar de mas" es preferible a dejar pasar una entrega sin gates.
-CMD=""
-if command -v python3 >/dev/null 2>&1; then
-    CMD=$(printf '%s' "$INPUT" | python3 -c \
-        "import json,sys
-try: print(json.load(sys.stdin).get('tool_input',{}).get('command',''))
-except Exception: print('')" 2>/dev/null)
-fi
+CMD=$(dod_tool_command "$INPUT")
 [[ -z "$CMD" ]] && CMD="$INPUT"
 
 # Confirmar sobre el comando real: el fast path tambien matchea si la frase
