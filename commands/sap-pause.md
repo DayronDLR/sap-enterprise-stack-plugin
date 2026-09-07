@@ -1,4 +1,5 @@
 ---
+description: Guarda un checkpoint de la sesion para retomarla despues sin perder contexto.
 model: claude-haiku-4-5-20251001
 ---
 

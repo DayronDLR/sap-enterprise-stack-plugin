@@ -1,4 +1,5 @@
 ---
+description: Tarea compleja multi-agente: planifica el trabajo, lo reparte entre agentes y reporta.
 model: claude-opus-4-7
 ---
 

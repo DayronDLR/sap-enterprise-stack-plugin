@@ -1,4 +1,5 @@
 ---
+description: Valida el codigo modificado contra el catalogo Clean Core de SAP.
 model: claude-opus-4-7
 ---
 

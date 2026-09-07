@@ -1,4 +1,5 @@
 ---
+description: Valida los requisitos no funcionales (concurrencia, volumen, idempotencia) sobre el diff.
 model: claude-opus-4-7
 ---
 
