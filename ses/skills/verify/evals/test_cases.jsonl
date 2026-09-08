@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Run full quality pipeline", "expected_keywords": ["npx cds lint", "npx @ui5/linter", "npx eslint"], "expected_patterns": ["cds lint", "@ui5/linter"], "category": "pipeline"}
+{"id": "TC-002", "prompt": "Validate manifest and UI5 app", "expected_keywords": ["run_manifest_validation", "ui5-mcp", "Manifest"], "expected_patterns": ["run_manifest_validation", "ui5-mcp"], "category": "manifest"}
+{"id": "TC-003", "prompt": "Production build verification", "expected_keywords": ["--production", "cds build", "Fallos"], "expected_patterns": ["--production", "cds build"], "category": "build"}

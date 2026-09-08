@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Create a List Report + Object Page for purchase orders", "expected_keywords": ["ListReport", "ObjectPage", "@UI.lineItem", "manifest.json"], "expected_patterns": ["ListReport", "ObjectPage", "@UI\\.lineItem"], "category": "fiori_elements"}
+{"id": "TC-002", "prompt": "Configure Fiori launchpad tile for my app", "expected_keywords": ["crossNavigation", "inbound", "semanticObject"], "expected_patterns": ["crossNavigation", "semanticObject"], "category": "flp_config"}
+{"id": "TC-003", "prompt": "Add a custom column to List Report using annotation", "expected_keywords": ["@UI.lineItem", "@UI.dataPoint", "criticality"], "expected_patterns": ["@UI\\.lineItem", "criticality"], "category": "annotations"}

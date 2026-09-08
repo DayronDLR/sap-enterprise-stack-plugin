@@ -1,0 +1,100 @@
+{
+  "description": "Definition of Done del SAP Enterprise Agent Stack. Generado por emitters/codex.mjs.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/delivery-gate.sh\"",
+            "timeout": 600,
+            "async": false
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/protect-sensitive-files.sh\"",
+            "timeout": 600,
+            "async": false
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/mcp-guard.sh\"",
+            "timeout": 600,
+            "async": false
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/shrink-input.sh\"",
+            "timeout": 600,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/auto-lint.sh\"",
+            "timeout": 600,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/agent-reinforcement.sh\"",
+            "timeout": 600,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/log-agent-activity.sh\"",
+            "timeout": 600,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/session-close-note.sh\"",
+            "timeout": 600,
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

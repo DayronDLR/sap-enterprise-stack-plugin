@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sap-diagrams/architecture.schema.json",
+  "title": "SAP Solution Diagram — arquitectura",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "diagram_type", "meta", "nodes"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "diagram_type": { "const": "architecture" },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 90 },
+        "subtitle": { "type": "string", "maxLength": 120 },
+        "level": { "$ref": "common.schema.json#/$defs/level" },
+        "quality_profile": { "$ref": "common.schema.json#/$defs/qualityProfile" },
+        "legend": {
+          "type": "array",
+          "maxItems": 6,
+          "items": { "$ref": "common.schema.json#/$defs/legendEntry" }
+        }
+      }
+    },
+    "zones": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "label", "wraps"],
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/id" },
+          "kind": { "$ref": "common.schema.json#/$defs/zoneKind" },
+          "label": { "type": "string", "minLength": 1, "maxLength": 48 },
+          "sublabel": { "type": "string", "maxLength": 48 },
+          "wraps": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "common.schema.json#/$defs/id" }
+          }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "label"],
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/id" },
+          "type": { "$ref": "common.schema.json#/$defs/nodeType" },
+          "label": { "type": "string", "minLength": 1, "maxLength": 34 },
+          "sublabel": { "type": "string", "maxLength": 34 },
+          "layer": { "type": "integer", "minimum": 0, "maximum": 9 },
+          "order": { "type": "integer", "minimum": 0, "maximum": 99 }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to"],
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/id" },
+          "from": { "$ref": "common.schema.json#/$defs/id" },
+          "to": { "$ref": "common.schema.json#/$defs/id" },
+          "label": { "type": "string", "maxLength": 28 },
+          "kind": { "$ref": "common.schema.json#/$defs/edgeKind" },
+          "style": { "$ref": "common.schema.json#/$defs/edgeStyle" },
+          "bidirectional": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

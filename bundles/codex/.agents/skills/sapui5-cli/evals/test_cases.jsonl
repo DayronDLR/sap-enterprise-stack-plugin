@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Initialize a new UI5 project", "expected_keywords": ["ui5 init", "ui5.yaml", "framework"], "expected_patterns": ["ui5 init", "ui5\\.yaml"], "category": "init"}
+{"id": "TC-002", "prompt": "Build UI5 app for production", "expected_keywords": ["ui5 build", "--clean-dest", "--dest"], "expected_patterns": ["ui5 build", "--clean-dest"], "category": "build"}
+{"id": "TC-003", "prompt": "Run UI5 dev server with HTTP/2", "expected_keywords": ["ui5 serve", "--h2", "--port"], "expected_patterns": ["ui5 serve", "--h2"], "category": "serve"}

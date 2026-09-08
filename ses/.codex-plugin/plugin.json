@@ -1,0 +1,35 @@
+{
+  "name": "ses",
+  "version": "0.1.39",
+  "description": "Stack de agentes SAP enterprise: 11 agentes de dominio, subagentes Fiori, gates de Definition of Done y servidores MCP SAP.",
+  "author": {
+    "name": "DayronDLR"
+  },
+  "homepage": "https://github.com/DayronDLR/sap-enterprise-stack-plugin",
+  "repository": "https://github.com/DayronDLR/sap-enterprise-stack-plugin",
+  "license": "GPL-3.0",
+  "keywords": [
+    "sap",
+    "s4hana",
+    "btp",
+    "abap",
+    "fiori",
+    "cap",
+    "hana"
+  ],
+  "skills": "skills",
+  "interface": {
+    "displayName": "SAP Enterprise Stack",
+    "shortDescription": "19 comandos SAP y 23 skills de referencia.",
+    "longDescription": "Agentes SAP especializados —ABAP, CAP/BTP, Fiori, HANA, Integracion, Basis, Migracion, QA, DevOps, Requirements y Documentacion— con sus estandares y un orquestador que enruta pedidos en lenguaje natural. Asume S/4HANA 2023 + BTP y principios Clean Core.",
+    "developerName": "DayronDLR",
+    "category": "development",
+    "capabilities": [
+      "skills"
+    ],
+    "defaultPrompt": [
+      "Necesito un report ABAP de aging AR con buckets 0-30, 31-60, 61-90 y +90 dias",
+      "Disena un Calculation View de ventas con conversion de moneda para SAC"
+    ]
+  }
+}

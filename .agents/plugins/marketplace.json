@@ -1,0 +1,10 @@
+{
+  "name": "sap-stack",
+  "plugins": [
+    {
+      "name": "ses",
+      "source": "./ses",
+      "description": "Stack de agentes SAP enterprise: 11 agentes de dominio, subagentes Fiori, gates de Definition of Done y servidores MCP SAP."
+    }
+  ]
+}

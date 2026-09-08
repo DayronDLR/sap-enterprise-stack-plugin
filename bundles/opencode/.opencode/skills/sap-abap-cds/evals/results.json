@@ -1,0 +1,37 @@
+{
+  "skill": "sap-abap-cds",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 3,
+  "pass": 3,
+  "partial": 0,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered: 'define view entity' in SKILL.md sections 1 and references/associations-reference.md; 'WITH PARAMETERS' in SKILL.md section 7 and templates/parameterized-view.md; '@Consumption.filter' in references/annotations-reference.md.",
+      "gaps": "None. @Consumption.filter appears only in annotations-reference.md, but coverage is sufficient.",
+      "recommendation": "Consider adding a complete parameterized view example that combines @Consumption.filter with WITH PARAMETERS in a single code block for quicker reference."
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered: 'DEFINE ROLE' in SKILL.md section 9, references/access-control-reference.md (15 occurrences), and templates/dcl-template.md; 'pfcg_auth' in access-control-reference.md and dcl-template.md; 'ASPECT' in access-control-reference.md and troubleshooting.md.",
+      "gaps": "None. DCL/access control is one of the best-covered areas with dedicated reference file and template.",
+      "recommendation": "No changes needed. Access control coverage is comprehensive."
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered: 'CURRENCY_CONVERSION' in SKILL.md section 4, references/associations-reference.md, and templates/basic-view.md; '@Semantics.amount.currencyCode' in SKILL.md, references/annotations-reference.md, references/troubleshooting.md, and templates.",
+      "gaps": "None. Currency conversion is well documented with both syntax and annotations.",
+      "recommendation": "Consider adding a dedicated CURR/QUAN troubleshooting example since SD_CDS_ENTITY105 errors are common in this area."
+    }
+  ],
+  "overall_score": "3/3",
+  "improvement_recommendations": [
+    "Add a combined parameterized view + @Consumption.filter example in templates/ for TC-001 scenario",
+    "Consider adding unit conversion (UNIT_CONVERSION) examples alongside currency conversion for completeness",
+    "The references/ directory has 6 well-structured files covering all test case areas; no structural changes needed"
+  ]
+}

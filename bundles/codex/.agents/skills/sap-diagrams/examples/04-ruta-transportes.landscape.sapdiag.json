@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "diagram_type": "landscape",
+  "meta": {
+    "title": "Ruta de transportes S/4HANA — DEV → QAS → PRD",
+    "subtitle": "Landscape de 3 sistemas: workbench desde el mandante golden, customizing desde el de pruebas",
+    "quality_profile": "showcase"
+  },
+  "systems": [
+    {
+      "id": "dev",
+      "sid": "S4D",
+      "role": "development",
+      "label": "Desarrollo",
+      "type": "s4-onprem",
+      "clients": [
+        {
+          "id": "dev-100",
+          "mandt": "100",
+          "label": "Customizing",
+          "sublabel": "Mandante 100 — golden"
+        },
+        {
+          "id": "dev-120",
+          "mandt": "120",
+          "label": "Pruebas unitarias",
+          "sublabel": "Mandante 120"
+        }
+      ]
+    },
+    {
+      "id": "qas",
+      "sid": "S4Q",
+      "role": "quality",
+      "label": "Calidad",
+      "type": "s4-onprem",
+      "clients": [
+        {
+          "id": "qas-200",
+          "mandt": "200",
+          "label": "Integración",
+          "sublabel": "Mandante 200 — UAT"
+        }
+      ]
+    },
+    {
+      "id": "prd",
+      "sid": "S4P",
+      "role": "production",
+      "label": "Producción",
+      "type": "s4-onprem",
+      "clients": [
+        {
+          "id": "prd-300",
+          "mandt": "300",
+          "label": "Productivo",
+          "sublabel": "Mandante 300"
+        }
+      ]
+    }
+  ],
+  "transports": [
+    {
+      "id": "wb",
+      "from": "dev-100",
+      "to": "qas-200",
+      "label": "S4DK9xxxxx",
+      "kind": "workbench"
+    },
+    {
+      "id": "cust",
+      "from": "dev-120",
+      "to": "qas-200",
+      "label": "Customizing",
+      "kind": "customizing"
+    },
+    {
+      "id": "release",
+      "from": "qas-200",
+      "to": "prd-300",
+      "label": "Release aprobado",
+      "kind": "workbench"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Show agent activity for today", "expected_keywords": ["logs/agents-", "date +%Y-%m-%d", ".jsonl"], "expected_patterns": ["logs/agents-", "\\.jsonl"], "category": "log_reading"}
+{"id": "TC-002", "prompt": "Show which agents ran most this week", "expected_keywords": ["seq 0 6", "logs/agents-", "DATE"], "expected_patterns": ["seq 0 6", "DATE"], "category": "weekly_summary"}
+{"id": "TC-003", "prompt": "Dashboard summary of recent activity", "expected_keywords": ["Actividad", "Ejecuciones", "Insights"], "expected_patterns": ["Actividad", "Insights"], "category": "summary"}

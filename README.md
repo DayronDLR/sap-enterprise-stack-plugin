@@ -75,6 +75,49 @@ updating, run `/reload-plugins` to reload commands and hooks.
 > repo (which is plugin **and** marketplace) with a bumped version — that's how
 > `/plugin update` detects it.
 
+## Other editors
+
+This marketplace ships the **Claude Code** plugin. The same stack — same agents,
+commands, skills, MCP servers and Definition of Done — also runs on:
+
+| Editor | Gates while you type |
+| --- | --- |
+| **Claude Code** | all 8 hooks, automatic *(this plugin)* |
+| **Codex CLI** | all 8, once you trust the project folder |
+| **OpenCode** | 5 of 8 — the other 3 use events OpenCode doesn't expose |
+| **GitHub Copilot** | none; the gates live in git hooks and CI |
+
+### Codex CLI — install as a plugin
+
+Codex has its own plugin marketplace, and this repo is one:
+
+```bash
+codex plugin marketplace add https://github.com/DayronDLR/sap-enterprise-stack-plugin
+codex plugin add ses@sap-stack
+codex plugin marketplace upgrade     # to update
+```
+
+That gives you the **19 commands** (invoked `$ses-sap-abap`) and the **23 skills**.
+
+> **What a Codex plugin cannot carry:** hooks and MCP servers. Verified against
+> `codex-cli 0.153.4` — the `plugin_hooks` feature is `removed`, and `hooks` isn't
+> among the keys its own plugin validator accepts. If you want the Definition of
+> Done blocking your deliveries and the 5 SAP MCP servers, add the full bundle:
+
+```bash
+git clone https://github.com/DayronDLR/sap-enterprise-stack-plugin
+cd sap-enterprise-stack-plugin
+./instalar.sh codex ~/my-sap-project     # or: opencode · copilot
+```
+
+`instalar.sh` is **additive**: if a file in your project differs from the bundle it
+stops and names it instead of overwriting. `--force` is the explicit way to let the
+bundle win.
+
+**On Codex, one more step:** open Codex once in the project and accept when it
+asks whether you trust the folder. Until you do, the hooks don't run and the 3
+gates won't stop you as you type — they stay in git hooks and CI.
+
 ## Getting started (2 minutes)
 
 1. Install (the 3 commands above).
@@ -300,6 +343,50 @@ repo.
 - **Agentes de desarrollo** (Opus): ABAP, CAP/BTP, Fiori/UI5, HANA, Integration.
 - **Agentes de soporte** (Sonnet): Basis, Migration, QA, DevOps, Requirements, Docs.
 - **Entorno asumido:** S/4HANA 2023 + BTP, landscape DEV→QAS→PRD, Clean Core.
+
+## Otros editores
+
+Este marketplace publica el plugin de **Claude Code**. El mismo stack —los mismos
+agentes, comandos, skills, servidores MCP y Definition of Done— también corre en:
+
+| Editor | Gates mientras escribís |
+| --- | --- |
+| **Claude Code** | los 8 hooks, automáticos *(este plugin)* |
+| **Codex CLI** | los 8, una vez que confiás la carpeta del proyecto |
+| **OpenCode** | 5 de 8 — los otros 3 usan eventos que OpenCode no expone |
+| **GitHub Copilot** | ninguno; los gates viven en los hooks de git y en CI |
+
+### Codex CLI — instalar como plugin
+
+Codex tiene su propio marketplace de plugins, y este repo es uno:
+
+```bash
+codex plugin marketplace add https://github.com/DayronDLR/sap-enterprise-stack-plugin
+codex plugin add ses@sap-stack
+codex plugin marketplace upgrade     # para actualizar
+```
+
+Eso te da los **19 comandos** (se invocan `$ses-sap-abap`) y los **23 skills**.
+
+> **Lo que un plugin de Codex no puede llevar:** hooks ni servidores MCP.
+> Verificado contra `codex-cli 0.153.4` — la feature `plugin_hooks` está
+> `removed`, y `hooks` no figura entre las claves que acepta su propio validador
+> de plugins. Si querés la Definition of Done bloqueando tus entregas y los 5
+> servidores MCP SAP, sumá el bundle completo:
+
+```bash
+git clone https://github.com/DayronDLR/sap-enterprise-stack-plugin
+cd sap-enterprise-stack-plugin
+./instalar.sh codex ~/mi-proyecto-sap     # o: opencode · copilot
+```
+
+`instalar.sh` es **aditivo**: si un archivo de tu proyecto difiere del bundle, se
+detiene y te lo nombra en vez de pisarlo. `--force` es la salida explícita para que
+gane el bundle.
+
+**En Codex hace falta un paso más:** abrí Codex una vez en el proyecto y aceptá
+cuando pregunte si confiás en la carpeta. Hasta que lo hagas los hooks no corren y
+los 3 gates no te frenan al escribir — quedan en los hooks de git y en CI.
 
 ## Licencia
 

@@ -1,0 +1,37 @@
+{
+  "skill": "sap-btp-best-practices",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 3,
+  "pass": 3,
+  "partial": 0,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PASS",
+      "coverage": "SKILL.md covers account hierarchy (global account, directory, subaccount, entitlements) in Platform Fundamentals and Account Model Setup sections. references/account-models.md has 18 matches for expected keywords with detailed patterns for simple/advanced/enterprise models.",
+      "gaps": "None identified.",
+      "recommendation": "Coverage is comprehensive. Consider adding a multi-country-specific example with region mapping."
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PASS",
+      "coverage": "references/deployment-and-delivery.md has 13 matches covering mbt build, cf deploy, CI/CD pipeline stages. SKILL.md Table of Contents includes Deployment and Delivery section. Pipeline stages and ATC integration are documented.",
+      "gaps": "None identified.",
+      "recommendation": "Coverage is solid. Could add a concrete end-to-end pipeline YAML example for CAP apps."
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PASS",
+      "coverage": "references/failover-and-resilience.md has 17 matches covering multi-region, failover, and health check patterns. SKILL.md Table of Contents includes High Availability and Failover section. Production workload resilience patterns are well documented.",
+      "gaps": "None identified.",
+      "recommendation": "Strong coverage. Consider adding specific SLA numbers and RTO/RPO guidance per service."
+    }
+  ],
+  "overall_score": "3/3",
+  "improvement_recommendations": [
+    "Add a multi-country rollout example with region-to-subaccount mapping in account-models.md",
+    "Include a ready-to-use CI/CD pipeline YAML template in deployment-and-delivery.md",
+    "Add RTO/RPO targets and SLA guidance per BTP service in failover-and-resilience.md"
+  ]
+}

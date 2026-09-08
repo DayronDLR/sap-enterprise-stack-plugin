@@ -1,0 +1,42 @@
+# Prepara el entorno del Copilot coding agent.
+#
+# Generado por emitters/copilot.mjs — no editar a mano.
+#
+# Copilot no tiene hooks: la Definition of Done vive en git y CI (ADR-013).
+# Estos pasos dejan `ses` disponible para que el agente pueda correr los
+# gates antes de proponer una entrega.
+
+name: copilot-setup-steps
+
+on: workflow_dispatch
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinneadas al SHA completo, no al tag: un tag es un puntero movible,
+      # y quien controle el repo de la action puede reapuntarlo a otro commit
+      # que corre con los permisos de este workflow.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      # `npm ci`, sin el fallback a `npm install`: ci exige un lockfile y
+      # respeta las versiones resueltas. El fallback las ignoraba, asi que
+      # el agente podia correr con dependencias distintas a las del repo.
+      #
+      # `--ignore-scripts`: en un entorno donde va a correr un agente, los
+      # lifecycle scripts de una dependencia son codigo arbitrario que nadie
+      # reviso. Es la convencion que este stack ya usa en sus cuatro
+      # workflows.
+      #
+      # SI tu proyecto tiene dependencias que necesitan su postinstall (algo
+      # nativo que compila), quitalo — pero hacelo a sabiendas, no por
+      # descarte.
+      - name: Instalar dependencias
+        run: npm ci --ignore-scripts
+      # `npm exec --no` NUNCA instala: usa el binario local o falla. `npx`
+      # habria bajado el paquete bajo demanda, ejecutando sus lifecycle
+      # scripts dentro del entorno del agente.
+      - name: Verificar el stack
+        run: npm exec --no -- ses doctor

@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Design BTP account hierarchy for multi-country rollout", "expected_keywords": ["global account", "directory", "subaccount", "entitlements"], "expected_patterns": ["global account", "subaccount", "entitlements"], "category": "account_model"}
+{"id": "TC-002", "prompt": "Implement CI/CD pipeline for CAP application", "expected_keywords": ["mbt build", "cf deploy", "ATC", "stages"], "expected_patterns": ["mbt\\s+build", "cf\\s+deploy"], "category": "cicd"}
+{"id": "TC-003", "prompt": "Configure high availability for production workloads", "expected_keywords": ["multi-region", "failover", "health check"], "expected_patterns": ["multi-region", "failover"], "category": "resilience"}

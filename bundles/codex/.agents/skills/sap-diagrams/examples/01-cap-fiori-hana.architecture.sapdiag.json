@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Portal de Aprobaciones — Arquitectura de Solución (L1)",
+    "subtitle": "SAP BTP Cloud Foundry + S/4HANA 2023 On-Premise",
+    "level": "L1",
+    "quality_profile": "showcase"
+  },
+  "zones": [
+    {
+      "id": "btp",
+      "kind": "btp",
+      "label": "SAP BTP",
+      "sublabel": "Global Account — Región eu10",
+      "wraps": ["fiori", "cap", "hana", "xsuaa", "ias", "dest", "conn"]
+    },
+    {
+      "id": "sub",
+      "kind": "subaccount",
+      "label": "Subaccount DEV",
+      "sublabel": "Cloud Foundry",
+      "wraps": ["fiori", "cap", "hana", "dest", "conn"]
+    },
+    {
+      "id": "onprem",
+      "kind": "onpremise",
+      "label": "Red On-Premise",
+      "sublabel": "Datacenter corporativo",
+      "wraps": ["cc", "s4"]
+    }
+  ],
+  "nodes": [
+    { "id": "user", "type": "user", "label": "Aprobador", "sublabel": "Browser / Mobile" },
+    { "id": "ias", "type": "ias", "label": "SAP IAS", "sublabel": "Identity Authentication" },
+    { "id": "xsuaa", "type": "xsuaa", "label": "XSUAA", "sublabel": "Authorization & Trust" },
+    { "id": "fiori", "type": "fiori", "label": "App Fiori", "sublabel": "List Report / OP" },
+    { "id": "cap", "type": "cap", "label": "Servicio CAP", "sublabel": "Node.js" },
+    { "id": "hana", "type": "hana", "label": "HANA Cloud", "sublabel": "HDI container" },
+    { "id": "dest", "type": "destination", "label": "Destination", "sublabel": "Service" },
+    { "id": "conn", "type": "connectivity", "label": "Connectivity", "sublabel": "Service" },
+    { "id": "cc", "type": "cloud-connector", "label": "Cloud Connector", "sublabel": "SCC 2.16" },
+    { "id": "s4", "type": "s4-onprem", "label": "S/4HANA 2023", "sublabel": "OData / RFC" }
+  ],
+  "edges": [
+    { "id": "acceso", "from": "user", "to": "fiori", "label": "HTTPS", "kind": "access" },
+    { "id": "login", "from": "ias", "to": "fiori", "label": "SAML2 / OIDC", "kind": "auth" },
+    { "id": "scopes", "from": "xsuaa", "to": "cap", "label": "JWT / OAuth2", "kind": "auth" },
+    { "id": "odata", "from": "fiori", "to": "cap", "label": "OData V4", "kind": "data" },
+    { "id": "sql", "from": "cap", "to": "hana", "label": "SQL / CDS", "kind": "data" },
+    { "id": "dest-lookup", "from": "cap", "to": "dest", "label": "lookup destino", "kind": "data" },
+    { "id": "proxy", "from": "dest", "to": "conn", "label": "proxy on-prem", "kind": "data" },
+    { "id": "tunel", "from": "conn", "to": "cc", "label": "túnel TLS", "kind": "access" },
+    { "id": "backend", "from": "cc", "to": "s4", "label": "RFC / OData", "kind": "data" }
+  ]
+}

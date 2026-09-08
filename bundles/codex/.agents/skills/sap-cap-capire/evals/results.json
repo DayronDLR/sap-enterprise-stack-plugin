@@ -1,0 +1,53 @@
+{
+  "skill": "sap-cap-capire",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 5,
+  "pass": 3,
+  "partial": 2,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PARTIAL",
+      "coverage": "entity (SKILL.md line 72+), managed (SKILL.md line 68+, 151), Composition (references/cdl-syntax.md lines 337-381 covers Composition of many extensively). @mandatory found in references/cdl-syntax.md line 426 and references/annotations-reference.md line 51.",
+      "gaps": "SKILL.md itself does not mention Composition or @mandatory anywhere. A developer relying only on the main SKILL.md would miss these critical CDS modeling concepts. The references cover them well, but the core skill document lacks even a brief mention of Compositions in its Basic Entity Example or Core Concepts section.",
+      "recommendation": "Add a Compositions subsection to Core Concepts in SKILL.md with a brief example (e.g., Items : Composition of many OrderItems). Also add @mandatory to the Common Aspects or annotations section. Both are fundamental CDS patterns that should appear in the quick-reference surface."
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PASS",
+      "coverage": "All expected keywords fully covered. SKILL.md lines 159-179 show this.before('CREATE', ...) and req.error(400, ...) patterns directly in the Event Handlers section. references/event-handlers-nodejs.md has extensive coverage with 10+ examples of .before() handlers (lines 31, 52, 72, 79, 85, 152, 155, 158, 238) and req.error() patterns (lines 74-75, 225-226, 265-267). The expected patterns srv.before() and req.error() are directly demonstrated.",
+      "gaps": "None. Coverage is thorough in both SKILL.md and references.",
+      "recommendation": "No changes needed."
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered. hdi-shared found in templates/mta.yaml line 118, references/extended/deployment-cf.md line 135, references/consuming-services-deployment.md line 233. xsuaa found in templates/mta.yaml line 131 (service: xsuaa). type: hdb found in templates/mta.yaml line 51 and multiple reference files. SKILL.md lines 237-247 cover the deployment workflow (cds add hana,xsuaa,mta,approuter; mbt build; cf deploy). The templates/mta.yaml provides a complete working template.",
+      "gaps": "None significant. The SKILL.md Deployment section is concise but points to the template and references which have full detail.",
+      "recommendation": "No changes needed."
+    },
+    {
+      "id": "TC-004",
+      "verdict": "PASS",
+      "coverage": "action keyword covered in SKILL.md line 95 (action submitOrder returns String). returns keyword covered in same line. Bound actions extensively covered in references/service-definitions.md lines 123-140 (Bound Actions section with entity-level actions syntax, discount/getStock examples). references/cdl-syntax.md lines 519-521 shows entity actions { action confirm(); action cancel(); } syntax. Unbound actions also covered in service-definitions.md lines 105-121.",
+      "gaps": "SKILL.md only shows an unbound action example (submitOrder at service level). No bound action example in the main SKILL.md.",
+      "recommendation": "Consider adding a one-line bound action example to the Basic Service section in SKILL.md (e.g., entity Orders { } actions { action approve() returns Orders; }) to surface this common pattern without requiring reference lookup."
+    },
+    {
+      "id": "TC-005",
+      "verdict": "PARTIAL",
+      "coverage": "role-templates found in templates/xs-security.json line 28, references/data-privacy-security.md line 44, references/extended/deployment-cf.md line 163, references/consuming-services-deployment.md line 253. scope-references found in all the same files. $XSAPPNAME found extensively in templates/xs-security.json (lines 11, 15, 32, 38, 44, 53, 58) and multiple reference files. The template xs-security.json provides a complete working example with admin and user roles.",
+      "gaps": "SKILL.md itself has zero coverage of xs-security.json structure. The Authorization Examples section (lines 269-280) only shows CDS-level annotations (@requires, @restrict) but does not mention role-templates, scope-references, or $XSAPPNAME. It merely lists 'templates/xs-security.json' in the Bundled Resources index (line 318) without any explanation of the XSUAA security descriptor format.",
+      "recommendation": "Add a brief XSUAA Configuration subsection under Authorization Examples in SKILL.md showing the key xs-security.json structure (scopes, role-templates, scope-references with $XSAPPNAME). This is a critical deployment artifact that developers need to understand, not just copy from a template."
+    }
+  ],
+  "overall_score": "3/5",
+  "improvement_recommendations": [
+    "Add Composition examples to SKILL.md Core Concepts section — Compositions are fundamental to CDS data modeling (parent-child relationships) and currently only exist in references/cdl-syntax.md, not the main skill document.",
+    "Add @mandatory annotation to SKILL.md — this is a commonly used annotation for required fields, currently only in references/cdl-syntax.md and references/annotations-reference.md.",
+    "Add xs-security.json structure overview to SKILL.md Authorization section — the current authorization coverage only shows CDS annotations but omits the XSUAA descriptor format (role-templates, scopes, $XSAPPNAME) which is essential for BTP deployment.",
+    "Add a bound action example to SKILL.md Basic Service section — only unbound actions are shown in the main document, while bound actions (entity-level) are a very common pattern covered only in references.",
+    "Consider adding a 'Common Patterns' quick-reference section to SKILL.md that briefly surfaces the most-used patterns from references (Compositions, bound actions, XSUAA config) with pointers to the full reference files."
+  ]
+}

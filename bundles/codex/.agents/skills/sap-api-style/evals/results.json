@@ -1,0 +1,37 @@
+{
+  "skill": "sap-api-style",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 3,
+  "pass": 3,
+  "partial": 0,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PASS",
+      "coverage": "references/naming-conventions.md has 50 matches covering PurchaseOrder-style naming, camelCase conventions, and endpoint patterns. SKILL.md Quick Decision Tree routes naming questions correctly. SAP API naming rules for resources, operations, and parameters are thoroughly documented.",
+      "gaps": "None identified.",
+      "recommendation": "Comprehensive naming coverage. Consider adding more concrete endpoint examples (e.g., /sap/opu/odata/sap/API_PURCHASEORDER_PROCESS_SRV)."
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PASS",
+      "coverage": "references/deprecation-policy.md has 70 matches covering x-sap-stateInfo, deprecated status, and sunset policies. Complete deprecation lifecycle documented including notification periods, header requirements, and successor API guidance.",
+      "gaps": "None identified.",
+      "recommendation": "Excellent deprecation coverage. No changes needed."
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PASS",
+      "coverage": "138 matches across 8 reference files for OpenAPI-related content. references/extended/rest-odata-openapi-guide.md has 81 matches alone covering openapi spec structure, paths, components/schemas, and responses. references/extended/manual-templates-guide.md covers manual API documentation with 10 matches. quality-processes.md covers spec validation.",
+      "gaps": "None identified.",
+      "recommendation": "Very strong OpenAPI coverage. The extended/rest-odata-openapi-guide.md is the most comprehensive reference file in this skill."
+    }
+  ],
+  "overall_score": "3/3",
+  "improvement_recommendations": [
+    "Add concrete SAP API endpoint examples (real S/4HANA API paths) to naming-conventions.md",
+    "Consider adding a ready-to-use OpenAPI 3.0 template file (.yaml) in a templates/ directory",
+    "Add cross-references between naming-conventions.md and rest-odata-openapi-guide.md for unified lookup"
+  ]
+}

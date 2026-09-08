@@ -1,0 +1,37 @@
+{
+  "skill": "sap-sqlscript",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 3,
+  "pass": 3,
+  "partial": 0,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered: 'CREATE PROCEDURE' in SKILL.md (9 occurrences), syntax-reference.md, templates/simple-procedure.sql, and 6+ other files; 'LANGUAGE SQLSCRIPT' in SKILL.md, syntax-reference.md, and all procedure templates; 'DAYS_BETWEEN' in SKILL.md, references/built-in-functions.md, references/data-types.md, and templates/scalar-function.sql.",
+      "gaps": "None. Procedure creation is the core strength of this skill with extensive coverage across SKILL.md, references, and templates.",
+      "recommendation": "Consider adding a complete aging report template in templates/ to directly match this common business scenario."
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered: 'RETURNS TABLE' in SKILL.md and templates/table-function.sql; 'SUM' and 'OVER' (window functions) in references/built-in-functions.md, references/skill-reference-guide.md, references/syntax-reference.md, and references/glossary.md; 'PARTITION BY' in references/built-in-functions.md, templates/table-function.sql, and syntax-reference.md.",
+      "gaps": "None. Window functions and table functions are well documented with dedicated examples.",
+      "recommendation": "Add a running totals example using SUM() OVER(ORDER BY) in a template for this exact pattern."
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PASS",
+      "coverage": "All expected keywords covered: 'DECLARE EXIT HANDLER' in references/exception-handling.md (24 occurrences), SKILL.md, syntax-reference.md, troubleshooting.md, and multiple templates; 'SIGNAL SQL_ERROR_CODE' in references/exception-handling.md, syntax-reference.md, troubleshooting.md, and templates/procedure-with-error-handling.sql.",
+      "gaps": "None. Exception handling is one of the most thoroughly covered areas with a dedicated 24-occurrence reference file.",
+      "recommendation": "No changes needed. Exception handling coverage is excellent."
+    }
+  ],
+  "overall_score": "3/3",
+  "improvement_recommendations": [
+    "Add a business-scenario template for aging reports (TC-001 common use case)",
+    "Add a running totals / cumulative sum template using window functions",
+    "The skill has 11 reference files including extended/ subdirectory and 7 templates -- coverage is comprehensive across all test scenarios"
+  ]
+}

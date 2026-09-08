@@ -1,0 +1,3 @@
+{"id": "TC-001", "prompt": "Refactor backend and frontend simultaneously", "expected_keywords": ["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "Backend", "Frontend"], "expected_patterns": ["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "Backend"], "category": "orchestration"}
+{"id": "TC-002", "prompt": "Large refactor across multiple layers", "expected_keywords": ["capas", "Config", "Coordinen"], "expected_patterns": ["capas", "Config"], "category": "multi_layer"}
+{"id": "TC-003", "prompt": "Team refactor with test validation", "expected_keywords": ["/verify", "/review", "Consolidar"], "expected_patterns": ["/verify", "Consolidar"], "category": "validation"}

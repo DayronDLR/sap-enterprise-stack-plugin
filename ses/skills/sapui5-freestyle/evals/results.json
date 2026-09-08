@@ -1,0 +1,36 @@
+{
+  "skill": "sapui5-freestyle",
+  "evaluated_at": "2026-03-19",
+  "total_cases": 3,
+  "pass": 2,
+  "partial": 1,
+  "fail": 0,
+  "results": [
+    {
+      "id": "TC-001",
+      "verdict": "PARTIAL",
+      "coverage": "references/routing.md covers manifest.json routing configuration with routerClass, routes, and targets in detail. references/design-patterns.md mentions SplitApp and FlexibleColumnLayout as master/detail patterns (line 27). SKILL.md references routing.md for multi-view apps.",
+      "gaps": "SplitApp is only mentioned as a one-liner in design-patterns.md ('Master/Detail split: SplitApp or FlexibleColumnLayout') with no code example. There is no complete SplitApp XML view template or controller setup showing master-detail navigation with SplitApp. The routing reference covers general routing but not the specific SplitApp pattern with masterPages/detailPages.",
+      "recommendation": "Add a complete SplitApp master-detail code example to references/design-patterns.md or references/routing.md, including the SplitApp XML view structure with masterPages/detailPages and the routing configuration specific to split-view navigation."
+    },
+    {
+      "id": "TC-002",
+      "verdict": "PASS",
+      "coverage": "references/design-patterns.md has a dedicated 'Form — ColumnLayout' section (line 86+) with complete XML code showing Form, FormContainer, FormElement, and Input controls with i18n labels. SKILL.md's validation checklist explicitly states 'No SimpleForm — only Form + ColumnLayout'. references/i18n-accessibility.md includes validation message patterns (validationRequired, validationEmail). references/security-performance.md covers input validation against XSS.",
+      "gaps": "No explicit valueLiveUpdate example, but form validation patterns are covered across multiple reference files.",
+      "recommendation": ""
+    },
+    {
+      "id": "TC-003",
+      "verdict": "PASS",
+      "coverage": "references/design-patterns.md has a complete 'Dashboard — KPI Tiles' section (line 131+) with full XML code showing GenericTile, TileContent, and NumericContent controls with proper i18n bindings, value colors, and layout using HBox/VBox. The SKILL.md description explicitly mentions 'dashboard' as a trigger keyword.",
+      "gaps": "None significant — the dashboard tile pattern is well-documented with production-ready code.",
+      "recommendation": ""
+    }
+  ],
+  "overall_score": "2/3",
+  "improvement_recommendations": [
+    "Add a complete SplitApp master-detail example to references/design-patterns.md with XML view template showing masterPages/detailPages structure, and the corresponding routing configuration in manifest.json.",
+    "Consider adding FlexibleColumnLayout as an alternative master-detail pattern with a code example, since it is the more modern approach recommended by SAP."
+  ]
+}
