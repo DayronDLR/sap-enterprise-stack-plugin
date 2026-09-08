@@ -26,6 +26,22 @@ FILE_PATH=""
 if [[ "$INPUT" =~ \"file_path\"[[:space:]]*:[[:space:]]*\"([^\"]*)\" ]]; then
     FILE_PATH="${BASH_REMATCH[1]}"
 fi
+# Codex no tiene tool de escritura: edita por `exec_command`, asi que no hay
+# `file_path`. Se busca dentro del comando un token que parezca archivo lintable
+# —el ultimo gana, que es donde caen tanto `> srv/foo.js` como `sed -i … a.js`—.
+# Bash puro, sin interprete: este hook corre en CADA edicion.
+#
+# Si acierta de mas, el peor caso es lintear un archivo que no cambio: ruido
+# barato. Si no encuentra nada, se comporta como antes y sale.
+if [[ -z "$FILE_PATH" && "$INPUT" =~ \"cmd\"[[:space:]]*:[[:space:]]*\"([^\"]*)\" ]]; then
+    for _TOKEN in ${BASH_REMATCH[1]}; do
+        case "$_TOKEN" in
+            *.js|*.mjs|*.cjs|*.cds|*.xml|*.json) FILE_PATH="$_TOKEN" ;;
+            *) ;;
+        esac
+    done
+fi
+
 [[ -z "$FILE_PATH" ]] && exit 0
 
 # Recorta la salida del linter para que un archivo con 200 hallazgos no vuelque

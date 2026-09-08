@@ -5,6 +5,18 @@
 
 set -u
 
+# `dod_tool_command` normaliza el comando entre hosts (`command` en Claude, `cmd`
+# en Codex). Si la lib no esta, se degrada a la cobertura vieja —solo rutas
+# explicitas— con aviso: un hook de seguridad no puede desaparecer en silencio.
+_SPF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+if [[ -f "${_SPF_DIR}/lib/dod-common.sh" ]]; then
+    # shellcheck source=lib/dod-common.sh
+    source "${_SPF_DIR}/lib/dod-common.sh"
+else
+    echo "[protect-sensitive-files] lib/dod-common.sh no encontrado: no se inspeccionan comandos de shell." >&2
+    dod_tool_command() { printf ''; }
+fi
+
 # AUDITORIA A1 / PORTABILIDAD (ADR-012). Antes leia UNICAMENTE
 # `tool_input.file_path`, que es la clave de Claude Code. Codex nombra el
 # parametro `path` en `apply_patch` y OpenCode tambien usa `path`, asi que en
@@ -67,6 +79,27 @@ PROTECTED_PATTERNS=(
     "*.mtar"
     "mta_archives/"
 )
+
+# Un comando de shell que ESCRIBE sobre un archivo protegido cuenta igual.
+#
+# Hasta ahora el hook solo miraba `tool_input.file_path` y equivalentes, o sea las
+# tools de escritura del host de referencia. Eso dejaba dos agujeros:
+#
+#   1. En Claude Code, `Bash: echo SECRET=1 >> .env` pasaba sin un solo aviso.
+#   2. En Codex NO HAY tool de escritura —los archivos se editan por
+#      `exec_command`— asi que el hook no cubria absolutamente nada.
+#
+# Se exige INTENCION DE ESCRITURA, no la sola mencion: `grep foo .env` sigue
+# permitido, `echo x > .env` no. Bloquear toda mencion volveria el hook inusable
+# y la gente lo terminaria desactivando, que es peor que no tenerlo.
+CMD=$(dod_tool_command "$INPUT" 2>/dev/null || printf '')
+if [[ -n "$CMD" ]]; then
+    # Redireccion (`>`, `>>`), o un comando que escribe por naturaleza.
+    ESCRIBE_RE='(^|[^0-9A-Za-z_])(>>?|tee|dd[[:space:]]|install[[:space:]])|(^|[[:space:]])(cp|mv|ln|truncate|sed[[:space:]]+-i|perl[[:space:]]+-i|vi|vim|nano|emacs)([[:space:]]|$)'
+    if printf '%s' "$CMD" | grep -qE "$ESCRIBE_RE"; then
+        RUTAS=$(printf '%s\n%s' "$RUTAS" "$CMD")
+    fi
+fi
 
 # Verificar cada ruta contra cada patron protegido. Una sola coincidencia
 # bloquea: si la herramienta toca varios archivos y uno esta protegido, la
