@@ -94,10 +94,10 @@ Codex has its own plugin marketplace, and this repo is one:
 ```bash
 codex plugin marketplace add https://github.com/DayronDLR/sap-enterprise-stack-plugin
 codex plugin add ses@sap-stack
-codex plugin marketplace upgrade     # to update
+codex plugin marketplace upgrade && codex plugin add ses@sap-stack   # to update
 ```
 
-That gives you the **19 commands** (invoked `$ses-sap-abap`) and the **23 skills**.
+That gives you **48 skills**: the **19 commands** (invoked `$ses-sap-abap`), the **6 subagents**, and **23 reference skills**.
 
 > **What a Codex plugin cannot carry:** hooks and MCP servers. Verified against
 > `codex-cli 0.153.4` — the `plugin_hooks` feature is `removed`, and `hooks` isn't
@@ -363,10 +363,10 @@ Codex tiene su propio marketplace de plugins, y este repo es uno:
 ```bash
 codex plugin marketplace add https://github.com/DayronDLR/sap-enterprise-stack-plugin
 codex plugin add ses@sap-stack
-codex plugin marketplace upgrade     # para actualizar
+codex plugin marketplace upgrade && codex plugin add ses@sap-stack   # para actualizar
 ```
 
-Eso te da los **19 comandos** (se invocan `$ses-sap-abap`) y los **23 skills**.
+Eso te da **48 skills**: los **19 comandos** (se invocan `$ses-sap-abap`), los **6 subagentes** y **23 skills** de referencia.
 
 > **Lo que un plugin de Codex no puede llevar:** hooks ni servidores MCP.
 > Verificado contra `codex-cli 0.153.4` — la feature `plugin_hooks` está

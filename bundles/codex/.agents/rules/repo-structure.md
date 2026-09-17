@@ -3,7 +3,7 @@
 ├── CLAUDE.md                    ← Orquestador principal
 ├── README.md                    ← Instrucciones de instalación
 ├── CONTRIBUTING.md              ← Guía para extender el stack
-├── commands/                    ← Comandos del stack (13); cada emisor los traduce al formato de su host
+├── commands/                    ← Comandos del stack (19); cada emisor los traduce al formato de su host
 ├── agents/                      ← System prompts de cada agente especializado
 │   ├── 01-requirements/
 │   ├── 02-integration/
