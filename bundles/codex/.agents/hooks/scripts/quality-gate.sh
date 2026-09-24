@@ -280,6 +280,33 @@ if [[ -n "$DIAGRAM_CHANGED" ]]; then
     fi
 fi
 
+# 4.8) Documentacion de cliente de un proyecto SDD (ADR-014 §3). El `.gitignore`
+#      del proyecto la deja afuera, pero un `.gitignore` no es un control: un
+#      `git add -f` la mete igual. La regla vive en UN lugar —el motor SDD— y la
+#      usan este gate y `ses gates --ci`; aca solo se le pasan las rutas.
+#      Solo corre si alguna ruta tiene un segmento `entradas/`: costo cero en el
+#      resto de los commits.
+ENTRADAS_CHANGED=$(echo "$CHANGED_FILES" | grep -E '(^|/)entradas/' || true)
+if [[ -n "$ENTRADAS_CHANGED" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SDD_CLI="${PROJECT_DIR}/skills/sap-sdd/bin/sdd.mjs"
+    [[ -f "$SDD_CLI" ]] || SDD_CLI="${SCRIPT_DIR}/../../skills/sap-sdd/bin/sdd.mjs"
+    # Fail-closed, como el motor de diagramas: el motor SDD viene con el stack.
+    # Si falta y hay rutas `entradas/`, no se puede afirmar que no hay
+    # documentacion de un cliente en la entrega.
+    if [[ ! -f "$SDD_CLI" ]]; then
+        ERRORS="${ERRORS}\n[CRITICAL] Hay rutas entradas/ en la entrega pero no se encuentra el motor SDD (skills/sap-sdd/bin/sdd.mjs) para verificar que no sean documentacion de un cliente."
+    else
+        ENT_RESULT=$(cd "$PROJECT_DIR" && printf '%s\n' "$ENTRADAS_CHANGED" | node "$SDD_CLI" vigilar-entradas 2>&1)
+        ENT_EXIT=$?
+        if [[ "$ENT_EXIT" -eq 1 ]]; then
+            ERRORS="${ERRORS}\n[CRITICAL] ${ENT_RESULT}"
+        elif [[ "$ENT_EXIT" -ne 0 ]]; then
+            ERRORS="${ERRORS}\n[CRITICAL] El motor SDD fallo al verificar entradas/ (exit ${ENT_EXIT}):\n${ENT_RESULT}"
+        fi
+    fi
+fi
+
 # 5) Manifest UI5 (auto-validate-manifest.sh ya esta en PostToolUse, pero validamos
 #    en cierre para detectar drift acumulado)
 if [[ -n "$MANIFEST_CHANGED" ]]; then

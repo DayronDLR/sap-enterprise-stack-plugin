@@ -106,7 +106,7 @@ export function repoQueContiene(dir) {
 /** El `estado.json` de un proyecto recién creado: todas las fases pendientes. */
 export function estadoInicial(nombre, ahora) {
   const fases = {};
-  for (const f of FASES) fases[f.id] = { estado: 'pendiente', aprobacion: null, consumio: {} };
+  for (const f of FASES) fases[f.id] = { estado: 'pendiente', aprobacion: null, consumio: {}, artefactos: {} };
   return { version: VERSION_ESTADO, proyecto: nombre, creado: ahora.toISOString(), fases };
 }
 
@@ -119,11 +119,13 @@ function fecha(ahora) {
  * `ses sdd estado` (P2) lo pueda reescribir sin tocar lo que el arquitecto
  * agregue alrededor.
  */
-export function bloqueEstado(estado) {
+export function bloqueEstado(estado, calculado = {}) {
   const filas = FASES.map((f) => {
     const e = estado.fases[f.id];
     const aprob = e.aprobacion ? `${e.aprobacion.dec} (${e.aprobacion.fecha})` : '—';
-    return `| ${f.id} | [${f.titulo}](${f.dir}/) | ${e.estado} | ${aprob} |`;
+    // El estado GUARDADO dice "aprobada" aunque una edición posterior la haya
+    // dejado vieja; si hay uno calculado, manda ése.
+    return `| ${f.id} | [${f.titulo}](${f.dir}/) | ${calculado[f.id] ?? e.estado} | ${aprob} |`;
   });
   return [
     '<!-- sdd:estado -->',
@@ -267,7 +269,7 @@ function crearEnExclusiva(p, crear, esDelTipo, tipo) {
  * TEMPORAL se leía como "el archivo canónico ya existe". Por la misma razón un
  * error del temporal nunca sale con el código EEXIST.
  */
-function escribirEntero(p, contenido) {
+export function escribirEntero(p, contenido) {
   const tmp = path.join(path.dirname(p), `.${path.basename(p)}.${randomUUID()}.tmp`);
   try {
     try {
@@ -292,7 +294,9 @@ export const EDAD_HUERFANO_MS = 60_000;
  * temporal de uno que está corriendo en paralelo le haría fallar el `link`.
  */
 function limpiarHuerfanos(dir, nombres, ahoraMs) {
-  const canon = nombres.map((n) => n.replace(/[.]/g, '\\.')).join('|');
+  // Escape completo, no sólo del punto: un nombre con `(` o `+` agregado al
+  // plan armaría un patrón que matchea de más y borra lo que no es suyo.
+  const canon = nombres.map((n) => n.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&')).join('|');
   const re = new RegExp(`^\\.(?:${canon})\\.[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\\.tmp$`);
   const borrados = [];
   for (const n of fs.readdirSync(dir)) {
