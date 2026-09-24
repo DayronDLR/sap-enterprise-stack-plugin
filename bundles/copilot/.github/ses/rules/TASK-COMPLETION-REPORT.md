@@ -87,7 +87,7 @@ Además de mostrar el reporte en la conversación, se **DEBE** persistir como ar
 <proyecto>/docs/claude-reports/YYYY-MM-DD_<slug-descriptivo>.md
 ```
 
-- **`<proyecto>`**: La raíz del proyecto en el que se está trabajando (ej: `fury_fps-inv-ctrl-arg/`)
+- **`<proyecto>`**: La raíz del proyecto en el que se está trabajando (ej: `mi-proyecto-cap/`)
 - **`YYYY-MM-DD`**: Fecha actual
 - **`<slug-descriptivo>`**: Descripción breve de la tarea en kebab-case, máximo 50 caracteres
 - Si ya existe un archivo con el mismo nombre, agregar sufijo incremental: `_02`, `_03`, etc.
