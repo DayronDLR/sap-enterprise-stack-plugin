@@ -18,7 +18,7 @@ $ARGUMENTS
    - `N/A + justificacion` (ej: "no aplica: codigo de solo lectura sin estado")
    - `NO CUBIERTO` → bloqueante (CRITICAL o HIGH segun el item)
 5. Devuelve hallazgos **inline en la conversacion** — NO generar archivos
-6. Si no hay CRITICAL ni HIGH: ejecutar `touch tmp/.qa-nfr-done` para liberar el Stop hook
+6. Si no hay CRITICAL ni HIGH: ejecutar `bash hooks/scripts/sellar-gate.sh qa` para sellar el Gate 3
 
 ## Salida esperada
 

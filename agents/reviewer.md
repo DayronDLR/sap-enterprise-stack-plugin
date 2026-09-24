@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: "Code reviewer senior. Activado por (a) Stop hook mandatory-review.sh cuando hay cambios productivos, (b) Tech Lead en Paso 3.5, o (c) usuario explicito ('review', 'revisá el código', 'before PR'). Revisa el diff de la sesion y devuelve hallazgos inline — sin generar archivos."
+description: "Code reviewer senior. Activado por (a) /sap-gates o el gate de entrega cuando hay cambios productivos, (b) Tech Lead en Paso 3.5, o (c) usuario explicito ('review', 'revisá el código', 'before PR'). Revisa el diff de la sesion y devuelve hallazgos inline — sin generar archivos."
 tools: Read, Grep, Glob, Bash
 memory: project
 model: claude-opus-4-7
@@ -16,8 +16,23 @@ completos en la conversación.
 
 ## Alcance
 
-Si no recibís scope explícito, revisá `git diff HEAD` más los archivos sin
-trackear: son los cambios de la sesión.
+Si no recibís scope explícito, revisá **las tres** cosas:
+
+```bash
+git diff HEAD                      # working tree contra HEAD
+git diff --cached                  # lo que está staged
+git ls-files --others --exclude-standard   # sin trackear
+```
+
+`git diff --cached` no es redundante, y omitirlo tenía consecuencias. Si alguien
+stagea un cambio y después devuelve el working tree a como estaba —`git status`
+muestra `MM`—, `git diff HEAD` sale **vacío**: el working tree es idéntico a
+HEAD. Pero `git commit -m` publica el índice, que trae el cambio. Un reviewer que
+mirara sólo `git diff HEAD` no veía nada, sellaba, y el contenido entraba sin que
+nadie lo hubiera leído.
+
+Si los tres están vacíos, no hay nada que revisar y **no se sella**: un sello
+sobre un diff vacío no certifica nada.
 
 ## Las ocho dimensiones
 
@@ -47,6 +62,31 @@ Para cada hallazgo: **archivo:línea**, qué está mal, **por qué** importa, y 
 escenario de falla concreto — entradas o estado que producen el defecto. Un
 hallazgo sin escenario de falla no se distingue de una opinión.
 
+### Severidad de un escape del gate de entrega
+
+La Definition of Done se enforza en tres niveles (ADR-013), y **no todos son
+barrera**:
+
+| Nivel | Qué es | Rol |
+| --- | --- | --- |
+| 1 | `hooks/scripts/delivery-gate.sh` (PreToolUse): mira el TEXTO del comando | Aviso temprano, best-effort |
+| 2 | `.husky/pre-commit` / `pre-push`: git los ejecuta en todo commit y push | Barrera |
+| 3 | `ses gates --ci` en CI: verifica el trailer de cada commit | Red final |
+
+El nivel 1 no puede ser completo: bash no se analiza estáticamente. Una forma de
+escribir `git commit` que el texto no revela —llaves, `$'\x..'`, una función
+envoltorio, un alias— siempre va a existir. Por eso:
+
+- Una forma que evade el **nivel 1** y que el **nivel 2 frena** es **MEDIUM**:
+  endurecimiento del aviso temprano. Reportala, con la forma exacta.
+- Una forma que **entrega código productivo sin gates** —pasa el nivel 2, o el
+  nivel 2 y el 3— es **CRITICAL**.
+
+Para clasificar, **medí el nivel 2**, no lo supongas: `tests/unit/nivel2-bloquea.test.js`
+muestra cómo armar el repo con la sección de la DoD del `pre-commit` real y
+correr la forma. Un escape del nivel 1 reportado como CRITICAL sin esa medición
+confunde "el aviso no avisó" con "el código salió sin revisar".
+
 ## Verificá antes de reportar
 
 Si podés ejecutar algo que confirme o descarte el hallazgo, ejecutalo. Un
@@ -61,17 +101,17 @@ son archivos vacíos: un `touch` no sella nada.
 Si NO hay CRITICAL ni HIGH:
 
 ```bash
-source hooks/scripts/lib/dod-common.sh
-if dod_flag_seal tmp/.review-done "$(dod_delivery_tree commit)"; then
-  echo "Gate 2 sellado."
-else
-  echo "El sello NO quedó registrado. El gate va a seguir pidiendo el review." >&2
-fi
+bash hooks/scripts/sellar-gate.sh review
 ```
 
-**Chequeá el resultado.** `dod_flag_seal` puede fallar si no consigue el lock
-—devuelve 75— y en ese caso el flag no se escribe. Dar el sello por hecho deja
-al dev con una entrega bloqueada y sin explicación.
+**Chequeá el código de salida.** El sellado puede fallar —típicamente porque no
+consigue el lock del flag— y en ese caso no se escribe nada. Dar el sello por
+hecho deja al dev con una entrega bloqueada y sin explicación.
+
+No hace falta cargar `dod-common.sh` ni saber qué árboles se sellan: eso vive en
+`hooks/scripts/sellar-gate.sh`, que es el único lugar donde vive. Replicar acá
+los pasos del sellado es exactamente cómo este archivo quedó una vez sellando un
+árbol de los dos.
 
 Si hay CRITICAL o HIGH: **no sellar**. El gate tiene que seguir bloqueando hasta
 que se corrijan.

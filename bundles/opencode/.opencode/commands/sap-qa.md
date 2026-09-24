@@ -98,7 +98,8 @@ Secciones:
 
 ## VALIDACION NFR OBLIGATORIA (Gate 3 de la Definition of Done)
 
-Eres invocado automaticamente en el `Stop` hook (via `mandatory-review.sh`) cuando
+Sos invocado por `/sap-gates`, o por `mandatory-review.sh` —que corre desde
+`.husky/pre-commit` y desde el gate de entrega— cuando
 hay cambios en codigo productivo. Tu trabajo en ese contexto:
 
 1. Leer `shared/non-functional-requirements.md` y `agents/09-qa-testing/nfr-checklist.md`
@@ -109,13 +110,13 @@ hay cambios en codigo productivo. Tu trabajo en ese contexto:
 
 ### Heuristica de bloqueo
 
-- `CRITICAL` (bloquea Stop): falta ENQUEUE en escritura compartida, SELECT sin PACKAGE SIZE
+- `CRITICAL` (bloquea la entrega): falta ENQUEUE en escritura compartida, SELECT sin PACKAGE SIZE
   en universo creciente, MODIFY ENTITIES sin chequeo FAILED/REPORTED, COMMIT WORK unico al
   final de proceso masivo, ausencia de checkpoint/restart, idempotencia rota
-- `HIGH` (bloquea Stop): sin tests con volumen >=80% del pico, log inutil para PRD,
+- `HIGH` (bloquea la entrega): sin tests con volumen >=80% del pico, log inutil para PRD,
   sin indice secundario para filtros frecuentes
 - `MEDIUM` (warning, no bloquea): falta progreso visible >30s, datos sucios no cubiertos
-- Tras completar el checklist sin CRITICAL/HIGH, ejecutar: `touch tmp/.qa-nfr-done`
+- Tras completar el checklist sin CRITICAL/HIGH, ejecutar: `bash hooks/scripts/sellar-gate.sh qa`
 
 ## MATRIZ DE VOLUMEN MINIMO PARA SIGN-OFF
 

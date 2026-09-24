@@ -32,7 +32,14 @@ done
 
 cd "$SANDBOX" || exit 1
 git init -q . && git config user.email dev@ci.local && git config user.name ci
-echo seed > seed.txt && git add seed.txt && git commit -qm init
+# El seed trae CODIGO PRODUCTIVO a proposito. Los tests de push de este archivo
+# comprueban vencimiento de flags y anclaje por arbol, y para eso el push tiene
+# que necesitar los gates: desde que la exencion se decide por CONTENIDO
+# (`dod-classify.sh --union`), un sandbox con solo `seed.txt` queda exento por
+# no tener nada productivo, y esos dos tests pasaban por el motivo equivocado.
+echo seed > seed.txt
+mkdir -p srv && echo "module.exports = {};" > srv/app.js
+git add seed.txt srv/app.js && git commit -qm init
 export CLAUDE_PROJECT_DIR="$SANDBOX"
 
 DG="hooks/scripts/delivery-gate.sh"
@@ -79,9 +86,29 @@ for cmd in "ls -la" "rg -n foo src/" "npm test" "git status" "git diff HEAD"; do
 done
 
 echo ""
-echo "==> Falsos positivos: la frase aparece pero no es una entrega"
+echo "==> La frase citada SI dispara el gate: se elige fallar cerrado"
+# Este test afirmaba lo contrario —que `echo "git push"` no dispara— y esa
+# eleccion era la que dejaba entregar sin gates a `sh -c "git commit"`,
+# `bash -c`, `eval "git commit"` y `env FOO=bar sh -c "git commit"`. Medido:
+# las cuatro salian ALLOW de punta a punta, porque a `git` lo precedia una
+# comilla y `DOD_GIT_PRE` no la admitia.
+#
+# Los dos errores no cuestan lo mismo. Un falso positivo cuesta UN MENSAJE; un
+# falso negativo entrega sin gates, en silencio. Un control de seguridad ante la
+# ambiguedad elige el primero.
+#
+# El precio real y medido: el propio script de verificacion de esta ronda quedo
+# bloqueado por citar `git commit` adentro. Se paga.
 OUT=$(gate 'echo \"git push\"')
-[[ -z "$OUT" ]] && ok "echo con la frase no dispara el gate" || bad "falso positivo" "$OUT"
+[[ -n "$OUT" ]] \
+    && ok "la frase citada deniega (falla cerrado, a sabiendas)" \
+    || bad "la frase citada no disparo: volvio el agujero de sh -c" "$OUT"
+
+# Lo que NO debe disparar sigue sin disparar: sin la palabra, no hay entrega.
+for cmd in "git status" "git log --oneline" "git diff HEAD" "gh pr list"; do
+    OUT=$(gate "$cmd")
+    [[ -z "$OUT" ]] && ok "no dispara: $cmd" || bad "falso positivo en: $cmd" "$OUT"
+done
 OUT=$(gate 'git commit --dry-run')
 [[ -z "$OUT" ]] && ok "--dry-run no es entrega" || bad "--dry-run bloqueado" "$OUT"
 
@@ -411,13 +438,13 @@ git -c core.hooksPath=/dev/null commit -qm "productivo" >/dev/null 2>&1
 flags_ok
 ARBOL_ENTREGADO=$(git rev-parse "HEAD^{tree}")
 echo "$ARBOL_ENTREGADO" >> tmp/.review-done; echo "$ARBOL_ENTREGADO" >> tmp/.qa-nfr-done
-DOD_CONSUME_ONLY=1 bash hooks/scripts/mandatory-review.sh >/dev/null 2>&1
+bash hooks/scripts/mandatory-review.sh --consume-only >/dev/null 2>&1
 grep -qx "$ARBOL_ENTREGADO" tmp/.review-done 2>/dev/null \
-    && bad "el approval del arbol entregado sobrevivio" || ok "DOD_CONSUME_ONLY libera el arbol entregado"
+    && bad "el approval del arbol entregado sobrevivio" || ok "--consume-only libera el arbol entregado"
 
 # Y el approval de OTRO arbol —una sesion en paralelo— no se toca.
 echo "1111111111111111111111111111111111111111" >> tmp/.review-done
-DOD_CONSUME_ONLY=1 bash hooks/scripts/mandatory-review.sh >/dev/null 2>&1
+bash hooks/scripts/mandatory-review.sh --consume-only >/dev/null 2>&1
 grep -qx "1111111111111111111111111111111111111111" tmp/.review-done 2>/dev/null \
     && ok "no pisa el approval de otra sesion" || bad "borro el approval de un arbol ajeno"
 
@@ -456,9 +483,35 @@ printf '%s' "$OUT" | grep -q deny \
 flags_ok
 printf '%s' "$(gate "git push origin main")" | grep -q deny \
     && ok "un approval del indice NO habilita un push" || bad "el push acepto el arbol del indice"
+# Sellar el arbol de HEAD NO alcanza si hay commits mas viejos sin publicar: cada
+# commit que se publica necesita su propia evidencia. Sin esta regla, agregar
+# codigo y revertirlo dejaba pasar el commit intermedio —el arbol de HEAD vuelve
+# a ser el del remoto, `/sap-gates` lo sella sobre un diff vacio— y el backdoor
+# viajaba igual. Aca hay varios commits acumulados, asi que el push se bloquea.
 flags_ok_head
-[[ -z "$(gate "git push origin main")" ]] \
-    && ok "un approval de HEAD si habilita el push" || bad "el push rechazo su propio arbol"
+printf '%s' "$(gate "git push origin main")" | grep -q deny \
+    && ok "un approval de HEAD no tapa commits mas viejos" || bad "el sello de HEAD tapo el resto"
+
+# Pero cuando el arbol sellado ES el del commit que se publica, si habilita: es el
+# caso de quien commitea primero y corre /sap-gates despues.
+(
+    SOLO=$(mktemp -d)
+    cp -R hooks "$SOLO/hooks"; mkdir -p "$SOLO/tmp" "$SOLO/srv"
+    cd "$SOLO" || exit 1
+    git init -q . && git config user.email d@c && git config user.name c
+    echo "module.exports = {};" > srv/app.js
+    git add -A && git -c core.hooksPath=/dev/null commit -qm productivo >/dev/null 2>&1
+    T=$(git rev-parse 'HEAD^{tree}')
+    echo "$T" > tmp/.review-done
+    echo "$T" > tmp/.qa-nfr-done
+    OUT=$(printf '{"tool_name":"Bash","tool_input":{"command":"git push origin main"}}' \
+        | CLAUDE_PROJECT_DIR="$SOLO" SES_GATES='' bash hooks/scripts/delivery-gate.sh 2>/dev/null)
+    cd - >/dev/null || exit 1
+    rm -rf "$SOLO"
+    # Un `allow` CON NOTA tambien es un allow: lo que no puede haber es un deny.
+    printf '%s' "$OUT" | grep -q '"permissionDecision":"deny"' && { printf '%s' "$OUT"; exit 1; }
+    exit 0
+) && ok "el sello del arbol de un commit si lo habilita" || bad "el push rechazo su propio arbol"
 
 # Con los hooks desactivados los flags sobreviven, y eso ES seguro: estan
 # anclados al hash del arbol, asi que solo cubren ese contenido exacto. El gate
@@ -553,7 +606,7 @@ git config core.hooksPath "$POSTDIR"
 #
 # Antes los hooks copiados quedaban untracked, asi que `dod_changed_files` nunca
 # daba vacio y el codigo con el bug de H-2 consumia igual: el mutante
-# "reintroducir la evaluacion del working tree en DOD_CONSUME_ONLY" sobrevivia al
+# "reintroducir la evaluacion del working tree en --consume-only" sobrevivia al
 # harness. Con la infra commiteada y tmp/ y logs/ ignorados, post-commit corre en
 # la misma condicion que en un repo real.
 printf 'tmp/\nlogs/\nrealhooks/\n' > .gitignore
@@ -631,7 +684,12 @@ rm -f "${CLAUDE_PROJECT_DIR}/logs/dod-lock-degradado.log"
 # `$BASHPID` no existe en el bash 3.2 que trae macOS.
 mkdir -p "$LOCKD/f2.lock"
 rm -f "${CLAUDE_PROJECT_DIR}/logs/dod-lock-degradado.log"
-for i in 1 2 3 4; do ( dod_flag_seal "$LOCKD/f2" "$(printf 'd%039d' "$i")" ) >/dev/null 2>&1 & done
+# `DOD_LOCK_HUERFANO_SEG=0`, igual que el test de arriba: sin eso, cada subshell
+# espera el umbral real de 5s antes de declarar huerfano el lock, y si uno lo toma
+# y libera rapido los demas nunca registran degradacion. El test aseveraba sobre
+# el resultado de una CARRERA, o sea que fallaba solo bajo carga — y este job
+# ahora es obligatorio en CI, donde un rojo intermitente se re-corre sin mirar.
+for i in 1 2 3 4; do ( DOD_LOCK_HUERFANO_SEG=0 dod_flag_seal "$LOCKD/f2" "$(printf 'd%039d' "$i")" ) >/dev/null 2>&1 & done
 wait 2>/dev/null
 PIDS=$(awk '{print $2}' "${CLAUDE_PROJECT_DIR}/logs/dod-lock-degradado.log" 2>/dev/null | sort -u | wc -l | tr -d ' ')
 [[ "${PIDS:-0}" -gt 1 ]] \

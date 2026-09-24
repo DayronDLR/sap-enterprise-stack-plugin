@@ -77,6 +77,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/verify-artefactos.sh\"",
+            "timeout": 600,
+            "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/log-agent-activity.sh\"",
             "timeout": 600,
             "async": true

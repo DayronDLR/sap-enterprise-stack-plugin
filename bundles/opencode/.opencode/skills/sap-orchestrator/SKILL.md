@@ -40,7 +40,7 @@ invocar un comando explícito), tu trabajo es:
 
 - "explicame / enseñame / por qué se hace así" → el subagente **mentor**.
 - "review / revisá el código / antes del PR" → subagente **reviewer** (también
-  lo dispara el hook `Stop` del DoD).
+  lo dispara el gate de entrega cuando hay código productivo sin revisar).
 
 ## Desambiguación
 
@@ -62,4 +62,4 @@ invocar un comando explícito), tu trabajo es:
 - Para tareas multi-agente: explicitá el orden y las dependencias entre agentes.
 - Si algo es ambiguo, hacé máximo 2 preguntas de clarificación antes de proceder.
 - El cierre de toda tarea pasa por los gates de la **Definition of Done** (hooks
-  `quality-gate` + `mandatory-review` en el evento `Stop`).
+  `quality-gate` + `mandatory-review`, en `git commit` / `git push` / `gh pr create`).

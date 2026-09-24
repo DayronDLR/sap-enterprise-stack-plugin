@@ -47,6 +47,7 @@ ese trailer bloquea el pull request.
 - Controla las llamadas a servidores MCP.
 - Comprime la entrada de comandos verbosos (ADR-009).
 - Reinyecta la persona del agente activo cada N turnos.
+- Comprueba que los archivos que un subagente dice haber producido existan.
 - Registra la actividad de subagentes para las métricas.
 - Aviso de cierre de sesión, una vez por sesión.
 

@@ -58,6 +58,6 @@ No existe MCP oficial SAP para consultar release-state / Clean Core level (gap r
 📊 VEREDICTO: ✅ COMPLIANT | ❌ BLOQUEADO (N violaciones) | ⚠️ REQUIERE ATC REMOTO
 ```
 
-Si hay `❌ NO COMPLIANT`: NO ejecutar `touch tmp/.review-done`. El usuario debe corregir antes de cerrar.
+Si hay `❌ NO COMPLIANT`: NO ejecutar `bash hooks/scripts/sellar-gate.sh review`. El usuario debe corregir antes de cerrar.
 Si hay `⚠️ A VALIDAR EN ATC`: solicitar al usuario ejecutar ATC remoto en sistema cliente antes de sign-off.
-Si todo OK: agregar nota "Clean Core OK (validacion heuristica + skills locales)" al review del Stop hook.
+Si todo OK: agregar nota "Clean Core OK (validacion heuristica + skills locales)" al review del Gate 2.

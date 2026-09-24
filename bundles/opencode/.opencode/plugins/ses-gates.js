@@ -9,7 +9,7 @@
 // `deny` en un throw.
 //
 // Politicas cubiertas: delivery-gate, protect-sensitive-files, mcp-guard, shrink-input, auto-lint
-// NO cubiertos aca (OpenCode no tiene esos eventos): agent-reinforcement (UserPromptSubmit), log-agent-activity (SubagentStop), session-close-note (Stop)
+// NO cubiertos aca (OpenCode no tiene esos eventos): agent-reinforcement (UserPromptSubmit), verify-artefactos (SubagentStop), log-agent-activity (SubagentStop), session-close-note (Stop)
 // Ninguno hace cumplir una politica: son comodidades del host de referencia.
 
 import { spawnSync } from "node:child_process";

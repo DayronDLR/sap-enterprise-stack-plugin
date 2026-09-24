@@ -49,9 +49,18 @@ case "${BASH_SOURCE[0]:-$0}" in
 esac
 # AUDITORIA A12: queda constancia de la omision, con arbol y archivos.
 if [[ "${SES_GATES:-}" = "off" ]]; then
-    dod_log_gates_off "${PROJECT_DIR}/logs/gates-off.log" \
-        "$(dod_delivery_tree commit)" "$(dod_staged_files)"
-    say "[DoD] SES_GATES=off -> gates 2+3 omitidos. Registrado en logs/gates-off.log."
+    # El rc se lee, igual que en `delivery-gate.sh`. Era la tercera reincidencia
+    # del mismo patron: el helper propaga 1 cuando el log no queda escrito —su
+    # cabecera dice que existe para eso— y este consumidor anunciaba el registro
+    # igual. Una entrega sin gates que ademas no deja rastro contradice A12.
+    if dod_log_gates_off "${PROJECT_DIR}/logs/gates-off.log" \
+        "$(dod_delivery_tree commit)" "$(dod_staged_files)"; then
+        say "[DoD] SES_GATES=off -> gates 2+3 omitidos. Registrado en logs/gates-off.log."
+    else
+        say "[DoD] SES_GATES=off -> gates 2+3 omitidos."
+        say "[DoD] ATENCION: el registro en logs/gates-off.log NO se pudo escribir."
+        say "[DoD] Esta entrega queda sin rastro auditable."
+    fi
     exit 0
 fi
 
@@ -59,7 +68,28 @@ fi
 # corre DESPUES de que HEAD se movio: ahi `git diff HEAD` da vacio y la
 # evaluacion normal saldria por "sin archivos productivos" sin llegar nunca a
 # consumir. La decision de si hacian falta gates ya la tomo pre-commit.
-if [[ "${DOD_CONSUME_ONLY:-}" = "1" ]]; then
+# LA SEÑAL ES UN ARGUMENTO, NO UNA VARIABLE DE ENTORNO.
+#
+# Era `DOD_CONSUME_ONLY=1` en el entorno, y esa es la cuarta variable de la misma
+# clase en este ciclo: estado del gate que bash importa del entorno y se lee
+# ANTES de escribirse. Las otras tres —`_DOD_RAICES_*`, `_DOD_GEN_KEY`,
+# `_DOD_NONCE`— se cerraron una por una con un nonce, mirando el caso y no la
+# clase. Esta seguia viva a diez lineas de distancia, y es la peor de las cuatro:
+# no altera un veredicto, SALTEA LA EVALUACION ENTERA de los gates 2 y 3 en la
+# red de husky. Reproducido: con la variable exportada, un commit con codigo
+# productivo sin revisar sale rc=0 y sin una linea en ningun log —a diferencia de
+# `SES_GATES=off`, que si queda registrado.
+#
+# Un argumento lo pone QUIEN INVOCA. Una variable de entorno la pone cualquiera:
+# un `.envrc`, un wrapper de shell, un IDE que exporta de mas. Esa es la
+# diferencia que cierra la clase, y por eso la variable se ignora incluso si
+# viene seteada.
+_CONSUMO_PURO=no
+for _arg in "$@"; do
+    [[ "$_arg" = "--consume-only" ]] && _CONSUMO_PURO=si
+done
+
+if [[ "$_CONSUMO_PURO" = "si" ]]; then
     # Un commit meta-only no exigio gates 2+3, asi que tampoco puede gastarlos:
     # antes se los llevaba puestos y el dev perdia una revision que seguia siendo
     # valida para su contenido.
@@ -85,13 +115,57 @@ if [[ "${DOD_CONSUME_ONLY:-}" = "1" ]]; then
     exit 0
 fi
 
-CHANGED=$(dod_changed_files)
+# El flag se resuelve ANTES de calcular CHANGED: `dod_filtrar_productivos` lo lee
+# en el momento de la llamada, asi que calcularlo primero dejaba los generados
+# adentro y el husky denegaba el mismo sync que el hook aprobaba — la mitad
+# exacta del problema que esta unificacion vino a cerrar.
+#
+# DOS arboles, a proposito, y conviene ser exacto sobre cual hace que:
+#
+#   - `commit-a` (superconjunto: indice + tracked modificado) para VERIFICAR la
+#     salida generada. Es el conservador: un `plugins/` sucio en el working tree
+#     endurece el veredicto, no lo ablanda.
+#   - `commit` (el indice) para COMPROBAR los approvals, porque esto corre desde
+#     `.husky/pre-commit` y lo que se commitea es el indice.
+#
+# Una version anterior de este comentario afirmaba que la asimetria estaba
+# "cerrada". No lo estaba, y funcionaba de casualidad: `sellar-gate.sh` sella los
+# DOS arboles, asi que el flag cubria los dos casos. El dia que el sellador
+# sellara uno solo, este script denegaba en silencio un commit que el gate de
+# entrega ya habia aprobado. Ahora la comprobacion tiene el mismo respaldo que
+# `delivery-gate.sh`: si el flag no cubre el indice pero cubre el superconjunto y
+# la diferencia no es codigo productivo, vale.
+# El rc se verifica, por lo mismo que en `delivery-gate.sh`: una lista recortada
+# hace que la exencion por salida generada se afirme habiendo verificado un solo
+# arbol.
+if ! _ARBOLES_HUSKY=$(dod_arboles_de_entrega commit); then
+    say "[DoD] no se pudieron calcular los arboles de entrega (ver arriba)."
+    say "[DoD] la red de husky NO pudo verificar nada: revisa el estado del repo."
+    exit 1
+fi
+_ARBOL_HUSKY=$(printf '%s\n' "$_ARBOLES_HUSKY" | sed '/^$/d' | tail -1)
+# La lista COMPLETA, igual que el gate de entrega: la exencion por salida
+# generada solo vale si cada arbol candidato coincide con sus emisores. Pasar uno
+# solo era el bypass de `plugins/` staged-y-revertido.
+dod_resolver_generados_ok commit-a "$(git -c core.quotePath=false diff --cached --name-only 2>/dev/null
+    git -c core.quotePath=false diff --name-only 2>/dev/null)" "$_ARBOLES_HUSKY"
+# El rc se verifica: `dod_changed_files` documenta que PROPAGA el error justamente
+# para que nadie concluya "no hay archivos productivos" a partir de un fallo de
+# git. `$( )` captura stdout y tira el rc, asi que el vacio de un error y el vacio
+# de "no hay nada" eran el mismo valor — y este script elegia el segundo, dejando
+# pasar el commit. Es el mismo mecanismo que mantuvo escondido el bypass por
+# `core.quotePath`, en el caller que quedo suelto.
+CHANGED=$(dod_changed_files) || {
+    say "[DoD] no se pudo listar los archivos productivos (git fallo)."
+    say "[DoD] la red de husky NO pudo verificar nada: revisa el estado del repo."
+    exit 1
+}
 if [[ -z "$CHANGED" ]]; then
     say "[DoD] Sin archivos productivos modificados — gates 2+3 no aplican."
     exit 0
 fi
 
-if dod_is_meta_only "$CHANGED"; then
+if dod_alcanza_gate1 "$CHANGED"; then
     say "[DoD] Solo cambios al meta-stack — alcanza con Gate 1."
     exit 0
 fi
@@ -106,7 +180,24 @@ check_flag() {
     dod_flag_covers "$flag" "$DELIVERY_TREE"
     case "$?" in
         0) return 0 ;;
-        2) MISSING=1; say "  OTRO ARBOL  ${etiqueta} — cubre otro contenido: editaste despues, u otra sesion sello lo suyo" ;;
+        2) if [[ "$_ARBOL_HUSKY" = "$DELIVERY_TREE" ]]; then
+               # Un solo arbol en la lista: no hay con que comparar, y decir
+               # "cubre otro contenido" manda al dev a buscar una edicion que no
+               # hizo.
+               # No es "no se pudo calcular": son dos arboles que dieron el
+               # MISMO hash (el indice y el working tree coinciden), asi que no
+               # hay un arbol alternativo contra el cual probar equivalencia.
+               # Decir lo otro mandaba al dev a debuggear un problema de calculo
+               # que no existio.
+               MISSING=1; say "  OTRO ARBOL  ${etiqueta} — cubre otro contenido; indice y working tree coinciden, no hay arbol alternativo con que comparar"
+               return 1
+           fi
+           if [[ -n "$_ARBOL_HUSKY" ]] \
+              && dod_arboles_equivalentes "$DELIVERY_TREE" "$_ARBOL_HUSKY" \
+              && dod_flag_covers "$flag" "$_ARBOL_HUSKY"; then
+               return 0
+           fi
+           MISSING=1; say "  OTRO ARBOL  ${etiqueta} — cubre otro contenido: editaste despues, u otra sesion sello lo suyo" ;;
         *) MISSING=1; say "  PENDIENTE   ${etiqueta}" ;;
     esac
 }
@@ -118,7 +209,7 @@ if [[ "$MISSING" = "0" ]]; then
     # Este camino NO consume: es el que corre .husky/pre-commit, y consumir aca
     # seria prematuro (`git commit` sin -m abre el editor DESPUES del hook, asi
     # que el commit todavia puede abortarse). El consumo vive en post-commit,
-    # via DOD_CONSUME_ONLY.
+    # via `--consume-only`.
     exit 0
 fi
 
@@ -128,4 +219,55 @@ say "$(echo "$CHANGED" | sed 's/^/  /')"
 say ""
 say "Corre /sap-gates para ejecutarlos, y entrega sin tocar nada mas: los approvals"
 say "se anclan al hash del contenido revisado (arbol ${DELIVERY_TREE:0:12})."
+
+# El caso que dejaba al dev en un bucle, detectado donde SI se puede detectar.
+#
+# `git commit <ruta>` no entrega el indice ni el working tree entero: git arma un
+# TERCER arbol —HEAD mas esa ruta— y lo commitea ignorando el indice. Ese arbol no
+# existe hasta que el commit arranca, asi que `/sap-gates` no lo puede sellar. El
+# dev corria los gates, reintentaba, volvia a fallar, y el mensaje le decia otra
+# vez "corre /sap-gates". Reproducido 3 de 3, igual con `--only` y con `-i`.
+#
+# El primer intento de avisar comparaba el arbol entregado contra la lista de
+# candidatos, y era CODIGO MUERTO: los dos salen de `dod_delivery_tree`, asi que
+# en un commit parcial dan el mismo valor y la condicion era falsa POR
+# CONSTRUCCION. Nunca disparo.
+#
+# (Una version anterior de este parrafo decia que los dos "honran el
+# GIT_INDEX_FILE que git exporta al hook". Eso dejo de ser cierto por un rato,
+# cuando `dod_delivery_tree commit` paso a copiar siempre del indice real, y
+# volvio a serlo despues. La razon por la que la condicion no sirve no depende de
+# eso: sirve o no sirve porque los dos valores salen del mismo lugar.)
+#
+# El señalador real es ese mismo `GIT_INDEX_FILE`: en un commit parcial apunta a
+# `<gitdir>/next-index-<pid>.lock`, y en uno normal al indice de siempre.
+#
+# Y se DENIEGA aca, antes de Gate 1 y de los sellos: el tercer arbol no se puede
+# sellar —los subconjuntos posibles son exponenciales—, asi que el deny es el
+# estado terminal igual. Llegar antes le ahorra al dev el ciclo entero para
+# recibir despues un diagnostico equivocado.
+_ruta_canonica() {
+    local d b
+    d=$(cd "$(dirname "$1")" 2>/dev/null && pwd) || return 1
+    b=$(basename "$1")
+    printf '%s/%s' "$d" "$b"
+}
+if [[ -n "${GIT_INDEX_FILE:-}" ]]; then
+    _INDICE_REAL="$(git rev-parse --git-dir 2>/dev/null)/index"
+    _A=$(_ruta_canonica "$GIT_INDEX_FILE" 2>/dev/null || echo "$GIT_INDEX_FILE")
+    _B=$(_ruta_canonica "$_INDICE_REAL" 2>/dev/null || echo "$_INDICE_REAL")
+    if [[ "$_A" != "$_B" ]]; then
+        say ""
+        say "Estas commiteando con ruta (nombrando archivos, o con --only / -i)."
+        say ""
+        say "Eso arma un arbol propio —HEAD mas esa ruta— que no existe hasta este"
+        say "momento, asi que /sap-gates no lo pudo haber sellado. Correr los gates"
+        say "de nuevo NO va a destrabarlo."
+        say ""
+        say "El camino que funciona:"
+        say "    git add <ruta>   y despues commitea sin nombrar rutas"
+        exit 1
+    fi
+fi
+
 exit 1

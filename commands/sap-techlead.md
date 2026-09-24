@@ -166,8 +166,28 @@ Si es independiente: omite esta sección]
 - Señala explícitamente las dependencias con otros módulos o agentes
 
 Retorna tus entregables en formato estructurado con secciones claramente delimitadas.
-Indica al final: ESTADO: COMPLETADO | Artefactos producidos: [lista numerada]
+Indica al final, UNA RUTA POR LÍNEA y entre backticks:
+
+ESTADO: COMPLETADO | Artefactos producidos:
+1. `ruta/al/archivo.ext`
+2. `otra/ruta.ext`
+
+Si la tarea no produce archivos —un análisis, una revisión— escribí
+`Artefactos producidos: ninguno`.
 ```
+
+> El formato importa porque se parsea: declarar un archivo que no se escribió
+> hace que la tarea se propague como hecha.
+>
+> **Dónde se verifica solo.** En Claude Code el hook `verify-artefactos.sh` corre
+> en `SubagentStop`, resuelve esa lista contra el disco y devuelve el aviso al
+> orquestador. **En OpenCode y Copilot no corre**: ninguno de los dos expone ese
+> evento. En Codex está registrado, pero como hook asíncrono — no verificamos si
+> su salida llega al orquestador, así que no cuentes con el aviso.
+>
+> Donde no corre, la lista la comprobás vos antes de dar la tarea por cerrada. La
+> declaración sigue siendo obligatoria en los cuatro: es lo que hace auditable el
+> cierre.
 
 Marca cada tarea como `completed` con `TaskUpdate` al recibir el resultado del subagente.
 
@@ -186,12 +206,15 @@ Tras completar todos los subagentes funcionales y ANTES del cierre:
    - Si CRITICAL/HIGH → volver a delegar al agente correspondiente para corregir, repetir review
 
 2. **Invocar AGENT_09 (QA & Testing)** con `Agent` tool
-   - Tarea: "Ejecutar `agents/09-qa-testing/nfr-checklist.md` contra el diff de la sesion. Devolver hallazgos inline con evidencia o NO CUBIERTO. Tras completar sin CRITICAL/HIGH, ejecutar `touch tmp/.qa-nfr-done`."
+   - Tarea: "Ejecutar `agents/09-qa-testing/nfr-checklist.md` contra el diff de la sesion. Devolver hallazgos inline con evidencia o NO CUBIERTO. Tras completar sin CRITICAL/HIGH, ejecutar `bash hooks/scripts/sellar-gate.sh qa`."
    - Si bloquea por NFR no cubierto → corregir antes de cerrar
 
-3. **Verificar flags**: `ls tmp/.review-done tmp/.qa-nfr-done` debe mostrar ambos archivos antes del cierre
+3. **Verificar los sellos**: que los dos subagentes hayan reportado `sellar-gate.sh` en verde.
+   Un `ls` de los flags NO alcanza: el archivo puede existir y no cubrir el árbol actual —
+   cualquier edición posterior al sellado lo deja afuera. La verificación real la hace el
+   gate en la entrega, comparando hashes; acá sólo se confirma que los gates se corrieron.
 
-NUNCA omitas este paso, incluso si fue una tarea de 1 solo agente. El hook `mandatory-review.sh` bloqueara el Stop si faltan los flags.
+NUNCA omitas este paso, incluso si fue una tarea de 1 solo agente. Los gates se exigen en la entrega: `git commit`, `git push` y `gh pr create` quedan bloqueados si faltan los sellos.
 
 ---
 

@@ -63,10 +63,130 @@ revisados, uno por línea, y solo cubren esos: cualquier edición posterior los
 deja de cubrir. Se consumen cuando la entrega efectivamente ocurre (hook
 `post-commit`). El flujo es **correr los gates, no tocar nada, y entregar**.
 
-`git push` verifica que los commits que publica figuren en el registro de
-entregas gateadas (`logs/gate-deliveries.log`); si alguno falta, pide los gates
-sobre el árbol de `HEAD`. Detalle y alternativas descartadas en
-[ADR-011](../docs/adr/011-approvals-de-gate-anclados-al-contenido.md).
+`git push` mira **los commits que publica**, no el working tree. Primero
+clasifica el rango entero: si todo lo que publica es meta-stack o documentación,
+no hay nada que los gates 2 y 3 puedan revisar y el push sale exento, con nota.
+
+Si hay código productivo, cada commit tiene que estar cubierto por alguna de
+estas tres, que son la misma evidencia por vías distintas:
+
+| Vía | Qué es | Sobrevive a |
+|---|---|---|
+| Trailer `SES-Gated-Tree` | Va dentro del commit, anclado a su árbol | squash, clon nuevo, CI |
+| `logs/gate-deliveries.log` | Registro local, por sha o por árbol | `--amend` de solo mensaje |
+| Anterior al mecanismo | El commit precede al que **introdujo** `.husky/prepare-commit-msg` | clonar, rotar el log, borrar el hook |
+
+### Cuando el commit trae varios trailers
+
+Un merge o un squash **concatena los mensajes**, y con ellos los trailers. Eso es
+normal: 8 de los últimos 100 commits de este repo tienen dos o más, y uno tiene
+26. **Gana el último**, que es el del commit final de la rama y cuyo árbol es
+exactamente el árbol del merge. Por eso el trailer sobrevive a un squash.
+
+Ambos lectores —`dod_trailer_cubre_su_arbol` en bash y `lib/trailer.mjs` en el
+CLI— aplican esa misma regla, y `tests/unit/sellado-trailer.test.js` los corre a
+los dos sobre los commits reales del repo exigiendo el mismo veredicto. Cuando
+divergían, el gate local aceptaba un push que CI denegaba para siempre.
+
+Dos detalles que conviene saber:
+
+- **No alcanza con que *alguno* de los trailers cubra.** Si el último no cubre, se
+  deniega aunque haya uno válido más arriba: es el caso del `--amend` posterior al
+  sellado, donde corresponde denegar.
+- **`git merge --squash` local pierde los trailers sólo si aceptás el mensaje
+  automático.** Git arma `SQUASH_MSG` indentando los mensajes cuatro espacios
+  dentro de «Squashed commit of the following», y el patrón exige columna 0.
+  Medido:
+
+  | Cómo commiteás el squash | Resultado |
+  |---|---|
+  | `git commit -m "…"` | **sella normal** — la fuente es `message`, el hook corre |
+  | `git commit --no-edit` | queda sin trailer: la fuente es `squash` y el hook sale temprano |
+
+  Si caíste en el segundo caso no estás trabado: sellá y `git commit --amend
+  --no-edit` estampa el trailer. El squash de GitHub no tiene este problema —
+  deja los trailers en columna 0.
+
+La tercera vía se ancla a **git**, no al registro local: la frontera es el commit
+que introdujo el hook de sellado, que es un hecho de la historia y no se mueve al
+clonar. Un commit posterior que *borre* el hook no queda exento, y si el hook no
+existe en ningún commit, nada queda exento por antigüedad.
+
+El rango de un push **no se deduce del texto del comando** — se le pregunta a
+git. Con un solo remoto no hay ambigüedad; con varios se usa el upstream de la
+rama; y si no se puede determinar el destino, se mira `HEAD` entero. Esa última
+opción bloquea de más, que es el lado correcto para equivocarse: `--not --remotes`
+excluye lo alcanzable desde *cualquier* remoto, o sea que da un rango más
+**chico**, y caer ahí ante la duda sería fallar abierto.
+
+La salida generada (`plugins/`, `fixtures/`) se excluye **solo cuando el emisor
+confirma que es la suya**: el gate materializa el árbol que se entrega y corre
+`ses build --check` contra él. Si coincide, se excluye para no repetir el mismo
+hallazgo una vez por host; si no coincide —o no se puede comprobar— cuenta como
+código productivo y exige los gates.
+
+No alcanza con que la fuente venga en el mismo cambio. Esa regla se probó y se
+descartó: bastaba tocar `settings.json` —un byte— para colar a mano un backdoor
+en el artefacto que se distribuye. `dist/` no se excluye por ninguna vía, porque
+ningún `--check` lo valida.
+
+En un push la verificación es **por commit**, no sólo sobre el árbol final. La
+primera versión corría el `--check` una vez sobre HEAD y aplicaba el veredicto a
+todo el rango; eso se descartó al medir lo que permitía: basta plantar un
+backdoor en `plugins/` en un commit y revertirlo en el siguiente para que HEAD
+salga limpio, el rango entero se declare meta-stack y el push salga exento, con
+el backdoor publicado y accesible por `git checkout` o `git bisect`. Es la clase
+*add-and-revert*, que ya se bloqueaba para el código productivo y quedaba abierta
+justo para el artefacto que se distribuye.
+
+Sólo se paga por los commits que **tocan** salida generada, que en un push normal
+son cero o uno; el resto se saltea sin materializar nada. Un rango que excede la
+ventana ya bloquea por otro lado.
+
+El recorrido por commit se corta en `DOD_PUSH_SCAN_MAX` (50). **Si el push trae
+más, no se toma ningún atajo**: se exigen los gates sobre el árbol de `HEAD`,
+porque hay commits que nadie inspeccionó.
+
+Y cuando el rango toca salida generada, el techo efectivo **no es la ventana sino
+`DOD_GEN_PRESUPUESTO_SEG`** (45 s): a ~1,5 s por commit —medido; una versión
+anterior decía ~1,1— se agota alrededor de los **30** y el push queda denegado, no
+lento. Subir `DOD_PUSH_SCAN_MAX` en ese caso no
+hace que tarde más: hace que deniegue igual, más tarde. La salida es sellar `HEAD`
+con `/sap-gates`.
+
+Subir la variable inspecciona más, y el costo depende de **qué** trae el push, no
+sólo de cuántos commits:
+
+| Camino | Por commit | 50 commits |
+| --- | --- | --- |
+| Rango sin salida generada | plano: una sola pasada | ~0,4 s |
+| Rango productivo, recorrido de trailers | ~82 ms | ~4,5 s |
+| Commits que **tocan** salida generada | ~1,5 s (materializa el árbol y corre los 4 emisores) | hasta ~36 s |
+
+El último camino tiene techo agregado propio, `DOD_GEN_PRESUPUESTO_SEG` (45 s):
+pasado ese punto no se exime nada, se dice por qué, y la entrega cae al camino
+normal de pedir los gates sobre `HEAD`.
+
+**Cuántos commits tocan salida generada, de verdad.** Una versión anterior decía
+«cero o uno en un push normal». Medido sobre la historia de este repo: **80 % de
+los últimos 20 commits**, 48 % de los últimos 50, 26 % de los últimos 100. O sea
+que un push de 50 commits puede pagar ~36 s y rozar el presupuesto. Si lo agota,
+la salida no es un error: es sellar `HEAD` con `/sap-gates`, que sale más barato
+que inspeccionar el rango entero.
+
+Una versión anterior de este párrafo publicaba «~85 ms por commit» para todo y
+estimaba 45 s con `DOD_PUSH_SCAN_MAX=500`. Era el número del recorrido de
+trailers aplicado al camino equivocado: en el de salida generada la cuenta
+verdadera daba minutos, y el dev que siguiera ese consejo se quedaba mirando un
+prompt clavado.
+
+Son medidas de una máquina de desarrollo, no una garantía: lo que vale es el
+orden de magnitud. Sellar el árbol de `HEAD` con `/sap-gates` suele salir más
+barato que subir la ventana.
+
+Detalle y alternativas descartadas en
+[ADR-011](../docs/adr/011-approvals-de-gate-anclados-al-contenido.md); sobre lo
+que el trailer **no** garantiza, [ADR-013](../docs/adr/013-la-dod-vive-en-git-no-en-el-host.md).
 
 ## Aplicabilidad
 
@@ -76,7 +196,33 @@ sobre el árbol de `HEAD`. Detalle y alternativas descartadas en
 | Feature completa | Los 3 (al entregar) |
 | Hotfix en PRD | Los 3, con bloqueo aun mas estricto |
 | Documentacion / markdown | Ninguno (no es codigo ejecutable) |
-| Meta-stack (`hooks/`, `agents/`, `commands/`, `scripts/`) | Solo Gate 1 |
+| Meta-stack (ver lista completa abajo) | Solo Gate 1 |
+
+### Qué cuenta como meta-stack, exactamente
+
+Estas rutas quedan **exentas de los gates 2 y 3** y pasan sólo por el Gate 1:
+
+```text
+hooks/          scripts/        .github/      orchestrator/
+config/         rules/          shared/       agents/
+commands/       evals/          tests/        plugins/sap-enterprise-stack/
+settings.json   CLAUDE.md
+```
+
+Una versión anterior de esta tabla nombraba cuatro —`hooks/`, `agents/`,
+`commands/`, `scripts/`— cuando la implementación eximía catorce. Entre los diez
+que faltaban estaba **`settings.json`, que es el archivo que configura los
+hooks**: un cambio que apague el gate entra por una puerta que la doc no decía
+que existía.
+
+Eso sigue siendo cierto por diseño —tocar el andamiaje no debería exigir un
+review funcional— pero no depende de la buena fe: `tests/unit/meta-stack-documentado.test.js`
+verifica que esta lista y `dod_is_meta_only` digan lo mismo, y que `settings.json`
+siga cableando `delivery-gate.sh` sobre `Bash`. Borrar ese cableado **rompe un
+test**, que es lo que antes no pasaba.
+
+Alcanza **un** archivo productivo en el cambio para que el commit entero exija
+los 3 gates.
 
 ## Escape hatches
 
@@ -159,6 +305,50 @@ Reglas duras:
 
 Procedimiento completo, anti-patrones y auditoria mensual:
 `docs/adr/003-hotfix-override-design.md` y `docs/adr/005-two-person-hotfix-approval.md`.
+
+## Que cuenta como "entrega" — y donde esta la garantia
+
+**La garantia no esta en el texto del comando. Esta en git.** `.husky/pre-commit`
+lo ejecuta git en TODO commit, lo haya escrito quien lo haya escrito, y si
+alguien lo saltea con `--no-verify` el commit sale sin trailer y **CI lo
+deniega**. `tests/unit/nivel2-bloquea.test.js` lo fija con las formas que ningun
+analisis de texto revela —una funcion envoltorio, la indireccion por variable—:
+git las bloquea todas.
+
+El hook `delivery-gate.sh` (PreToolUse) es el **aviso temprano** (ADR-013,
+nivel 1): mira el texto del comando y deniega antes de que el agente llegue a
+git, con un mensaje que dice que hacer. Es **best-effort por construccion**: bash
+no se puede analizar estaticamente de forma completa. Tres rondas de revision
+seguidas encontraron formas nuevas de escribir `git commit` que el texto no
+revela; la proxima siempre existe.
+
+Lo que el nivel 1 si reconoce, medido de punta a punta contra el hook:
+
+```bash
+git commit; echo listo      sh -c "git commit -m x"      eval "git commit"
+(git commit -m x)           $(git commit -m x)           !git commit
+\git commit                 <(git push)                  {git,commit} -m x
+$'\x67\x69\x74' commit       git c''ommit                 "git" commit
+gh pr create                gh pr new                    gh "pr" cr''eate
+```
+
+La regla: `git` tiene que **empezar una palabra**, y se matchea sobre el comando
+crudo y sobre una forma aplanada con lo que bash resuelve antes de ejecutar —el
+citado ANSI-C, las llaves sin espacios, comillas y barras—. Lo que **no**
+reconoce, a sabiendas: funciones y alias, la indireccion por variable, `xargs`,
+`find -exec`, un `python -c`. Esas las frena el nivel 2.
+
+**Severidad para los gates**: una forma que evade el nivel 1 y que el nivel 2
+frena es **MEDIUM**. Una que entrega codigo productivo sin gates —que pasa el
+nivel 2— es **CRITICAL**. Se clasifica midiendo el nivel 2, no suponiendolo (ver
+`agents/reviewer.md`).
+
+**El precio del lado seguro: `echo "git commit"` deniega.** Es a proposito: un
+falso positivo cuesta un mensaje, un falso negativo en el aviso manda al agente a
+chocar contra git sin explicacion. No hay allowlist de `echo|cat|grep` al
+principio del comando, porque `echo hola; git commit` tambien empieza con `echo`.
+Si el gate bloquea un comando que solo *menciona* la frase, la salida es
+`SES_GATES=off` para ese comando, o no citarla.
 
 ## Quien lo enforce
 

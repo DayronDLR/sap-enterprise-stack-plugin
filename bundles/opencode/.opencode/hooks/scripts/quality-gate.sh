@@ -217,6 +217,22 @@ if [[ -n "$ABAP_CHANGED" ]] || [[ -n "$CDS_CHANGED" ]]; then
     fi
 fi
 
+# 4.55) Sustitucion de comandos en strings de mensaje (.sh / .husky)
+#
+# Las ~3.600 lineas de bash de `hooks/` eran el unico codigo del repo sin
+# analisis estatico, y son las que deciden si todo lo demas sale. Un backtick sin
+# escapar dentro de un `deny` hizo que el gate corriera el emisor en modo
+# ESCRITURA contra el repo del dev y borrara trabajo sin commitear. Lo encontro
+# una revision; esto lo vuelve imposible de repetir.
+SHELL_CHANGED=$(echo "$CHANGED_FILES" | grep -E '\.sh$|^\.husky/' || true)
+if [[ -n "$SHELL_CHANGED" ]] && [[ -f "${PROJECT_DIR}/scripts/scan-shell-strings.mjs" ]]; then
+    SH_RESULT=$(node "${PROJECT_DIR}/scripts/scan-shell-strings.mjs" 2>&1)
+    SH_EXIT=$?
+    if [[ "$SH_EXIT" -ne 0 ]]; then
+        ERRORS="${ERRORS}\n[CRITICAL] ${SH_RESULT}"
+    fi
+fi
+
 # 4.6) ATC config drift (validate-atc-config.js) — bloquea si config/atc-*.json invalido
 ATC_CHANGED=$(echo "$CHANGED_FILES" | grep -E '^config/atc-(variant|exemptions)\.json$' || true)
 if [[ -n "$ATC_CHANGED" ]]; then

@@ -35,7 +35,7 @@ Bloquea si reporta CRITICAL o HIGH. Si el resultado es aceptable, **anotá el
 hash del árbol revisado** — no un `touch` pelado:
 
 ```bash
-git write-tree >> tmp/.review-done
+bash hooks/scripts/sellar-gate.sh review
 ```
 
 ## Paso 3 — Gate 3: QA + NFR
@@ -47,7 +47,7 @@ volumen, idempotencia, restart-ability, observabilidad y locking.
 Si pasa:
 
 ```bash
-git write-tree >> tmp/.qa-nfr-done
+bash hooks/scripts/sellar-gate.sh qa
 ```
 
 ## Cierre
