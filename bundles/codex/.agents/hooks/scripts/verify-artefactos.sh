@@ -1,7 +1,12 @@
 #!/bin/bash
 # verify-artefactos.sh
-# SubagentStop hook: comprueba que los archivos que el subagente DICE haber
-# producido existan de verdad. Recibe el JSON del evento por stdin.
+# SubagentStop hook: comprueba que lo que el subagente AFIRMA en su mensaje final
+# exista de verdad. Recibe el JSON del evento por stdin. Verifica dos cosas:
+#
+#   - los artefactos que declara producidos (roadmap F1, lib/artefactos.mjs);
+#   - las ubicaciones `archivo:línea` que cita como evidencia (roadmap F2,
+#     lib/citas.mjs): los hallazgos del reviewer y la evidencia de QA, que son lo
+#     que decide si una entrega se sella.
 #
 # QUE RESUELVE. El contrato de `/sap-techlead` exige que cada subagente cierre
 # con `ESTADO: COMPLETADO | Artefactos producidos: [lista]`. Esa linea existe
@@ -21,7 +26,8 @@ set -u
 
 _VA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 _VA_RAIZ="${CLAUDE_PROJECT_DIR:-$(cd "${_VA_DIR}/../.." && pwd)}"
-_VA_MOD="${_VA_DIR}/lib/artefactos.mjs"
+_VA_ARTEFACTOS="${_VA_DIR}/lib/artefactos.mjs"
+_VA_CITAS="${_VA_DIR}/lib/citas.mjs"
 
 INPUT=$(cat)
 
@@ -31,8 +37,8 @@ if ! command -v node >/dev/null 2>&1; then
     echo "[artefactos] node no disponible: no se verificaron los artefactos declarados." >&2
     exit 0
 fi
-if [[ ! -f "$_VA_MOD" ]]; then
-    echo "[artefactos] no encuentro $_VA_MOD: no se verificaron los artefactos declarados." >&2
+if [[ ! -f "$_VA_ARTEFACTOS" || ! -f "$_VA_CITAS" ]]; then
+    echo "[artefactos] no encuentro $_VA_ARTEFACTOS o $_VA_CITAS: no se verificaron artefactos ni citas." >&2
     exit 0
 fi
 
@@ -43,11 +49,13 @@ fi
 # —una tarea con muchos artefactos, justo la de mas riesgo— hacia fallar el
 # `exec` con E2BIG: el hook salia 0, sin verificar y sin `additionalContext`.
 # El control desaparecia exactamente donde mas falta hacia.
-printf '%s' "$INPUT" | SES_RAIZ="$_VA_RAIZ" SES_MOD="$_VA_MOD" node --input-type=module -e '
+printf '%s' "$INPUT" | SES_RAIZ="$_VA_RAIZ" SES_ARTEFACTOS="$_VA_ARTEFACTOS" SES_CITAS="$_VA_CITAS" node --input-type=module -e '
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 const { rutasDeclaradas, verificarArtefactos, informe } =
-  await import(pathToFileURL(process.env.SES_MOD).href);
+  await import(pathToFileURL(process.env.SES_ARTEFACTOS).href);
+const { citasDe, verificarCitas, informeCitas } =
+  await import(pathToFileURL(process.env.SES_CITAS).href);
 
 let crudo = "";
 try { crudo = fs.readFileSync(0, "utf8"); } catch { /* sin stdin: nada que leer */ }
@@ -56,11 +64,24 @@ let ev = {};
 try { ev = JSON.parse(crudo || "{}"); } catch { /* entrada rara: nada que leer */ }
 const mensaje = ev.last_assistant_message || ev.lastAssistantMessage || "";
 
-const rutas = rutasDeclaradas(mensaje);
-if (!rutas.length) process.exit(0);   // no declaro nada: no hay contrato que verificar
-
-const r = verificarArtefactos(rutas, process.env.SES_RAIZ);
-const aviso = informe(r);
+// Cada verificacion corre sola: un agente que no declaro artefactos igual puede
+// haber citado evidencia, y al reves. Y una que falla no apaga a la otra: un
+// EACCES leyendo una cita dejaba sin verificar tambien los artefactos (F1).
+const avisos = [];
+const aislada = (nombre, fn) => {
+  try { avisos.push(fn()); } catch (e) {
+    process.stderr.write(`[${nombre}] el verificador falló: ${e.message}\n`);
+  }
+};
+aislada("artefactos", () => {
+  const rutas = rutasDeclaradas(mensaje);
+  return rutas.length ? informe(verificarArtefactos(rutas, process.env.SES_RAIZ)) : "";
+});
+aislada("citas", () => {
+  const citas = citasDe(mensaje);
+  return citas.length ? informeCitas(verificarCitas(citas, process.env.SES_RAIZ)) : "";
+});
+const aviso = avisos.filter(Boolean).join("\n");
 if (!aviso) process.exit(0);
 
 process.stdout.write(JSON.stringify({
@@ -71,7 +92,7 @@ process.stderr.write(aviso + "\n");
     # Sin `2>/dev/null`: el stderr de node es el unico lugar donde se ve POR QUE
     # fallo. Taparlo dejaba este mensaje generico como unica senial, que es el
     # modo de falla que este archivo dice querer evitar.
-    echo "[artefactos] el verificador falló: no se comprobaron los artefactos declarados." >&2
+    echo "[artefactos] el verificador falló: no se comprobaron los artefactos ni las citas." >&2
 }
 
 exit 0

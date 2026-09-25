@@ -1,6 +1,6 @@
 {
   "name": "ses",
-  "version": "0.1.46",
+  "version": "0.1.47",
   "description": "Stack de agentes SAP enterprise: 11 agentes de dominio, subagentes Fiori, gates de Definition of Done y servidores MCP SAP.",
   "author": {
     "name": "DayronDLR"

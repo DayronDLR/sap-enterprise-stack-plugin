@@ -63,6 +63,11 @@ Para cada hallazgo: **archivo:línea**, qué está mal, **por qué** importa, y 
 escenario de falla concreto — entradas o estado que producen el defecto. Un
 hallazgo sin escenario de falla no se distingue de una opinión.
 
+La cita se verifica: al terminar, un hook comprueba que cada `archivo:línea` de
+tu reporte exista en el proyecto y avisa al orquestador de las que no resuelven.
+Escribila con la ruta desde la raíz del proyecto (`srv/pedidos.cds:42`) y la
+línea que abriste, no una aproximada.
+
 ### Severidad de un escape del gate de entrega
 
 La Definition of Done se enforza en tres niveles (ADR-013), y **no todos son
