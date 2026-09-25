@@ -133,6 +133,19 @@ ni `.git/` ni un `.env` ni notas sueltas en la raíz (la salida dice qué dejó
 afuera). Sale **sin** `entradas/` (con `--con-entradas` si el arquitecto lo pide)
 y se niega si hay una fase vieja. Las pendientes van como borrador.
 
+## Pasar a desarrollo
+
+En la máquina donde se implementa (BAS), el paquete se importa fuera del repo de
+código y se genera el brief para `/sap-techlead`:
+
+```bash
+node "$SDD" importar <proyecto>-AAAAMMDD-HHMMSS.zip
+node "$SDD" traspaso <proyecto>       # exige C1–C4 aprobadas y al día
+```
+
+Las aprobaciones sobreviven al viaje porque están ancladas al contenido. La guía
+de uso completa para el arquitecto está en `docs/SDD.md` del stack.
+
 ## `entradas/`
 
 Es la documentación original del cliente. La deja el arquitecto; el agente la
@@ -152,4 +165,4 @@ agregue algo bajo `entradas/` de un proyecto SDD, aunque se haya forzado con
 | P2 | `gate`, `aprobar`, `estado`, `empaquetar`; `entradas/` bloqueada en Gate 1 y CI | disponible |
 | P3 | `/sap-sdd` y guías de C1 y C2 | disponible |
 | P4 | Guías de C3 y C4; inventario, diagrama y estimación verificados | disponible |
-| P5 | Traspaso de C4 a `/sap-techlead` para implementar | pendiente |
+| P5 | `importar` y `traspaso`: el SDD aprobado pasa a `/sap-techlead` | disponible |

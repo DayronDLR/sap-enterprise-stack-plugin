@@ -38,6 +38,34 @@ cat .planning/HANDOFF.json 2>/dev/null
 
 ---
 
+## PASO 0.5 — Si la tarea viene de un SDD aprobado
+
+Si el pedido nombra un proyecto SDD («implementá el SDD aging-ar-mx», o un
+paquete `.zip` del SDD), el plan ya está hecho y aprobado: **no lo rehagas**.
+
+1. Resolvé el motor SDD con el bloque de `.opencode/skills/sap-sdd/SKILL.md`
+   (`SDD=...`, cortando si no aparece).
+2. Si te pasaron un `.zip`, importalo primero, fuera del repo de código:
+   `node "$SDD" importar <paquete.zip>`.
+3. Generá el brief: `node "$SDD" traspaso <proyecto>`.
+   - Si sale con error, **no implementes**: el SDD tiene fases sin aprobar o
+     viejas. Mostrá los motivos y derivá a `/sap-sdd`.
+   - Si pasa, el brief reemplaza el análisis del PASO 1.1. Los agentes salen de
+     las capas del inventario, el orden sale de «Orden de trabajo» y la
+     estimación es la del SDD.
+4. En el PASO 2:
+   - cada tarea nombra los `OBJ-NN` que construye y sus horas del brief;
+   - el total es el del SDD, y no se re-estima: si una tarea se desvía, se
+     informa contra sus horas;
+   - un objeto que no está en el inventario no se construye: se vuelve a C3 con
+     `/sap-sdd`.
+5. `entradas/` no se lee. La fuente es el SDD.
+
+Después seguí con el PASO 1.2 (pre-carga de los agentes que el inventario
+necesita) y el resto del flujo, incluido el gate del PASO 3.5.
+
+---
+
 ## PASO 1 — Análisis técnico y pre-carga (ejecución normal)
 
 ### 1.1 — Lee el contexto del stack

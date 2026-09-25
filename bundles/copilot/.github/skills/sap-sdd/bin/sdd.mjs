@@ -6,6 +6,8 @@
 //   node bin/sdd.mjs aprobar    <proyecto> <C1|C2|C3|C4> --decide <nombre> [--raiz <dir>]
 //   node bin/sdd.mjs estado     <proyecto> [--raiz <dir>] [--json]
 //   node bin/sdd.mjs empaquetar <proyecto> [--raiz <dir>] [--salida <dir>] [--con-entradas]
+//   node bin/sdd.mjs importar   <paquete.zip> [--raiz <dir>]
+//   node bin/sdd.mjs traspaso   <proyecto> [--raiz <dir>] [--json]
 //   node bin/sdd.mjs raiz
 //   node bin/sdd.mjs vigilar-entradas     (rutas por stdin; lo usa el Gate 1)
 //
@@ -17,6 +19,7 @@ import { crearProyecto, raizSdd, normalizarRuta, errorDeUso, FASES } from '../li
 import { abrirProyecto, gate, aprobar, calcularEstado, estimacionDe } from '../lib/verificacion.mjs';
 import { empaquetar } from '../lib/paquete.mjs';
 import { entradasProhibidas } from '../lib/entradas.mjs';
+import { importarPaquete, traspaso, briefMarkdown } from '../lib/traspaso.mjs';
 
 function uso() {
   console.error(`uso: sdd init       <proyecto> [--raiz <dir>]
@@ -24,6 +27,8 @@ function uso() {
      sdd aprobar    <proyecto> <fase> --decide <nombre> [--raiz <dir>]
      sdd estado     <proyecto> [--raiz <dir>] [--json]
      sdd empaquetar <proyecto> [--raiz <dir>] [--salida <dir>] [--con-entradas]
+     sdd importar   <paquete.zip> [--raiz <dir>]
+     sdd traspaso   <proyecto> [--raiz <dir>] [--json]
      sdd raiz
      sdd vigilar-entradas   (interno: lo usa el Gate 1; rutas por stdin)
 
@@ -162,6 +167,7 @@ function cmdEstado(args) {
     const aprob = e.aprobacion ? ` (${e.aprobacion.dec}, ${e.aprobacion.fecha}, ${e.aprobacion.decide})` : '';
     console.log(`  ${f.id} ${f.titulo.padEnd(11)} ${e.estado}${aprob}`);
     for (const m of e.motivos) console.log(`       · ${m}`);
+    if (e.nota) console.log(`       nota: ${e.nota}`);
   }
   return 0;
 }
@@ -191,9 +197,32 @@ function cmdVigilarEntradas(args) {
   return 1;
 }
 
+function cmdImportar(args) {
+  const { flags, posicionales } = parsear(args, { '--raiz': 'valor' }, 1);
+  if (!posicionales.length) throw errorDeUso('falta el paquete (.zip)');
+  const r = importarPaquete({ zip: path.resolve(posicionales[0]), raiz: raizDe(flags) });
+  console.log(`✓ importado: ${r.dir} (${r.archivos} archivos)`);
+  const calc = calcularEstado(abrirProyecto(path.dirname(r.dir), r.nombre));
+  for (const f of FASES) console.log(`  ${f.id} ${calc[f.id].estado}${calc[f.id].aprobacion ? ` (${calc[f.id].aprobacion.dec})` : ''}`);
+  for (const nota of new Set(FASES.map((f) => calc[f.id].nota).filter(Boolean))) console.log(`  nota: ${nota}`);
+  return 0;
+}
+
+function cmdTraspaso(args) {
+  const { flags, proyecto } = proyectoDe(args, { '--json': 'bool' }, false);
+  const r = traspaso(proyecto);
+  if (r.bloqueos.length) {
+    imprimirHallazgos(`${proyecto.nombre} no está listo para implementar`, r.bloqueos);
+    console.error('  Terminá el SDD con /sap-sdd antes de pasarlo a /sap-techlead.');
+    return 1;
+  }
+  console.log(flags['--json'] ? JSON.stringify(r.brief, null, 2) : briefMarkdown(r.brief));
+  return 0;
+}
+
 const COMANDOS = {
   init, gate: cmdGate, aprobar: cmdAprobar, estado: cmdEstado,
-  empaquetar: cmdEmpaquetar, 'vigilar-entradas': cmdVigilarEntradas,
+  empaquetar: cmdEmpaquetar, importar: cmdImportar, traspaso: cmdTraspaso, 'vigilar-entradas': cmdVigilarEntradas,
 };
 
 function main(argv) {

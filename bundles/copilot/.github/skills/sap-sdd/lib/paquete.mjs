@@ -201,7 +201,7 @@ function seleccionar(dir, conEntradas) {
       archivos.push(...archivosBajo(dir, n, symlinks).filter((r) => !r.split('/').some((s) => s.startsWith('.'))));
     } else if (RAIZ_PERMITIDA.has(n) && st.isFile()) {
       archivos.push(n);
-    } else if (n !== 'entradas' && n !== '.sdd.lock' && !n.endsWith('.tmp')) {
+    } else if (n !== 'entradas' && n !== '.sdd.lock' && n !== '.importado.json' && !n.endsWith('.tmp')) {
       omitidos.push(st.isDirectory() ? `${n}/` : n);
     }
   }

@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { CONTRATO, REQUERIMIENTO, MINIMO_CARACTERES, MARCA_PENDIENTE, esIgnorable } from './contrato.mjs';
-import { FASES, VERSION_ESTADO, validarNombre, errorDeUso, bloqueEstado } from './proyecto.mjs';
+import { FASES, VERSION_ESTADO, validarNombre, errorDeUso, bloqueEstado, fecha as fechaLocal } from './proyecto.mjs';
 import { leerInventario, verificarEstimacion, riesgosDe, leerSi, rutaSapdiag } from './estimacion.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -59,7 +59,7 @@ const esHuella = (v) => esObjeto(v) && Object.values(v).every((h) => typeof h ==
  * mirar que cada fase fuera un objeto, un `{}` editado a mano borraba una
  * aprobación sin error, y un `consumio: "abc"` reventaba con un TypeError.
  */
-function formaInvalida(estado) {
+export function formaInvalida(estado) {
   if (!esObjeto(estado) || estado.version !== VERSION_ESTADO) return `version tiene que ser ${VERSION_ESTADO}`;
   if (!esObjeto(estado.fases)) return 'falta fases';
   for (const id of IDS) {
@@ -145,6 +145,20 @@ function huellaDeEntradas(dir, fase) {
   return h;
 }
 
+/** La marca que `sdd importar` deja en un proyecto que vino de un paquete. */
+export const MARCA_IMPORTADO = '.importado.json';
+
+/**
+ * Archivos en la carpeta de una fase que el contrato no declara. El gate ya los
+ * rechaza al aprobar; esto es para uno que aparece DESPUÉS: viajaría en el
+ * paquete sin haber sido aprobado.
+ */
+function extrasDeFase(dir, fase) {
+  const c = CONTRATO[fase.id];
+  const permitidos = new Set([...c.obligatorios, ...c.opcionales].map((n) => `${fase.dir}/${n}`));
+  return archivosBajo(dir, fase.dir, []).filter((r) => !permitidos.has(r));
+}
+
 /** Qué cambió entre dos huellas, en palabras. */
 function diferencias(guardada, actual) {
   const out = [];
@@ -166,14 +180,27 @@ function diferencias(guardada, actual) {
 export function calcularEstado(proyecto) {
   const { dir, estado } = proyecto;
   const out = {};
+  // Sin `entradas/` en un proyecto IMPORTADO —el paquete sale sin ella— no se
+  // puede verificar que la documentación del cliente no cambió, pero tampoco
+  // cambió: faltar no es cambiar. Esa comparación se omite y se avisa. En un
+  // proyecto local no: borrar `entradas/` después de cambiarla dejaba a C1
+  // aprobada de nuevo, así que ahí faltar SÍ la deja vieja.
+  const sinEntradas = archivosBajo(dir, 'entradas', []).length === 0 && fs.existsSync(path.join(dir, MARCA_IMPORTADO));
   for (const f of FASES) {
     const e = estado.fases[f.id];
     if (!e.aprobacion) { out[f.id] = { estado: 'pendiente', motivos: [] }; continue; }
+    let consumio = e.consumio ?? {};
+    let nota;
+    if (sinEntradas && Object.keys(consumio).some((r) => r.startsWith('entradas/'))) {
+      consumio = Object.fromEntries(Object.entries(consumio).filter(([r]) => !r.startsWith('entradas/')));
+      nota = 'entradas/ no está en esta copia: no se verifica que la documentación del cliente no haya cambiado';
+    }
     const motivos = [
-      ...diferencias(e.consumio ?? {}, huellaDeEntradas(dir, f)).map((m) => `entrada: ${m}`),
+      ...diferencias(consumio, huellaDeEntradas(dir, f)).map((m) => `entrada: ${m}`),
       ...diferencias(e.artefactos ?? {}, huellaDeFase(dir, f)).map((m) => `propio: ${m}`),
+      ...extrasDeFase(dir, f).map((r) => `propio: ${r} no es del contrato de la fase y apareció después de aprobarla`),
     ];
-    out[f.id] = { estado: motivos.length ? 'vieja' : 'aprobada', motivos, aprobacion: e.aprobacion };
+    out[f.id] = { estado: motivos.length ? 'vieja' : 'aprobada', motivos, aprobacion: e.aprobacion, ...(nota ? { nota } : {}) };
   }
   return out;
 }
@@ -626,7 +653,7 @@ export function aprobar(proyecto, id, { decide, ahora = new Date() }) {
     const pDec = path.join(p.dir, 'decisiones.md');
     const decisiones = fs.existsSync(pDec) ? fs.readFileSync(pDec, 'utf8') : '';
     const dec = siguienteDec(decisiones);
-    const fecha = ahora.toISOString().slice(0, 10);
+    const fecha = fechaLocal(ahora);
     const entrada = `
 ## ${dec} — Aprobación de gate ${id}
 

@@ -110,8 +110,10 @@ export function estadoInicial(nombre, ahora) {
   return { version: VERSION_ESTADO, proyecto: nombre, creado: ahora.toISOString(), fases };
 }
 
-function fecha(ahora) {
-  return ahora.toISOString().slice(0, 10);
+/** AAAA-MM-DD en la hora LOCAL: una aprobación a las 22 h no es del día siguiente. */
+export function fecha(ahora) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${ahora.getFullYear()}-${p(ahora.getMonth() + 1)}-${p(ahora.getDate())}`;
 }
 
 /**
@@ -204,7 +206,7 @@ export function planDeProyecto(nombre, ahora) {
 }
 
 /** Lanza si la raíz está dentro de un work tree de git. */
-function exigirFueraDeGit(raizAbs) {
+export function exigirFueraDeGit(raizAbs) {
   const repo = repoQueContiene(raizAbs);
   if (!repo) return;
   throw new Error(
