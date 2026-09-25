@@ -3,7 +3,7 @@
 ├── CLAUDE.md                    ← Orquestador principal
 ├── README.md                    ← Instrucciones de instalación
 ├── CONTRIBUTING.md              ← Guía para extender el stack
-├── commands/                    ← Comandos del stack (19); cada emisor los traduce al formato de su host
+├── commands/                    ← Comandos del stack (20); cada emisor los traduce al formato de su host
 ├── agents/                      ← System prompts de cada agente especializado
 │   ├── 01-requirements/
 │   ├── 02-integration/
@@ -23,6 +23,7 @@
 │   ├── sap-nfr/                 ← ⭐ Catálogo NFR detallado (lazy-load)
 │   ├── sap-btp-standards/       ← ⭐ Arquitectura CAP y modelado HANA (lazy-load)
 │   ├── sap-doc-standards/       ← ⭐ Estructura, diagramas y templates de doc (lazy-load)
+│   ├── sap-sdd/                 ← ⭐ Ciclo SDD (ADR-014): motor sdd.mjs + guías de fase en reference/
 │   └── sap-diagrams/            ← ⭐ Motor de diagramas SAP validados (.sapdiag.json → .drawio + .svg)
 │       ├── schemas/             ← IR tipado: architecture, sequence
 │       ├── lib/                 ← layout, ruteo, gate de composición, emisores

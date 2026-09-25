@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "diagram_type": "integration",
+  "meta": {
+    "title": "Replicación de pedidos S/4 → Salesforce (iFlow)",
+    "subtitle": "SAP Integration Suite — Cloud Integration",
+    "package": "ZPKG_VENTAS_INTEGRACION",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "emisor",
+      "kind": "sender",
+      "label": "Emisor",
+      "sublabel": "S/4HANA 2023 On-Premise"
+    },
+    {
+      "id": "proceso",
+      "kind": "process",
+      "label": "Integration Process"
+    },
+    {
+      "id": "receptor",
+      "kind": "receiver",
+      "label": "Receptor",
+      "sublabel": "Salesforce"
+    },
+    {
+      "id": "excepcion",
+      "kind": "exception",
+      "label": "Exception Subprocess"
+    }
+  ],
+  "steps": [
+    {
+      "id": "s4",
+      "type": "sender-system",
+      "label": "S/4HANA",
+      "sublabel": "ORDERS05",
+      "lane": "emisor"
+    },
+    {
+      "id": "inicio",
+      "type": "start",
+      "label": "Inicio",
+      "lane": "proceso"
+    },
+    {
+      "id": "convertir",
+      "type": "converter",
+      "label": "IDoc → XML",
+      "lane": "proceso"
+    },
+    {
+      "id": "mapeo",
+      "type": "mapping",
+      "label": "Mapeo pedido",
+      "sublabel": "ORDERS05 → Order",
+      "lane": "proceso"
+    },
+    {
+      "id": "router",
+      "type": "router",
+      "label": "¿Cliente activo?",
+      "lane": "proceso"
+    },
+    {
+      "id": "envio",
+      "type": "request-reply",
+      "label": "Crear pedido",
+      "sublabel": "REST v58",
+      "lane": "proceso"
+    },
+    {
+      "id": "fin",
+      "type": "end",
+      "label": "Fin",
+      "lane": "proceso"
+    },
+    {
+      "id": "error",
+      "type": "exception-start",
+      "label": "Captura de error",
+      "lane": "excepcion"
+    },
+    {
+      "id": "alerta",
+      "type": "script",
+      "label": "Alerta a soporte",
+      "sublabel": "Groovy + Mail",
+      "lane": "excepcion"
+    },
+    {
+      "id": "sfdc",
+      "type": "receiver-system",
+      "label": "Salesforce",
+      "sublabel": "Sales Cloud",
+      "lane": "receptor"
+    }
+  ],
+  "flows": [
+    {
+      "id": "idoc",
+      "from": "s4",
+      "to": "inicio",
+      "label": "IDoc",
+      "protocol": "IDoc",
+      "kind": "data"
+    },
+    {
+      "id": "f1",
+      "from": "inicio",
+      "to": "convertir",
+      "kind": "data"
+    },
+    {
+      "id": "f2",
+      "from": "convertir",
+      "to": "mapeo",
+      "kind": "data"
+    },
+    {
+      "id": "f3",
+      "from": "mapeo",
+      "to": "router",
+      "kind": "data"
+    },
+    {
+      "id": "f4",
+      "from": "router",
+      "to": "envio",
+      "label": "sí",
+      "kind": "data"
+    },
+    {
+      "id": "f5",
+      "from": "envio",
+      "to": "fin",
+      "kind": "data"
+    },
+    {
+      "id": "rest",
+      "from": "envio",
+      "to": "sfdc",
+      "label": "REST + confirmación",
+      "protocol": "REST",
+      "kind": "data",
+      "bidirectional": true
+    },
+    {
+      "id": "fallo",
+      "from": "router",
+      "to": "error",
+      "label": "no",
+      "kind": "event",
+      "style": "dashed"
+    },
+    {
+      "id": "notificar",
+      "from": "error",
+      "to": "alerta",
+      "kind": "event",
+      "style": "dashed"
+    }
+  ]
+}

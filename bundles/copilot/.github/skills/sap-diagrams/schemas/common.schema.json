@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sap-diagrams/common.schema.json",
+  "title": "SAP Diagrams — definiciones compartidas",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,47}$"
+    },
+    "qualityProfile": {
+      "enum": [
+        "standard",
+        "showcase"
+      ]
+    },
+    "level": {
+      "enum": [
+        "L0",
+        "L1",
+        "L2"
+      ]
+    },
+    "edgeKind": {
+      "enum": [
+        "data",
+        "auth",
+        "deploy",
+        "event",
+        "access",
+        "replication"
+      ]
+    },
+    "edgeStyle": {
+      "enum": [
+        "solid",
+        "dashed"
+      ]
+    },
+    "nodeType": {
+      "enum": [
+        "user",
+        "client",
+        "fiori",
+        "work-zone",
+        "bas",
+        "cap",
+        "abap-cloud",
+        "cf-runtime",
+        "kyma",
+        "hana",
+        "sac",
+        "dms",
+        "job-scheduler",
+        "event-mesh",
+        "integration-suite",
+        "iflow",
+        "api-management",
+        "destination",
+        "connectivity",
+        "cloud-connector",
+        "private-link",
+        "ias",
+        "xsuaa",
+        "audit-log",
+        "s4-onprem",
+        "s4-cloud",
+        "ecc",
+        "bw",
+        "external",
+        "database",
+        "note"
+      ]
+    },
+    "zoneKind": {
+      "enum": [
+        "btp",
+        "subaccount",
+        "service-area",
+        "onpremise",
+        "external",
+        "network"
+      ]
+    },
+    "legendEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "label"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "common.schema.json#/$defs/edgeKind"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      }
+    },
+    "stepType": {
+      "enum": [
+        "start",
+        "end",
+        "timer",
+        "mapping",
+        "router",
+        "splitter",
+        "aggregator",
+        "gather",
+        "script",
+        "request-reply",
+        "content-modifier",
+        "filter",
+        "converter",
+        "encoder",
+        "persist",
+        "process-call",
+        "exception-start",
+        "external-system",
+        "sender-system",
+        "receiver-system"
+      ]
+    },
+    "protocol": {
+      "enum": [
+        "IDoc",
+        "SOAP",
+        "OData",
+        "REST",
+        "HTTPS",
+        "SFTP",
+        "JMS",
+        "AS2",
+        "Mail",
+        "RFC",
+        "JDBC",
+        "AMQP",
+        "Kafka",
+        "SuccessFactors",
+        "Ariba"
+      ]
+    },
+    "systemRole": {
+      "enum": [
+        "development",
+        "quality",
+        "production",
+        "sandbox",
+        "training"
+      ]
+    },
+    "transportKind": {
+      "enum": [
+        "workbench",
+        "customizing",
+        "gcts",
+        "cts-plus",
+        "manual"
+      ]
+    }
+  }
+}

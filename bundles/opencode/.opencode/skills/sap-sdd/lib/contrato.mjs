@@ -6,14 +6,14 @@
  * artefacto que nadie pidió.
  *
  * `citas` dice qué archivos tienen que citar el requerimiento y con qué rigor:
- *   'por-seccion' → cada sección (`## ` / `### `) con contenido lleva al menos una
+ *   'por-seccion' → cada sección (`##` / `###` / `####`) con contenido lleva al menos una
  *   'alguna'      → el archivo lleva al menos una
  */
 export const CONTRATO = {
   C1: {
     obligatorios: ['requerimiento.md', 'fs.md', 'handoff.md'],
     opcionales: ['gap-analysis.md', 'preguntas.md'],
-    citas: {},
+    citas: { 'fs.md': 'alguna' },
   },
   C2: {
     obligatorios: ['escenarios.md', 'casos-prueba.md', 'handoff.md'],

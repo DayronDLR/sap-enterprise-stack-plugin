@@ -87,8 +87,7 @@ export function escribirZip(entradas, escribir, ahora = new Date()) {
     local.writeUInt16LE(n.length, 26);
     emitir(local);
     emitir(n);
-    if (cuerpo) emitir(cuerpo);
-    else copiarPorBloques(e.ruta, emitir);
+    emitirCuerpo(e, cuerpo, { tam, crc }, emitir);
 
     const central = Buffer.alloc(46);
     central.writeUInt32LE(0x02014b50, 0);
@@ -129,8 +128,7 @@ function prepararCuerpo(e, esDir) {
   if (esDir) return { crc: 0, tam: 0, metodo: 0, cuerpo: Buffer.alloc(0) };
   const tam = e.datos ? e.datos.length : fs.statSync(e.ruta).size;
   if (!e.datos && tam > MAX_COMPRIMIR) {
-    let crc = 0;
-    copiarPorBloques(e.ruta, (b) => { crc = crc32(b, crc); });
+    const { crc } = copiarPorBloques(e.ruta, () => {});
     return { crc, tam, metodo: 0, cuerpo: null };
   }
   const datos = e.datos ?? fs.readFileSync(e.ruta);
@@ -139,14 +137,36 @@ function prepararCuerpo(e, esDir) {
   return { crc: crc32(datos), tam, metodo: guardar ? 0 : 8, cuerpo: guardar ? datos : comprimido };
 }
 
+/**
+ * Emite el cuerpo de una entrada. Uno grande se lee dos veces (crc primero,
+ * copia después): si el archivo cambió en el medio, el zip saldría con un crc
+ * que no corresponde, y se corta acá.
+ */
+function emitirCuerpo(e, cuerpo, esperado, emitir) {
+  if (cuerpo) { emitir(cuerpo); return; }
+  const copia = copiarPorBloques(e.ruta, emitir);
+  if (copia.bytes !== esperado.tam || copia.crc !== esperado.crc) {
+    throw new Error(`${e.ruta} cambió mientras se empaquetaba; volvé a correr empaquetar`);
+  }
+}
+
+/** Emite `ruta` por bloques y devuelve cuántos bytes emitió y su crc. */
 function copiarPorBloques(ruta, emitir) {
   const buf = Buffer.allocUnsafe(BLOQUE);
   const fd = fs.openSync(ruta, 'r');
+  let bytes = 0;
+  let crc = 0;
   try {
-    for (let n = fs.readSync(fd, buf); n > 0; n = fs.readSync(fd, buf)) emitir(Buffer.from(buf.subarray(0, n)));
+    for (let n = fs.readSync(fd, buf); n > 0; n = fs.readSync(fd, buf)) {
+      const b = Buffer.from(buf.subarray(0, n));
+      bytes += n;
+      crc = crc32(b, crc);
+      emitir(b);
+    }
   } finally {
     fs.closeSync(fd);
   }
+  return { bytes, crc };
 }
 
 /** El zip entero en memoria. Para tests y para entradas chicas. */

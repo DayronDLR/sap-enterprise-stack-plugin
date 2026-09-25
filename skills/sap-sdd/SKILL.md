@@ -15,20 +15,19 @@ Un proyecto SDD vive **fuera de todo repo de código**, bajo `~/sdd-projects/`
 ## Resolver el CLI (una vez por sesión)
 
 El motor viaja dentro del skill, y cada host lo instala en otro lugar: el
-plugin de Claude, el checkout del stack, `.agents/` (Codex) u `.opencode/`
-(OpenCode). Resolvelo una vez y **cortá si no aparece**: `node ""` sale 0 sin
+plugin de Claude, el checkout del stack, `.agents/` (Codex), `.opencode/`
+(OpenCode) o `.github/` (Copilot). Resolvelo una vez y **cortá si no aparece**: `node ""` sale 0 sin
 hacer nada, y eso se lee como un éxito.
 
 ```bash
 SDD=$(ls "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/skills/sap-sdd/bin/sdd.mjs" \
          skills/sap-sdd/bin/sdd.mjs \
          .agents/skills/sap-sdd/bin/sdd.mjs \
-         .opencode/skills/sap-sdd/bin/sdd.mjs 2>/dev/null | head -1)
+         .opencode/skills/sap-sdd/bin/sdd.mjs \
+         .github/skills/sap-sdd/bin/sdd.mjs 2>/dev/null | head -1)
 [ -n "$SDD" ] || { echo "✗ no encontré el motor SDD (skills/sap-sdd/bin/sdd.mjs)"; exit 1; }
 node "$SDD" raiz
 ```
-
-Copilot no tiene el motor: recibe este skill como instrucciones, sin `bin/`.
 
 ## Crear el proyecto
 
@@ -43,6 +42,21 @@ sale 1 en vez de decir "completo".
 Se niega a crear el proyecto dentro de un repo git. Si tu `$HOME` es un repo
 (dotfiles versionados), la raíz por defecto queda dentro de él: usá
 `SES_SDD_HOME=/ruta/absoluta` fuera de todo repo.
+
+## Producir una fase
+
+Cada fase tiene su guía en `reference/`: qué leer, qué producir, con qué forma
+y qué no hacer. Leela entera antes de escribir el primer artefacto.
+
+| Fase | Guía |
+|---|---|
+| C1 Captura | `reference/C1-captura.md` |
+| C2 Escenarios | `reference/C2-escenarios.md` |
+| C3 Diseño, C4 Plan | pendientes (P4) |
+
+El comando `/sap-sdd <proyecto> [fase]` conduce el ciclo entero: crea el
+proyecto, retoma en la fase que corresponde y cierra cada una con el protocolo
+de abajo.
 
 ## Cerrar una fase: gate, aprobación humana, y recién ahí avanzar
 
@@ -75,18 +89,20 @@ Aprobar otra vez algo que no cambió no agrega otra decisión.
 | Fases anteriores | alguna no está aprobada, o quedó vieja |
 | Completitud | falta un obligatorio, tiene menos de 100 caracteres o lleva `<!-- sdd:pendiente -->` |
 | Whitelist | hay un archivo que la fase no declara |
-| Citas | una `[C1-captura/requerimiento.md:N]` o `:N-M` apunta a una línea que no existe o está vacía, o está mal escrita; se cita `entradas/`; o falta cita donde se exige. Lo que está dentro de bloques de código no cuenta |
+| Citas | una `[C1-captura/requerimiento.md:N]` o `:N-M` no apunta a una regla `RQ-NN` vigente, o está mal escrita; un `Fuente:` sin cita; se cita `entradas/`; o falta cita donde se exige. Lo que está entre backticks o en bloques de código no cuenta |
+| Reglas estables (C1) | una regla que cita una fase aprobada cambió de línea o desapareció; o un código `RQ-NN` está repetido |
 | Encoding | un obligatorio no es UTF-8 |
 
 | Fase | Obligatorios | Opcionales | Citas exigidas |
 |---|---|---|---|
-| C1 | `requerimiento.md`, `fs.md`, `handoff.md` | `gap-analysis.md`, `preguntas.md` | — |
-| C2 | `escenarios.md`, `casos-prueba.md`, `handoff.md` | — | una por sección `##`/`###` en escenarios; al menos una en casos |
+| C1 | `requerimiento.md`, `fs.md`, `handoff.md` | `gap-analysis.md`, `preguntas.md` | al menos una en fs |
+| C2 | `escenarios.md`, `casos-prueba.md`, `handoff.md` | — | una por sección `##`/`###`/`####` con texto en escenarios; al menos una en casos |
 | C3 | `diseno.md`, `arquitectura.sapdiag.json`, `handoff.md` | `arquitectura.drawio`, `arquitectura.svg`, `prototipo.html` | al menos una en diseño |
 | C4 | `plan.md`, `handoff.md` | `estimacion.md` | al menos una en plan |
 
-`requerimiento.md` es el texto normalizado del cliente: sus números de línea son
-los que se citan, así que después de aprobar C1 no se reformatea sin reaprobar.
+`requerimiento.md` es el texto normalizado del cliente, una regla `RQ-NN` por
+línea: sus números de línea son los que se citan. Una vez citadas, las reglas no
+se mueven: las nuevas van al final y las que no aplican se marcan `(retirado)`.
 
 ## Reabrir una fase
 
@@ -130,4 +146,5 @@ agregue algo bajo `entradas/` de un proyecto SDD, aunque se haya forzado con
 |---|---|---|
 | P1 | `init`, estructura y plantillas | disponible |
 | P2 | `gate`, `aprobar`, `estado`, `empaquetar`; `entradas/` bloqueada en Gate 1 y CI | disponible |
-| P3–P5 | Agentes cableados a C1–C4, `/sap-sdd` y traspaso a `/sap-techlead` | pendiente |
+| P3 | `/sap-sdd` y guías de C1 y C2 | disponible |
+| P4–P5 | Guías de C3 y C4, y traspaso a `/sap-techlead` | pendiente |

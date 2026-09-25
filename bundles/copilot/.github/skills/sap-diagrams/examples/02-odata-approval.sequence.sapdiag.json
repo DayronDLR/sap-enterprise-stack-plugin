@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Aprobación de pedido — Secuencia de llamadas",
+    "subtitle": "Fiori → CAP → S/4HANA vía Cloud Connector",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    {
+      "id": "app",
+      "type": "fiori",
+      "label": "App Fiori",
+      "sublabel": "Object Page"
+    },
+    {
+      "id": "xsuaa",
+      "type": "xsuaa",
+      "label": "XSUAA",
+      "sublabel": "OAuth2"
+    },
+    {
+      "id": "cap",
+      "type": "cap",
+      "label": "Servicio CAP",
+      "sublabel": "Node.js"
+    },
+    {
+      "id": "dest",
+      "type": "destination",
+      "label": "Destination",
+      "sublabel": "Service"
+    },
+    {
+      "id": "s4",
+      "type": "s4-onprem",
+      "label": "S/4HANA",
+      "sublabel": "OData V2"
+    }
+  ],
+  "messages": [
+    {
+      "from": "app",
+      "to": "xsuaa",
+      "label": "POST /oauth/token",
+      "kind": "auth"
+    },
+    {
+      "from": "xsuaa",
+      "to": "app",
+      "label": "JWT (scopes)",
+      "kind": "auth",
+      "return": true
+    },
+    {
+      "from": "app",
+      "to": "cap",
+      "label": "POST /Pedidos('4711')/aprobar",
+      "kind": "data"
+    },
+    {
+      "from": "cap",
+      "to": "cap",
+      "label": "validar autorización",
+      "kind": "auth",
+      "note": "Scope Pedidos.Aprobar"
+    },
+    {
+      "from": "cap",
+      "to": "dest",
+      "label": "GET destino S4_PRD",
+      "kind": "data"
+    },
+    {
+      "from": "dest",
+      "to": "cap",
+      "label": "URL + credenciales",
+      "kind": "data",
+      "return": true
+    },
+    {
+      "from": "cap",
+      "to": "s4",
+      "label": "POST BAPI_PO_RELEASE",
+      "kind": "data",
+      "note": "Idempotente por nro. de pedido"
+    },
+    {
+      "from": "s4",
+      "to": "cap",
+      "label": "200 OK + nro. documento",
+      "kind": "data",
+      "return": true
+    },
+    {
+      "from": "cap",
+      "to": "app",
+      "label": "201 Created",
+      "kind": "data",
+      "return": true
+    }
+  ]
+}

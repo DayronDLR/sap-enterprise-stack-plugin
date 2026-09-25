@@ -97,7 +97,7 @@ codex plugin add ses@sap-stack
 codex plugin marketplace upgrade && codex plugin add ses@sap-stack   # to update
 ```
 
-That gives you **48 skills**: the **19 commands** (invoked `$ses-sap-abap`), the **6 subagents**, and **23 reference skills**.
+That gives you **50 skills**: the **20 commands** (invoked `$ses-sap-abap`), the **6 subagents**, and **24 reference skills**.
 
 > **What a Codex plugin cannot carry:** hooks and MCP servers. Verified against
 > `codex-cli 0.153.4` — the `plugin_hooks` feature is `removed`, and `hooks` isn't
@@ -366,7 +366,7 @@ codex plugin add ses@sap-stack
 codex plugin marketplace upgrade && codex plugin add ses@sap-stack   # para actualizar
 ```
 
-Eso te da **48 skills**: los **19 comandos** (se invocan `$ses-sap-abap`), los **6 subagentes** y **23 skills** de referencia.
+Eso te da **50 skills**: los **20 comandos** (se invocan `$ses-sap-abap`), los **6 subagentes** y **24 skills** de referencia.
 
 > **Lo que un plugin de Codex no puede llevar:** hooks ni servidores MCP.
 > Verificado contra `codex-cli 0.153.4` — la feature `plugin_hooks` está

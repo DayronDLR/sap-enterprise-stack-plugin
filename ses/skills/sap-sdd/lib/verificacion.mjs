@@ -65,6 +65,9 @@ function formaInvalida(estado) {
       return `${id}.aprobacion tiene que ser null o { dec, fecha, decide }`;
     }
     if (!esHuella(f.consumio) || !esHuella(f.artefactos)) return `${id}.consumio y ${id}.artefactos tienen que ser { ruta: sha256 }`;
+    if (f.lineas !== undefined && !(esObjeto(f.lineas) && Object.values(f.lineas).every((n) => Number.isInteger(n) && n > 0))) {
+      return `${id}.lineas tiene que ser { 'RQ-NN': línea }`;
+    }
   }
   return null;
 }
@@ -176,6 +179,18 @@ const RE_CITA = /\[C1-captura\/requerimiento\.md:(\d+)(?:-(\d+))?\]/g;
 // Sin `g`: con `g`, `.test` guarda estado entre llamadas y la segunda da falso.
 const RE_CITA_UNA = /\[C1-captura\/requerimiento\.md:\d+(?:-\d+)?\]/;
 const RE_CITA_ENTRADAS = /\[entradas\/[^\]\n]*\]/g;
+/** Una regla del requerimiento: `RQ-` y sólo dígitos, al principio de la línea. */
+const RE_RQ = /^RQ-\d+(?![\w-])/;
+
+/** `{ 'RQ-01': 4, ... }`: en qué línea está cada regla. */
+export function lineasRq(texto) {
+  const out = {};
+  lineasDe(texto.replace(/^\uFEFF/, '')).forEach((l, i) => {
+    const m = RE_RQ.exec(l);
+    if (m && !(m[0] in out)) out[m[0]] = i + 1;
+  });
+  return out;
+}
 // Todo lo que PARECE una cita al requerimiento. Lo que matchea esto y no
 // RE_CITA está mal escrito (`:  3`, `:3a`, `:tres`) y antes se ignoraba callado.
 const RE_CASI_CITA = /\[C1-captura\/requerimiento\.md:[^\]\n]*\]/g;
@@ -217,24 +232,47 @@ function revisarCitas(rel, original, modo, lineasReq) {
     h.push(`${rel}:${lineaDe(texto, m.index)} cita ${m[0]}: las fases posteriores a C1 citan ${REQUERIMIENTO}, nunca entradas/`);
   }
   for (const m of texto.matchAll(RE_CITA)) {
-    const desde = Number(m[1]);
-    const hasta = m[2] === undefined ? desde : Number(m[2]);
-    const donde = `${rel}:${lineaDe(texto, m.index)}`;
-    if (!lineasReq) { h.push(`${donde} cita ${m[0]} pero ${REQUERIMIENTO} no existe`); continue; }
-    if (desde < 1 || hasta < desde || hasta > lineasReq.length) {
-      h.push(`${donde} cita ${m[0]}: fuera de rango (el requerimiento tiene ${lineasReq.length} líneas)`);
-    } else if (!lineasReq[desde - 1].trim()) {
-      h.push(`${donde} cita ${m[0]}: la línea ${desde} está vacía`);
-    }
+    const problema = destinoDeCita(Number(m[1]), m[2] === undefined ? Number(m[1]) : Number(m[2]), lineasReq);
+    if (problema) h.push(`${rel}:${lineaDe(texto, m.index)} cita ${m[0]}: ${problema}`);
+  }
+  // Un «Fuente: RQ-11» es la forma natural de citar y el gate no la ve: se
+  // avisa en vez de ignorarla.
+  // Los dos puntos son obligatorios: «Fuente de datos: CDS …» o «- Fuentes
+  // primarias del alcance» son prosa, no un intento de citar.
+  for (const m of texto.matchAll(/^[ \t>*_-]*(?:\*\*)?Fuentes?(?:\*\*)?\s*:[^\n]*$/gim)) {
+    if (!RE_CITA_UNA.test(m[0])) h.push(`${rel}:${lineaDe(texto, m.index)} "Fuente:" sin cita: escribila como [${REQUERIMIENTO}:N]`);
   }
   if (modo === 'alguna' && !RE_CITA_UNA.test(texto)) {
-    h.push(`${rel} no cita el requerimiento: toda afirmación funcional lleva [${REQUERIMIENTO}:N]`);
+    h.push(`${rel} no cita el requerimiento: toda afirmación funcional lleva [${REQUERIMIENTO}:N] (lo que está entre backticks o en bloques de código no cuenta)`);
   }
   if (modo === 'por-seccion') h.push(...seccionesSinCita(rel, texto));
   return h;
 }
 
-/** Cada sección `## ` / `### ` con contenido tiene que citar. */
+/**
+ * Qué tiene de malo una cita a las líneas `desde`–`hasta`, o null. Tiene que
+ * apuntar a reglas: líneas `RQ-NN` no retiradas. Con sólo exigir que la línea
+ * no estuviera vacía, una regla insertada en el medio corría todas las citas
+ * siguientes una línea —a un título, o a la regla de al lado— y el gate pasaba.
+ */
+function destinoDeCita(desde, hasta, lineasReq) {
+  if (!lineasReq) return `${REQUERIMIENTO} no existe`;
+  if (desde < 1 || hasta < desde || hasta > lineasReq.length) {
+    return `fuera de rango (el requerimiento tiene ${lineasReq.length} líneas)`;
+  }
+  // Las puntas tienen que ser reglas; en el medio se aceptan líneas en blanco,
+  // pero no títulos ni reglas retiradas: un rango que las cruza cita ruido.
+  for (let n = desde; n <= hasta; n += 1) {
+    const l = lineasReq[n - 1];
+    const punta = n === desde || n === hasta;
+    if (!l.trim()) { if (punta) return `la línea ${n} está vacía`; continue; }
+    if (!RE_RQ.test(l)) return `la línea ${n} no es una regla (tiene que empezar con RQ- y sólo dígitos, como RQ-07): «${l.trim().slice(0, 60)}»`;
+    if (/\(retirad[oa]\)/i.test(l)) return `la línea ${n} es una regla retirada`;
+  }
+  return null;
+}
+
+/** Cada sección `##` / `###` / `####` con contenido tiene que citar. */
 function seccionesSinCita(rel, texto) {
   const h = [];
   const lineas = texto.split('\n');
@@ -247,7 +285,7 @@ function seccionesSinCita(rel, texto) {
     }
   };
   lineas.forEach((l, i) => {
-    const m = /^#{2,3} (.+)$/.exec(l);
+    const m = /^#{2,4} (.+)$/.exec(l);
     if (m) { cerrar(); titulo = m[1].trim(); desde = i + 1; cuerpo = []; } else if (titulo) cuerpo.push(l);
   });
   cerrar();
@@ -286,10 +324,12 @@ function revisarArtefactos(dir, fase) {
   }
 
   const leer = (n) => fs.readFileSync(path.join(dir, fase.dir, n), 'utf8');
+  const noUtf8 = new Set();
   for (const n of c.obligatorios) {
     if (!presentes.has(n)) { h.push(`falta ${fase.dir}/${n}`); continue; }
     if (!esUtf8(path.join(dir, fase.dir, n))) {
       h.push(`${fase.dir}/${n} no es UTF-8: guardalo como UTF-8 (en otro encoding, acentos y citas se leen mal)`);
+      noUtf8.add(n);
       continue;
     }
     h.push(...revisarObligatorio(`${fase.dir}/${n}`, leer(n)));
@@ -298,7 +338,7 @@ function revisarArtefactos(dir, fase) {
   const pReq = path.join(dir, REQUERIMIENTO);
   const lineasReq = fs.existsSync(pReq) ? lineasDe(fs.readFileSync(pReq, 'utf8').replace(/^\uFEFF/, '')) : null;
   for (const [n, modo] of Object.entries(c.citas)) {
-    if (presentes.has(n)) h.push(...revisarCitas(`${fase.dir}/${n}`, leer(n), modo, lineasReq));
+    if (presentes.has(n) && !noUtf8.has(n)) h.push(...revisarCitas(`${fase.dir}/${n}`, leer(n), modo, lineasReq));
   }
   return h;
 }
@@ -320,10 +360,84 @@ export function gate(proyecto, id) {
     if (e.estado === 'pendiente') h.push(`${f.id} no está aprobada: se aprueba antes de avanzar a ${id}`);
     if (e.estado === 'vieja') h.push(`${f.id} quedó vieja (${e.motivos.join('; ')}): reaprobala antes de avanzar a ${id}`);
   }
+  if (id === 'C1') h.push(...reglasDuplicadas(proyecto.dir), ...reglasMovidas(proyecto));
   // Que ESTA fase haya quedado vieja no bloquea su gate: reaprobarla es
   // justamente la salida. Si bloqueara, una fase vieja no se podría reaprobar
   // nunca. La que bloquea es la fase SIGUIENTE, por el chequeo de arriba.
   h.push(...revisarArtefactos(proyecto.dir, fase));
+  return h;
+}
+
+/** Líneas del requerimiento citadas por un texto (las dos puntas y lo del medio). */
+function lineasCitadas(texto) {
+  const out = new Set();
+  for (const m of sinCodigo(texto).matchAll(RE_CITA)) {
+    const desde = Number(m[1]);
+    const hasta = m[2] === undefined ? desde : Number(m[2]);
+    for (let n = desde; n <= hasta && n - desde < 1000; n += 1) out.add(n);
+  }
+  return out;
+}
+
+/**
+ * Qué reglas citan las fases APROBADAS posteriores a C1, y desde qué archivo:
+ * `{ 'RQ-05': 'C2-escenarios/escenarios.md', ... }`. Las líneas citadas se
+ * traducen a reglas con las líneas que C1 tenía al aprobarse, que son las que
+ * esas fases vieron.
+ */
+function reglasCitadas(proyecto, guardadas) {
+  const porLinea = Object.fromEntries(Object.entries(guardadas).map(([rq, n]) => [n, rq]));
+  const citantes = FASES.slice(1)
+    .filter((f) => proyecto.estado.fases[f.id].aprobacion)
+    .flatMap((f) => Object.keys(proyecto.estado.fases[f.id].artefactos))
+    .filter((rel) => rel.endsWith('.md') && fs.existsSync(path.join(proyecto.dir, rel)));
+  const out = {};
+  for (const rel of citantes) {
+    for (const n of lineasCitadas(fs.readFileSync(path.join(proyecto.dir, rel), 'utf8'))) {
+      const rq = porLinea[n];
+      if (rq && !(rq in out)) out[rq] = rel;
+    }
+  }
+  return out;
+}
+
+/**
+ * Reglas que una fase aprobada posterior CITA y que cambiaron de línea o
+ * desaparecieron desde que se aprobó C1. Las citas son por número de línea:
+ * una regla citada que se mueve arrastra la cita, en silencio, a otra cosa. Las
+ * que nadie cita se pueden mover: por eso se buscan las citas de verdad en vez
+ * de congelar el archivo entero.
+ */
+function reglasMovidas(proyecto) {
+  const guardadas = proyecto.estado.fases.C1.lineas;
+  const p = path.join(proyecto.dir, REQUERIMIENTO);
+  if (!guardadas || !fs.existsSync(p)) return [];
+  const citadas = reglasCitadas(proyecto, guardadas);
+  const actuales = lineasRq(fs.readFileSync(p, 'utf8'));
+  const h = [];
+  for (const [rq, quien] of Object.entries(citadas)) {
+    const n = guardadas[rq];
+    if (!(rq in actuales)) {
+      h.push(`${rq} desapareció de ${REQUERIMIENTO} y ${quien} lo cita: no se borra, se deja como «${rq} (retirado) <motivo>» en su línea ${n}`);
+    } else if (actuales[rq] !== n) {
+      h.push(`${rq} pasó de la línea ${n} a la ${actuales[rq]} de ${REQUERIMIENTO} y ${quien} lo cita: la cita quedaría corrida. Las reglas nuevas van al final del archivo`);
+    }
+  }
+  return h;
+}
+
+/** Códigos `RQ-NN` repetidos: una cita a «la regla RQ-05» sería ambigua. */
+function reglasDuplicadas(dir) {
+  const p = path.join(dir, REQUERIMIENTO);
+  if (!fs.existsSync(p)) return [];
+  const vistas = {};
+  const h = [];
+  lineasDe(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, '')).forEach((l, i) => {
+    const m = RE_RQ.exec(l);
+    if (!m) return;
+    if (m[0] in vistas) h.push(`${REQUERIMIENTO}:${i + 1} repite ${m[0]} (ya está en la línea ${vistas[m[0]]}): cada regla tiene un código propio`);
+    else vistas[m[0]] = i + 1;
+  });
   return h;
 }
 
@@ -478,6 +592,7 @@ ${listar(artefactos)}
       aprobacion: { dec, fecha, decide: decide.trim() },
       consumio,
       artefactos,
+      ...(id === 'C1' ? { lineas: lineasRq(fs.readFileSync(path.join(p.dir, REQUERIMIENTO), 'utf8')) } : {}),
     };
     // Orden: primero el log, después el estado. Si algo cae en el medio queda
     // una DEC sin estado —visible y reaprobable—, nunca un estado sin su DEC.
