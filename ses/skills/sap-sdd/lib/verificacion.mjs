@@ -9,13 +9,18 @@
  * fase queda vieja sin que nadie tenga que acordarse. Como cada fase consume
  * TODAS las anteriores, reabrir C1 deja viejas C2, C3 y C4 de una vez.
  */
+import { spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
 
 import { CONTRATO, REQUERIMIENTO, MINIMO_CARACTERES, MARCA_PENDIENTE, esIgnorable } from './contrato.mjs';
 import { FASES, VERSION_ESTADO, validarNombre, errorDeUso, bloqueEstado } from './proyecto.mjs';
+import { leerInventario, verificarEstimacion, riesgosDe, leerSi, rutaSapdiag } from './estimacion.mjs';
+
+const AQUI = path.dirname(fileURLToPath(import.meta.url));
 
 const IDS = FASES.map((f) => f.id);
 
@@ -364,8 +369,54 @@ export function gate(proyecto, id) {
   // Que ESTA fase haya quedado vieja no bloquea su gate: reaprobarla es
   // justamente la salida. Si bloqueara, una fase vieja no se podría reaprobar
   // nunca. La que bloquea es la fase SIGUIENTE, por el chequeo de arriba.
-  h.push(...revisarArtefactos(proyecto.dir, fase));
+  const artefactos = revisarArtefactos(proyecto.dir, fase);
+  h.push(...artefactos);
+  // Lo específico de cada fase corre sobre artefactos que ya existen: sobre uno
+  // faltante sólo repetiría el "falta".
+  if (!artefactos.some((x) => x.startsWith('falta '))) {
+    if (id === 'C3') h.push(...revisarDiseno(proyecto.dir));
+    if (id === 'C4') h.push(...estimacionDe(proyecto.dir).hallazgos);
+  }
   return h;
+}
+
+/**
+ * C3: el inventario de objetos, y el diagrama validado por el motor de
+ * sap-diagrams con el perfil de entrega (showcase). Sin el motor no se puede
+ * afirmar que el diagrama se entrega bien: falla cerrado.
+ */
+function revisarDiseno(dir) {
+  const rel = 'C3-diseno/diseno.md';
+  const h = [...leerInventario(rel, leerSi(path.join(dir, rel))).hallazgos];
+  const spec = path.join(dir, 'C3-diseno/arquitectura.sapdiag.json');
+  const motor = rutaSapdiag(AQUI);
+  if (!fs.existsSync(motor)) {
+    h.push(`no encuentro el motor de diagramas (${motor}): sin él, arquitectura.sapdiag.json se entregaría sin validar`);
+    return h;
+  }
+  const r = spawnSync(process.execPath, [motor, 'validate', spec, '--quality', 'showcase'], { encoding: 'utf8' });
+  if (r.status === 1) {
+    const detalle = `${r.stdout}${r.stderr}`.split('\n').filter((l) => /ERROR|WARN/.test(l)).slice(0, 5).join(' · ');
+    h.push(`C3-diseno/arquitectura.sapdiag.json no pasa el gate de composición de sap-diagrams (perfil showcase): ${detalle || 'corré sapdiag validate para el detalle'}`);
+  } else if (r.status !== 0) {
+    h.push(`el motor de diagramas falló al validar arquitectura.sapdiag.json (exit ${r.status}): ${(r.stderr || r.stdout).trim().split('\n')[0]}`);
+  }
+  return h;
+}
+
+/** C4: la estimación contra el inventario de C3 y los riesgos del plan. */
+export function estimacionDe(dir) {
+  // Un archivo que no es UTF-8 ya tiene su hallazgo; parsearlo igual sólo
+  // agregaría ruido ("no tiene la tabla…") encima del problema real.
+  const rutas = ['C3-diseno/diseno.md', 'C4-plan/estimacion.md', 'C4-plan/plan.md'].map((r) => path.join(dir, r));
+  if (rutas.some((p) => fs.existsSync(p) && !esUtf8(p))) return { hallazgos: [], resumen: null };
+  const inventario = leerInventario('C3-diseno/diseno.md', leerSi(path.join(dir, 'C3-diseno/diseno.md')));
+  return verificarEstimacion({
+    rel: 'C4-plan/estimacion.md',
+    texto: leerSi(path.join(dir, 'C4-plan/estimacion.md')),
+    objetos: inventario.objetos,
+    riesgosDelPlan: riesgosDe(leerSi(path.join(dir, 'C4-plan/plan.md'))),
+  });
 }
 
 /** Líneas del requerimiento citadas por un texto (las dos puntas y lo del medio). */

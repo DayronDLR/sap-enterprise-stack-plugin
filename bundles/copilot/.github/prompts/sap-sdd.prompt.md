@@ -42,9 +42,13 @@ El argumento es `<proyecto> [C1|C2|C3|C4|estado]`.
 |---|---|
 | C1 Captura | `.github/skills/sap-sdd/reference/C1-captura.md` |
 | C2 Escenarios | `.github/skills/sap-sdd/reference/C2-escenarios.md` |
-| C3 Diseño, C4 Plan | Todavía no están conectadas (ADR-014, fase P4). Decilo: no las improvises. |
+| C3 Diseño | `.github/skills/sap-sdd/reference/C3-diseno.md` |
+| C4 Plan y estimación | `.github/skills/sap-sdd/reference/C4-plan.md` |
 
-Cada guía dice qué leer, qué producir, con qué forma y qué no hacer.
+Cada guía dice qué leer, qué producir, con qué forma y qué no hacer. En C4, la
+estimación tiene que ser **justa**: seguí las reglas de «Estimar lo justo» al pie
+de la letra y presentá el total que calcula el gate, nunca la suma de los
+pesimistas ni un porcentaje de seguridad agregado.
 
 ## 4. El cierre, siempre igual
 

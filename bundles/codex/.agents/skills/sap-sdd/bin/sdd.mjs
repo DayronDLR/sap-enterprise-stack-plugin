@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { crearProyecto, raizSdd, normalizarRuta, errorDeUso, FASES } from '../lib/proyecto.mjs';
-import { abrirProyecto, gate, aprobar, calcularEstado } from '../lib/verificacion.mjs';
+import { abrirProyecto, gate, aprobar, calcularEstado, estimacionDe } from '../lib/verificacion.mjs';
 import { empaquetar } from '../lib/paquete.mjs';
 import { entradasProhibidas } from '../lib/entradas.mjs';
 
@@ -114,10 +114,28 @@ function imprimirHallazgos(titulo, hallazgos) {
   for (const h of hallazgos) console.error(`  - ${h}`);
 }
 
+/** Los números de la estimación, para el juicio del arquitecto. */
+function imprimirEstimacion(dir) {
+  const { resumen: r } = estimacionDe(dir);
+  if (!r) return;
+  console.log(`  estimación: base ${r.base} h + contingencia ${r.contingencia} h = ${r.total} h (P80 ${r.p80} h)`);
+  console.log(`  rango de las tareas: ${r.optimista}–${r.sumaPesimistas} h`);
+  console.log('  el número que se presenta es el total; la suma de pesimistas no es una estimación');
+  const top = r.porObjeto.slice(0, 5).map((x) => `${x.obj} ${x.horas} h`).join(', ');
+  if (top) console.log(`  por objeto (mayores): ${top}${r.transversal ? `; transversales ${r.transversal} h` : ''}`);
+  for (const a of r.avisos) console.log(`  aviso: ${a}`);
+}
+
 function cmdGate(args) {
   const { proyecto, fase } = proyectoDe(args, {}, true);
   const h = gate(proyecto, fase);
-  if (h.length) { imprimirHallazgos(`gate ${fase} de ${proyecto.nombre}`, h); return 1; }
+  if (h.length) {
+    imprimirHallazgos(`gate ${fase} de ${proyecto.nombre}`, h);
+    // El resumen también mientras se itera: los avisos ayudan a corregir.
+    if (fase === 'C4') imprimirEstimacion(proyecto.dir);
+    return 1;
+  }
+  if (fase === 'C4') imprimirEstimacion(proyecto.dir);
   console.log(`✓ gate ${fase} de ${proyecto.nombre}: pasa. Presentá el resumen y pedí la aprobación antes de avanzar.`);
   const propia = calcularEstado(proyecto)[fase];
   if (propia.estado === 'vieja') console.log(`  ${fase} estaba aprobada y quedó vieja (${propia.motivos.join('; ')}): hay que reaprobarla.`);

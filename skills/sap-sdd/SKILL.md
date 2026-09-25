@@ -52,7 +52,8 @@ y qué no hacer. Leela entera antes de escribir el primer artefacto.
 |---|---|
 | C1 Captura | `reference/C1-captura.md` |
 | C2 Escenarios | `reference/C2-escenarios.md` |
-| C3 Diseño, C4 Plan | pendientes (P4) |
+| C3 Diseño | `reference/C3-diseno.md` |
+| C4 Plan y estimación | `reference/C4-plan.md` |
 
 El comando `/sap-sdd <proyecto> [fase]` conduce el ciclo entero: crea el
 proyecto, retoma en la fase que corresponde y cierra cada una con el protocolo
@@ -92,13 +93,16 @@ Aprobar otra vez algo que no cambió no agrega otra decisión.
 | Citas | una `[C1-captura/requerimiento.md:N]` o `:N-M` no apunta a una regla `RQ-NN` vigente, o está mal escrita; un `Fuente:` sin cita; se cita `entradas/`; o falta cita donde se exige. Lo que está entre backticks o en bloques de código no cuenta |
 | Reglas estables (C1) | una regla que cita una fase aprobada cambió de línea o desapareció; o un código `RQ-NN` está repetido |
 | Encoding | un obligatorio no es UTF-8 |
+| Inventario (C3) | falta la tabla «Inventario de objetos», un `OBJ-NN` repetido, un objeto sin cita o con Clean Core `Modificación` |
+| Diagrama (C3) | `arquitectura.sapdiag.json` no pasa `sap-diagrams` con el perfil showcase |
+| Estimación (C4) | una línea sobre un objeto que no está en el inventario, o un objeto sin estimar; O ≤ M ≤ P roto; E ≠ 0,3·O + 0,4·M + 0,3·P; M > 40 h; un `%` en Base; contingencia sin riesgo `R-NN` de la tabla de riesgos del plan, con Prob fuera de (0, 1) o ≠ Prob × Impacto; totales que no son la cuenta o con filas de más |
 
 | Fase | Obligatorios | Opcionales | Citas exigidas |
 |---|---|---|---|
 | C1 | `requerimiento.md`, `fs.md`, `handoff.md` | `gap-analysis.md`, `preguntas.md` | al menos una en fs |
 | C2 | `escenarios.md`, `casos-prueba.md`, `handoff.md` | — | una por sección `##`/`###`/`####` con texto en escenarios; al menos una en casos |
 | C3 | `diseno.md`, `arquitectura.sapdiag.json`, `handoff.md` | `arquitectura.drawio`, `arquitectura.svg`, `prototipo.html` | al menos una en diseño |
-| C4 | `plan.md`, `handoff.md` | `estimacion.md` | al menos una en plan |
+| C4 | `plan.md`, `estimacion.md`, `handoff.md` | — | al menos una en plan |
 
 `requerimiento.md` es el texto normalizado del cliente, una regla `RQ-NN` por
 línea: sus números de línea son los que se citan. Una vez citadas, las reglas no
@@ -147,4 +151,5 @@ agregue algo bajo `entradas/` de un proyecto SDD, aunque se haya forzado con
 | P1 | `init`, estructura y plantillas | disponible |
 | P2 | `gate`, `aprobar`, `estado`, `empaquetar`; `entradas/` bloqueada en Gate 1 y CI | disponible |
 | P3 | `/sap-sdd` y guías de C1 y C2 | disponible |
-| P4–P5 | Guías de C3 y C4, y traspaso a `/sap-techlead` | pendiente |
+| P4 | Guías de C3 y C4; inventario, diagrama y estimación verificados | disponible |
+| P5 | Traspaso de C4 a `/sap-techlead` para implementar | pendiente |

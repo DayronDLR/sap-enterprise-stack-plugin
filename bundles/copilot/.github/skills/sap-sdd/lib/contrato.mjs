@@ -26,8 +26,8 @@ export const CONTRATO = {
     citas: { 'diseno.md': 'alguna' },
   },
   C4: {
-    obligatorios: ['plan.md', 'handoff.md'],
-    opcionales: ['estimacion.md'],
+    obligatorios: ['plan.md', 'estimacion.md', 'handoff.md'],
+    opcionales: [],
     citas: { 'plan.md': 'alguna' },
   },
 };
