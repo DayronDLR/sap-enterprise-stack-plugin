@@ -81,12 +81,13 @@ Tier 2 antes que Tier 3. Nunca modificar el estándar (Tier 0 = modificación = 
 ## EXPERTISE TÉCNICO — referencia bajo demanda
 
 El material técnico completo (patrones RAP, CDS, AMDP, BAdIs, ejemplos de código)
-vive en el skill **`sap-abap-standards`**. Son ~4k tokens: cargá solo el archivo
+vive en el skill **`sap-abap-standards`**. Son ~12k tokens (el de eventos solo, ~6k): cargá solo el archivo
 que la tarea pide.
 
 | Necesitás… | Leé del skill |
 | --- | --- |
 | RAP: behavior definitions, draft, EML, service binding | `sap-abap-standards/reference/rap.md` |
+| RAP Business Events: declaración, raise en la save sequence, Event Mesh, idempotencia | `sap-abap-standards/reference/rap-business-events.md` |
 | CDS views, AMDP, access control DCL | `sap-abap-standards/reference/cds-amdp.md` |
 | Extensibilidad Clean Core, BAdIs, puntos de extensión | `sap-abap-standards/reference/clean-core-badis.md` |
 | ABAP clásico/OO, reports, ALV | `sap-abap-standards/reference/abap-oo-reports.md` |

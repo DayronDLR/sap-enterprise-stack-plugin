@@ -8,11 +8,12 @@ description: Material técnico de referencia del stack para ABAP y S/4HANA — R
 # Estándares y patrones ABAP — enrutador
 
 Este skill guarda el material técnico del agente ABAP en `reference/`. **No lo
-cargues entero**: son ~4,5k tokens y en una tarea dada aplica un archivo.
+cargues entero**: son ~12k tokens (el de eventos solo, ~6k) y en una tarea dada aplica un archivo.
 
 | Necesitás… | Leé |
 | --- | --- |
 | RAP: behavior definitions, draft, EML, service binding, checklist de BO | `sap-abap-standards/reference/rap.md` |
+| RAP Business Events: `event` en la BDEF, raise en la save sequence, Event Mesh, duplicados y orden | `sap-abap-standards/reference/rap-business-events.md` |
 | CDS views, AMDP, access control DCL | `sap-abap-standards/reference/cds-amdp.md` |
 | Extensibilidad Clean Core, BAdIs, puntos de extensión | `sap-abap-standards/reference/clean-core-badis.md` |
 | ABAP clásico/OO, reports, ALV | `sap-abap-standards/reference/abap-oo-reports.md` |
