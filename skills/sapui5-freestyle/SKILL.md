@@ -20,6 +20,8 @@ compatibility:
 model: claude-opus-4-7
 ---
 
+<!-- prompt-meta: last_reviewed=2026-09-04; sap_baseline=2025/2026; review_cycle_days=180 -->
+
 # SAPUI5 FreeStyle Application Builder
 
 Senior SAP Fiori/SAPUI5 developer workflow. Creates production-ready apps following enterprise SAP standards.

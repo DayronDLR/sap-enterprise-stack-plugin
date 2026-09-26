@@ -24,6 +24,7 @@
 │   ├── sap-btp-standards/       ← ⭐ Arquitectura CAP y modelado HANA (lazy-load)
 │   ├── sap-doc-standards/       ← ⭐ Estructura, diagramas y templates de doc (lazy-load)
 │   ├── sap-sdd/                 ← ⭐ Ciclo SDD (ADR-014): motor sdd.mjs + guías de fase en reference/
+│   ├── sap-fuentes-de-verdad/   ← ⭐ Fuentes de verdad POR STACK: qué doc oficial manda y qué archivo del proyecto define cada dato
 │   └── sap-diagrams/            ← ⭐ Motor de diagramas SAP validados (.sapdiag.json → .drawio + .svg)
 │       ├── schemas/             ← IR tipado: architecture, sequence
 │       ├── lib/                 ← layout, ruteo, gate de composición, emisores
@@ -60,3 +61,5 @@
 > **Archivos shared:** El directorio `shared/` contiene contenido reutilizado por múltiples agentes. Los agentes referencian estos archivos en vez de duplicar el contenido en cada system_prompt.
 >
 > **Archivos reference:** Cada agente puede tener un subdirectorio `reference/` con material de consulta que se lee solo cuando se necesita (lazy-load), NO se carga automáticamente con el system_prompt.
+>
+> **Frescura:** todo `agents/*/system_prompt.md` y todo `SKILL.md` **propio** lleva un marcador `<!-- prompt-meta: last_reviewed=…; review_cycle_days=180 -->` que valida `scripts/validate-prompt-freshness.js`. Los skills vendored no lo llevan: no los revisamos nosotros (ver `docs/SKILLS-REFRESH-POLICY.md`).

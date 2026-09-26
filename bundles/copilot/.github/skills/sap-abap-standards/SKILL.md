@@ -3,6 +3,8 @@ applyTo: **/*.abap,**/*.clas.abap,**/*.prog.abap,**/*.cds,**/*.ddls
 description: Material técnico de referencia del stack para ABAP y S/4HANA — RAP (behavior definitions, draft, EML, service binding), CDS views y AMDP, access control DCL, extensibilidad Clean Core con BAdIs, y ABAP clásico/OO con ALV. Úsalo antes de escribir ABAP, CDS o un Business Object RAP para cargar solo el patrón que aplica.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-08-21; sap_baseline=2025/2026; review_cycle_days=180 -->
+
 # Estándares y patrones ABAP — enrutador
 
 Este skill guarda el material técnico del agente ABAP en `reference/`. **No lo

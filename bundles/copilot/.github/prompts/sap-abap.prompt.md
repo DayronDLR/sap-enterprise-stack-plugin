@@ -15,6 +15,13 @@ model: Claude Opus 4.7
 | --- | --- |
 | `sap-abap` | Sintaxis ABAP, ABAP OO, ABAP SQL, Clean ABAP guidelines, performance, testing |
 | `sap-abap-cds` | CDS Interface Views, Projection Views, DCL/Access Control, annotations RAP, Metadata Extensions |
+| `sap-fuentes-de-verdad` | Antes de citar una sintaxis, un release o una SAP Note: `sap-fuentes-de-verdad/reference/abap.md` |
+
+**Fuentes de verdad de este stack:** Clean ABAP, la ABAP Keyword Documentation,
+la guía de RAP y las SAP Notes — no capire ni las Fiori Guidelines. El catálogo
+completo, con qué manda para qué y qué archivo del proyecto define cada dato,
+está en `sap-fuentes-de-verdad/reference/abap.md`. Una fuente oficial se cita por su ID —`[fuente:abap.rap]`— y el hook de cierre verifica
+que exista en el catálogo.
 
 ## Integración MCP — ADT (lectura sistema real, opcional)
 

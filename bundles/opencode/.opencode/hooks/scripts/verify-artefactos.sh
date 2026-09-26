@@ -1,12 +1,15 @@
 #!/bin/bash
 # verify-artefactos.sh
 # SubagentStop hook: comprueba que lo que el subagente AFIRMA en su mensaje final
-# exista de verdad. Recibe el JSON del evento por stdin. Verifica dos cosas:
+# exista de verdad. Recibe el JSON del evento por stdin. Verifica tres cosas:
 #
 #   - los artefactos que declara producidos (roadmap F1, lib/artefactos.mjs);
 #   - las ubicaciones `archivo:línea` que cita como evidencia (roadmap F2,
 #     lib/citas.mjs): los hallazgos del reviewer y la evidencia de QA, que son lo
-#     que decide si una entrega se sella.
+#     que decide si una entrega se sella;
+#   - las fuentes oficiales que cita por ID, `[fuente:abap.rap]`, contra el
+#     catalogo de `sap-fuentes-de-verdad` (F5), generado en
+#     lib/fuentes-catalogo.mjs.
 #
 # QUE RESUELVE. El contrato de `/sap-techlead` exige que cada subagente cierre
 # con `ESTADO: COMPLETADO | Artefactos producidos: [lista]`. Esa linea existe
@@ -28,6 +31,7 @@ _VA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 _VA_RAIZ="${CLAUDE_PROJECT_DIR:-$(cd "${_VA_DIR}/../.." && pwd)}"
 _VA_ARTEFACTOS="${_VA_DIR}/lib/artefactos.mjs"
 _VA_CITAS="${_VA_DIR}/lib/citas.mjs"
+_VA_FUENTES="${_VA_DIR}/lib/fuentes-catalogo.mjs"
 
 INPUT=$(cat)
 
@@ -38,7 +42,7 @@ if ! command -v node >/dev/null 2>&1; then
     exit 0
 fi
 if [[ ! -f "$_VA_ARTEFACTOS" || ! -f "$_VA_CITAS" ]]; then
-    echo "[artefactos] no encuentro $_VA_ARTEFACTOS o $_VA_CITAS: no se verificaron artefactos ni citas." >&2
+    echo "[artefactos] no encuentro $_VA_ARTEFACTOS o $_VA_CITAS: no se verificaron artefactos, citas ni fuentes." >&2
     exit 0
 fi
 
@@ -49,12 +53,12 @@ fi
 # —una tarea con muchos artefactos, justo la de mas riesgo— hacia fallar el
 # `exec` con E2BIG: el hook salia 0, sin verificar y sin `additionalContext`.
 # El control desaparecia exactamente donde mas falta hacia.
-printf '%s' "$INPUT" | SES_RAIZ="$_VA_RAIZ" SES_ARTEFACTOS="$_VA_ARTEFACTOS" SES_CITAS="$_VA_CITAS" node --input-type=module -e '
+printf '%s' "$INPUT" | SES_RAIZ="$_VA_RAIZ" SES_ARTEFACTOS="$_VA_ARTEFACTOS" SES_CITAS="$_VA_CITAS" SES_FUENTES="$_VA_FUENTES" node --input-type=module -e '
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 const { rutasDeclaradas, verificarArtefactos, informe } =
   await import(pathToFileURL(process.env.SES_ARTEFACTOS).href);
-const { citasDe, verificarCitas, informeCitas } =
+const { citasDe, verificarCitas, informeCitas, fuentesDe, fuentesDesconocidas, informeFuentes } =
   await import(pathToFileURL(process.env.SES_CITAS).href);
 
 let crudo = "";
@@ -80,6 +84,26 @@ aislada("artefactos", () => {
 aislada("citas", () => {
   const citas = citasDe(mensaje);
   return citas.length ? informeCitas(verificarCitas(citas, process.env.SES_RAIZ)) : "";
+});
+// El catalogo se carga aparte y aislado: si falta, se pierde solo esta
+// verificacion, no las otras dos. Y se dice al orquestador: callar dejaba leer
+// el silencio como "fuentes verificadas".
+let catalogo = null;
+let errorCatalogo = "";
+try {
+  ({ FUENTES: catalogo } = await import(pathToFileURL(process.env.SES_FUENTES).href));
+  if (!catalogo || typeof catalogo !== "object") throw new Error("el modulo no exporta FUENTES");
+} catch (e) {
+  errorCatalogo = e.message;
+}
+aislada("fuentes", () => {
+  const ids = fuentesDe(mensaje);
+  if (!ids.length) return "";
+  if (errorCatalogo) {
+    process.stderr.write(`[fuentes] catalogo no disponible (${errorCatalogo}): regeneralo con node scripts/build-fuentes.js\n`);
+    return `[fuentes] ${ids.length} fuente(s) citada(s) quedaron SIN VERIFICAR: el catalogo lib/fuentes-catalogo.mjs no cargo. No las tomes como verificadas.`;
+  }
+  return informeFuentes({ total: ids.length, desconocidas: fuentesDesconocidas(ids, catalogo) });
 });
 const aviso = avisos.filter(Boolean).join("\n");
 if (!aviso) process.exit(0);

@@ -4,6 +4,8 @@ description: "Comprime archivos .md en memory/ para reducir uso de contexto. Pre
 model: claude-sonnet-4-6
 ---
 
+<!-- prompt-meta: last_reviewed=2026-09-04; review_cycle_days=180 -->
+
 # Memory Compress
 
 Comprimir archivos `.md` en el directorio `memory/` del proyecto para reducir el consumo de ventana de contexto. Meta: ~40% de reducción manteniendo toda la información técnica.

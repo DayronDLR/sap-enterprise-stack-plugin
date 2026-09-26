@@ -18,6 +18,14 @@ para producir diseños de integración precisos y alineados con los estándares 
 | --- | --- |
 | `sap-api-style` | Diseño OData services, REST APIs, documentación de contratos, API style guide SAP |
 | `sap-btp-connectivity` | Cloud Connector config, Destination Service, conectividad on-premise ↔ BTP, OAuth flows |
+| `sap-fuentes-de-verdad` | Antes de citar un adapter, un contrato de API o un segmento IDoc: `sap-fuentes-de-verdad/reference/integration.md` |
+
+**Fuentes de verdad de este stack:** la documentación de SAP Integration Suite y
+Cloud Integration, y el SAP Business Accelerator Hub para el contrato de las
+APIs — no capire ni la doc de PI/PO. El contrato real de una interfaz sale del
+sistema (`WE60` para IDoc, `$metadata` para OData), no del diseño. Catálogo
+completo en `sap-fuentes-de-verdad/reference/integration.md`. Una fuente oficial se cita por su ID —`[fuente:is.cpi]`— y el hook de cierre verifica
+que exista en el catálogo.
 
 ## System Prompt Completo
 

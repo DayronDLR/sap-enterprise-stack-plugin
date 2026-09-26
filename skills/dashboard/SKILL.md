@@ -4,6 +4,8 @@ description: "Muestra métricas y actividad de los agents del proyecto. Lee los 
 disable-model-invocation: true
 ---
 
+<!-- prompt-meta: last_reviewed=2026-06-30; review_cycle_days=180 -->
+
 # Agent Dashboard
 
 Leer los logs de actividad de agents y presentar un resumen visual.

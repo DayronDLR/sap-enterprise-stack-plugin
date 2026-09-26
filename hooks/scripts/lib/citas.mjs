@@ -235,3 +235,57 @@ export function informeCitas({ total, malas }) {
     + 'No las uses como evidencia —ni para aprobar un hallazgo ni para sellar una entrega— hasta confirmarlas: '
     + 'una cita que no apunta a nada es una afirmación sin respaldo.';
 }
+
+// ─── Fuentes externas por ID (F2 sobre el catálogo de F5) ───────────────────
+//
+// Una fuente oficial SAP no tiene `archivo:línea`: se cita por su ID del
+// catálogo, `[fuente:abap.rap]`. Lo que se verifica es que el ID exista —que la
+// fuente sea una de las que el stack reconoce como autoritativas—, no que diga
+// lo que se le atribuye.
+
+/**
+ * `[fuente:abap.rap]`, con o sin espacios. El contenido está acotado y no
+ * admite corchetes: un `[fuente:` sin cerrar repetido miles de veces hacía
+ * retroceder la búsqueda desde cada comienzo (13 s sobre 256 KB).
+ */
+const RE_FUENTE = /\[\s*fuente\s*:([^[\]\n]{0,200})\]/giu;
+/** Lo que se muestra de un ID en el aviso: uno de 25 KB no se repite entero. */
+const MAX_ID_AVISO = 80;
+
+/**
+ * Los IDs de fuente que cita un mensaje, sin repetir y en el orden en que
+ * aparecen. Dentro del corchete, el ID es la primera palabra: lo que sigue es
+ * detalle (`[fuente:sap.notes 3456789]`, `[fuente:abap.rap §3]`), y varias
+ * fuentes van separadas por coma (`[fuente:abap.rap, abap.cloud]`). Antes, todo
+ * lo que no fuera un ID pelado hacía desaparecer la cita sin aviso.
+ *
+ * No cuentan los bloques de código ni el código en línea: ahí `[fuente:<ID>]`
+ * es la sintaxis explicada, no una cita. Tampoco un molde (`<ID>`, `{id}`, `…`).
+ */
+export function fuentesDe(mensaje) {
+  const texto = normalizar(mensaje).replace(/(`{1,8})[^`\n]*?\1/g, '');
+  const ids = new Set();
+  for (const m of texto.matchAll(RE_FUENTE)) {
+    for (const parte of m[1].split(/[,;]/)) {
+      const id = parte.trim().split(/\s+/)[0];
+      if (id && !/[<>{}…]|\.\.\./.test(id)) ids.add(id.toLowerCase());
+    }
+  }
+  return [...ids];
+}
+
+/** Los IDs que no están en el catálogo. */
+export function fuentesDesconocidas(ids, catalogo) {
+  return ids.filter((id) => !Object.hasOwn(catalogo, id));
+}
+
+/** El aviso para el orquestador, o '' si todas las fuentes están en el catálogo. */
+export function informeFuentes({ total, desconocidas }) {
+  if (!desconocidas.length) return '';
+  const corto = (id) => (id.length > MAX_ID_AVISO ? `${id.slice(0, MAX_ID_AVISO)}…` : id);
+  const lista = desconocidas.slice(0, 10).map((id) => `\`[fuente:${corto(id)}]\``).join(' · ');
+  const mas = desconocidas.length > 10 ? ` y ${desconocidas.length - 10} más` : '';
+  return `[fuentes] El subagente citó ${total} fuente(s) oficial(es) y ${desconocidas.length} no está(n) en el catálogo: ${lista}${mas}. `
+    + 'Una fuente fuera del catálogo no es verificable: pedí que cite por su ID de '
+    + '`sap-fuentes-de-verdad` o que marque el dato [NO VERIFICADO].';
+}

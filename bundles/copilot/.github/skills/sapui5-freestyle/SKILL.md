@@ -3,6 +3,8 @@ applyTo: **/webapp/**/*.js,**/webapp/**/*.xml,**/manifest.json,**/*.view.xml
 description: Creates and extends SAPUI5 FreeStyle applications using ui5-mcp and fiori-mcp tools. Use this skill when creating a new SAPUI5 app from scratch, scaffolding views/controllers/routes, building dashboards, forms, list/detail apps, or any custom Fiori/UI5 development not based on Fiori Elements generators. Trigger for requests like "crea una app SAPUI5", "nueva aplicación UI5 FreeStyle", "necesito un dashboard SAP", "formulario UI5", "app de aprobaciones SAPUI5", or adding new views/features to an existing SAPUI5 FreeStyle project — even if the user doesn't say "FreeStyle" explicitly.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-09-04; sap_baseline=2025/2026; review_cycle_days=180 -->
+
 # SAPUI5 FreeStyle Application Builder
 
 Senior SAP Fiori/SAPUI5 developer workflow. Creates production-ready apps following enterprise SAP standards.

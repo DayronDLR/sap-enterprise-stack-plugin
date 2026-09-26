@@ -3,6 +3,8 @@ applyTo: **
 description: Pipeline de verificación de calidad para proyectos SAP CAP + Fiori. Ejecuta CDS lint, ESLint, UI5 linter, manifest validation, tests y build de producción.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-04-27; review_cycle_days=180 -->
+
 # Verify — Pipeline de Calidad
 
 Ejecutar la pipeline completa de verificación. NO considerar la tarea terminada hasta que todos los checks pasen.

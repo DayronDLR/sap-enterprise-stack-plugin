@@ -22,8 +22,9 @@ model: claude-sonnet-4-6
 | `sap-sqlscript` | Documentar procedures HANA, AMDPs, funciones SQLScript |
 | `sap-api-style` | Documentar APIs REST/OData con el estilo SAP API Business Hub |
 | `sap-btp-connectivity` | Documentar Cloud Connector, destinations, conectividad on-premise |
+| `sap-fuentes-de-verdad` | **Antes de escribir cualquier valor:** qué fuente oficial manda en cada stack y qué archivo del proyecto define cada dato |
 
-**Regla:** la documentación entregable al cliente no debe contener APIs, features o servicios sin validar contra fuentes oficiales SAP. Validar manualmente vía SAP Help Portal + skills instalados (`sap-cap-capire`, `sap-abap`, `sap-fiori-tools`, etc.). Si una sección cita algo sin validación, marcarla con `[NO VERIFICADO]` y pedir confirmación antes de finalizar el `.docx`. Gap de MCP unificado registrado en `docs/MCP-ROADMAP.md`.
+**Regla:** la documentación entregable al cliente no debe contener APIs, features o servicios sin validar contra la fuente oficial **del stack que se está documentando** — la del stack equivocado no valida nada. Cada stack tiene la suya en `sap-fuentes-de-verdad/reference/` (ver §3); los skills instalados (`sap-cap-capire`, `sap-abap`, `sap-fiori-tools`, etc.) sirven para llegar al patrón, no como norma. La fuente oficial se cita por su ID del catálogo (`[fuente:cap.capire]`), que el hook de cierre verifica. Si una sección cita algo sin validación, marcarla con `[NO VERIFICADO]` y pedir confirmación antes de finalizar el `.docx`. Gap de MCP unificado registrado en `docs/MCP-ROADMAP.md`.
 
 ## Referencia de documentación — bajo demanda
 
@@ -58,58 +59,21 @@ sin capturas inventadas · el theme del cliente se aplica con el toolkit, no a m
 
 ### 3. Fuentes de verdad por stack — leer ANTES de escribir cualquier valor
 
-#### Stack Fiori / SAPUI5
+Las fuentes de verdad **son del stack, no del documento**. Viven en el skill
+`sap-fuentes-de-verdad`: cada archivo dice qué documentación oficial es
+autoritativa para ese stack, qué no sirve para citar ahí, y qué archivo del
+proyecto manda para cada dato.
 
-| Fuente | Datos |
-|--------|-------|
-| `webapp/manifest.json` → `sap.app.crossNavigation.inbounds` | Semantic Object, action, intent, icon |
-| `webapp/manifest.json` → `sap.ui5.dependencies.minUI5Version` | Versión UI5 |
-| `webapp/manifest.json` → `sap.cloud.service` | Nombre HTML5 repo en BTP |
-| `webapp/manifest.json` → `sap.app.dataSources` | URI y nombre del servicio OData |
-| `webapp/i18n/i18n_*.properties` | Títulos de tabs, labels, textos de la app |
-| Vistas XML / fragments → `SmartTable entitySet=` | Entity sets por vista / tab |
-| `webapp/localService/*/metadata.xml` → `EntitySet` | Entity sets OData (config, value help, analytical) |
-| `mta.yaml` → sección `resources` | Servicios BTP declarados |
-| `package.json` → `scripts` | Comandos de build y deploy |
+| El proyecto tiene… | Leé |
+| --- | --- |
+| Fiori / SAPUI5 | `sap-fuentes-de-verdad/reference/fiori-ui5.md` |
+| CAP / BTP (Node.js o Java) | `sap-fuentes-de-verdad/reference/cap-btp.md` |
+| ABAP / RAP / S/4HANA | `sap-fuentes-de-verdad/reference/abap.md` |
+| HANA Cloud / SQLScript | `sap-fuentes-de-verdad/reference/hana.md` |
+| Integration Suite / CPI | `sap-fuentes-de-verdad/reference/integration.md` |
+| Cualquiera (README, CHANGELOG, mta.yaml, CI/CD) | `sap-fuentes-de-verdad/SKILL.md` |
 
-#### Stack CAP / BTP (Node.js o Java)
-
-| Fuente | Datos |
-|--------|-------|
-| `package.json` → `name`, `version`, `cds.requires` | ID app, versión, servicios externos |
-| `srv/*.cds` — `@path`, `@requires`, `service` name | Nombre y path del servicio, roles requeridos |
-| `db/*.cds` — entities, enums, associations | Entidades del dominio, campos clave, relaciones |
-| `mta.yaml` → `modules` y `resources` | Módulos desplegados, servicios BTP (HANA, XSUAA, Destination) |
-| `xs-security.json` → `scopes`, `role-templates` | Modelo de autorización XSUAA |
-| `package.json` → `scripts` | Comandos build, deploy, test |
-
-#### Stack ABAP / RAP / S/4HANA
-
-| Fuente | Datos |
-|--------|-------|
-| CDS Interface Views (`.ddls`) | Entidades, asociaciones, campos clave, anotaciones OData |
-| Behavior Definition (`.bdef`) | Operaciones CRUD, actions, determinations, validations |
-| Enhancement Spots / BAdIs (`SE18`) | Puntos de extensión implementados |
-| Package ABAP (`SE80`, ADT) | Objetos de desarrollo, package, transport requests |
-| Tablas / Tipos / Clases principales | Dependencias de datos, contratos de interfaz |
-
-#### Stack Integration Suite / CPI
-
-| Fuente | Datos |
-|--------|-------|
-| iFlow configuration exports (`.zip` / `.xml`) | Nombre, ID, descripción, sender/receiver adapters |
-| Value Mapping artifacts | Mapeos de dominio entre sistemas |
-| Security Materials / Credentials | Tipos de autenticación (no los valores secretos) |
-| Integration Package metadata | Versión, descripción, objetos incluidos |
-
-#### Genérico (aplica a todos los stacks)
-
-| Fuente | Datos |
-|--------|-------|
-| `README.md` | Descripción del proyecto, setup, comandos |
-| `CHANGELOG.md` / `git log` | Historial de versiones, cambios relevantes |
-| `mta.yaml` o `manifest.yml` | Runtime BTP (CF / Kyma), dependencias de servicios |
-| CI/CD pipelines (`.pipeline/`, `.github/workflows/`) | Estrategia de build y deploy automatizado |
+Un documento full-stack lee **un archivo por stack presente**, no los cinco.
 
 ### 4. NUNCA hardcodear en el generador de documentación
 

@@ -19,6 +19,14 @@ para producir código CAP preciso y alineado con las versiones reales de los SDK
 | `sap-cap-capire` | Toda tarea CAP: CDS modeling, services, handlers, plugins, deploy. Incluye `search_docs` y `search_model` para buscar en docs oficiales de @sap/cds 9.7.x |
 | `sap-btp-developer-guide` | Arquitectura BTP, CF vs Kyma, security implementation, CI/CD, observability, testing |
 | `sap-btp-best-practices` | Account setup, governance, HA multi-región, cost management, producción enterprise |
+| `sap-fuentes-de-verdad` | Antes de citar una API, una anotación o una versión de `@sap/cds`: `sap-fuentes-de-verdad/reference/cap-btp.md` |
+
+**Fuentes de verdad de este stack:** capire (docs, CDS, Java, releases), el BTP
+Developer Guide y la documentación de XSUAA — no la ABAP Keyword Documentation
+ni la doc de XS Advanced. La versión de CAP la manda el `package.json` del
+proyecto, no el ejemplo de la documentación. Catálogo completo en
+`sap-fuentes-de-verdad/reference/cap-btp.md`. Una fuente oficial se cita por su ID —`[fuente:cap.releases]`— y el hook de cierre verifica
+que exista en el catálogo.
 
 ## Integración MCP — Tooling en vivo
 

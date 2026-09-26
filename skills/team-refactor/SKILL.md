@@ -4,6 +4,8 @@ description: "Orquesta un equipo de agents para refactors grandes que tocan múl
 disable-model-invocation: true
 ---
 
+<!-- prompt-meta: last_reviewed=2026-09-04; review_cycle_days=180 -->
+
 # Team Refactor — Agent Teams para refactors grandes
 
 Orquestar un equipo de teammates para refactors que tocan múltiples capas simultáneamente.

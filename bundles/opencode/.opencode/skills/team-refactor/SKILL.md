@@ -3,6 +3,8 @@ name: team-refactor
 description: Orquesta un equipo de agents para refactors grandes que tocan múltiples capas del proyecto (backend, frontend, tests). Usa la ejecucion de agentes en paralelo del host cuando existe; en un host sin subagentes, degrada a un plan secuencial.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-09-04; review_cycle_days=180 -->
+
 # Team Refactor — Agent Teams para refactors grandes
 
 Orquestar un equipo de teammates para refactors que tocan múltiples capas simultáneamente.

@@ -3,6 +3,8 @@ name: memory-compress
 description: Comprime archivos .md en memory/ para reducir uso de contexto. Preserva frontmatter YAML, bloques de código, términos SAP técnicos, paths y URLs. Hace backup de originales.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-09-04; review_cycle_days=180 -->
+
 # Memory Compress
 
 Comprimir archivos `.md` en el directorio `memory/` del proyecto para reducir el consumo de ventana de contexto. Meta: ~40% de reducción manteniendo toda la información técnica.

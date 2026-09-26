@@ -3,6 +3,8 @@ name: sap-ui5-standards
 description: Estándares obligatorios de SAPUI5/Fiori del stack — ES6+/MVC, data binding, accesibilidad e i18n, integración con CAP, layouts y controles, formatters, routing, y seguridad/performance. Úsalo antes de escribir o revisar código SAPUI5 (controllers, vistas XML, manifest.json, fragments, formatters, rutas) para cargar solo la regla que aplica al caso.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-09-04; sap_baseline=2025/2026; review_cycle_days=180 -->
+
 # Estándares SAPUI5 — enrutador
 
 Este skill guarda los estándares de UI5 del stack en `reference/`. **No los leas

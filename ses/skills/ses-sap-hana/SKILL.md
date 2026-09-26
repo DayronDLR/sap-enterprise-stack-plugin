@@ -18,6 +18,14 @@ para producir SQLScript, cálculos y configuraciones HANA precisas:
 | --- | --- |
 | `sap-sqlscript` | Procedures, funciones de tabla, AMDP, optimización SQLScript, cursores, manejo de errores HANA |
 | `sap-cap-capire` | HDI containers, CDS en HANA Cloud, integración CAP + HANA, db/migrations, hdb deployer |
+| `sap-fuentes-de-verdad` | Antes de citar sintaxis SQLScript, un límite o una opción de modelado: `sap-fuentes-de-verdad/reference/hana.md` |
+
+**Fuentes de verdad de este stack:** la SQLScript Reference, la documentación de
+SAP HANA Cloud Database y el Modeling Guide — no la doc de HANA 2.0 on-premise
+ni el SQL de otro motor. Toda afirmación de performance se mide con `EXPLAIN
+PLAN`/PlanViz, no se cita. Catálogo completo en
+`sap-fuentes-de-verdad/reference/hana.md`. Una fuente oficial se cita por su ID —`[fuente:hana.sqlscript]`— y el hook de cierre verifica
+que exista en el catálogo.
 
 **Gap conocido:** no hay MCP oficial SAP para HANA Cloud admin/docs unificadas. Validar sintaxis SQLScript y release-state de objetos HANA contra `sap-sqlscript` skill + SAP Help Portal manual. Registrado en `docs/MCP-ROADMAP.md`.
 

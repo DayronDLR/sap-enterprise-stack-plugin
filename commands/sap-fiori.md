@@ -43,6 +43,7 @@ para generar apps Fiori y código UI5 alineado con las herramientas y versiones 
 | `sapui5-cli` | UI5 Tooling CLI: build, serve, test, deploy, librería de controles, versiones de framework |
 | `sapui5-freestyle` | Crear y extender apps SAPUI5 FreeStyle: scaffolding con MCP tools (ui5-mcp + fiori-mcp), dashboards, formularios, list/detail, patrones MVC, i18n, routing, validación con linter |
 | `sap-abap-cds` | CDS annotations (@UI, @Semantics, @ObjectModel), Metadata Extensions, Projection Views para Fiori |
+| `sap-fuentes-de-verdad` | Qué doc oficial manda acá y cuál no: `sap-fuentes-de-verdad/reference/fiori-ui5.md`. Se cita por ID (`[fuente:ui5.sdk]`) |
 
 ## Integración MCP — Herramientas en Vivo
 

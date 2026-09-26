@@ -3,6 +3,8 @@ name: sap-nfr
 description: Catálogo detallado de requisitos no funcionales del stack SAP — concurrencia y locking por tecnología (ABAP, CAP, HANA, CPI), procesamiento masivo con chunking y restart-ability, smells de performance e índices, observabilidad, volúmenes mínimos de prueba en QAS, y captura de baseline de performance con umbrales de regresión. Úsalo al diseñar o revisar procesos batch, interfaces, jobs y cualquier lógica concurrente.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-08-21; sap_baseline=2025/2026; review_cycle_days=180 -->
+
 # Requisitos No Funcionales — enrutador
 
 Las **reglas duras** ya están en el contexto (vienen en `shared/non-functional-requirements.md`,

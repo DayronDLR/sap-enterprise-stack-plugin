@@ -3,6 +3,8 @@ name: dashboard
 description: Muestra métricas y actividad de los agents del proyecto. Lee los logs de logs/ y presenta un resumen de qué agents corrieron, cuántas veces, y sus últimas actividades.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-06-30; review_cycle_days=180 -->
+
 # Agent Dashboard
 
 Leer los logs de actividad de agents y presentar un resumen visual.

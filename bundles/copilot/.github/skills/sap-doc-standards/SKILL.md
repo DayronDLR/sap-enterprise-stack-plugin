@@ -3,6 +3,8 @@ applyTo: **
 description: Referencia del agente de documentación SAP — estructura maestra del documento de arquitectura, catálogo de templates y herramientas del toolkit (Word, PPTX, theming de cliente), política de diagramas draw.io con guidelines SAP y niveles L0-L2, y errores comunes en entregables. Úsalo al armar, generar o revisar documentación técnica de un proyecto SAP.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-09-04; sap_baseline=2025/2026; review_cycle_days=180 -->
+
 # Documentación SAP — enrutador
 
 Este skill guarda el material de referencia del agente de documentación. Son ~5k

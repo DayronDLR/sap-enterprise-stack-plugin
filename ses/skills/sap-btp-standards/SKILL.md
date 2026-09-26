@@ -3,6 +3,8 @@ name: sap-btp-standards
 description: Referencia técnica del stack para SAP BTP — arquitectura estándar de un proyecto CAP (estructura de carpetas, srv/db/app, MTA, XSUAA, deployment a Cloud Foundry y Kyma) y modelado en HANA Cloud (Calculation Views, SQLScript, HDI containers, particionado, objetos que produce el agente). Úsalo al diseñar o implementar sobre CAP, BTP o HANA Cloud.
 ---
 
+<!-- prompt-meta: last_reviewed=2026-08-21; sap_baseline=2025/2026; review_cycle_days=180 -->
+
 # BTP, CAP y HANA — enrutador
 
 Material de referencia de los agentes CAP/BTP y HANA Cloud. Leé el archivo que

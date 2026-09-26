@@ -3,6 +3,8 @@ name: sap-diagrams
 description: "Motor de diagramas SAP validados — genera diagramas de arquitectura de solución (BTP, subaccounts, on-premise, Cloud Connector) y de secuencia (OData, RFC, IDoc, llamadas entre servicios) a partir de una especificación JSON tipada, y los entrega como .drawio editable y .svg para el .docx. El agente escribe semántica, no coordenadas: el layout, el ruteo ortogonal y la ubicación de etiquetas se calculan, y un gate de composición mide el resultado (solapes, cruces, corredores ambiguos, etiquetas tapadas, legibilidad) antes de aceptar la entrega. Úsalo siempre que haya que producir un diagrama de arquitectura o de secuencia SAP para documentación técnica, en vez de escribir Mermaid o XML de draw.io a mano."
 ---
 
+<!-- prompt-meta: last_reviewed=2026-09-04; sap_baseline=2025/2026; review_cycle_days=180 -->
+
 # Diagramas SAP
 
 Un diagrama sale de una especificación JSON chica y tipada. **Nunca escribas

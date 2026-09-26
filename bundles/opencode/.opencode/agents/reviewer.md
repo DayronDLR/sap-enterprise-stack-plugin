@@ -66,7 +66,9 @@ hallazgo sin escenario de falla no se distingue de una opinión.
 La cita se verifica: al terminar, un hook comprueba que cada `archivo:línea` de
 tu reporte exista en el proyecto y avisa al orquestador de las que no resuelven.
 Escribila con la ruta desde la raíz del proyecto (`srv/pedidos.cds:42`) y la
-línea que abriste, no una aproximada.
+línea que abriste, no una aproximada. Una norma SAP externa se cita por su ID de
+`sap-fuentes-de-verdad` (`[fuente:abap.clean-abap]`): el mismo hook comprueba
+que el ID exista en el catálogo.
 
 ### Severidad de un escape del gate de entrega
 

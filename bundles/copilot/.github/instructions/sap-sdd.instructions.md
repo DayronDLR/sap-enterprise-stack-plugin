@@ -1,7 +1,9 @@
 ---
 applyTo: **
-description: Ciclo SDD (spec-driven development) previo a codear — requerimiento, escenarios, diseño y plan con estimación, en una carpeta de proyecto que se presenta al cliente. Usalo SOLO cuando el arquitecto pida explícitamente una estimación, una propuesta de arquitectura previa o el SDD de un requerimiento. NUNCA para un fix, un report, un cambio puntual ni una tarea de desarrollo normal. Hoy crea el proyecto, verifica y aprueba cada fase, y lo empaqueta; los agentes de cada fase llegan en P3–P4 (ADR-014).
+description: Ciclo SDD (spec-driven development) previo a codear — requerimiento, escenarios, diseño y plan con estimación, en una carpeta de proyecto que se presenta al cliente. Usalo SOLO cuando el arquitecto pida explícitamente una estimación, una propuesta de arquitectura previa o el SDD de un requerimiento. NUNCA para un fix, un report, un cambio puntual ni una tarea de desarrollo normal. Crea el proyecto, conduce C1–C4 con gate y aprobación por fase, lo empaqueta y lo traspasa a /sap-techlead (ADR-014).
 ---
+
+<!-- prompt-meta: last_reviewed=2026-09-24; sap_baseline=2025/2026; review_cycle_days=180 -->
 
 # Ciclo SDD
 
