@@ -108,9 +108,16 @@ aislada("fuentes", () => {
 const aviso = avisos.filter(Boolean).join("\n");
 if (!aviso) process.exit(0);
 
-process.stdout.write(JSON.stringify({
-  hookSpecificOutput: { hookEventName: "SubagentStop", additionalContext: aviso },
-}) + "\n");
+// Codex no acepta `hookSpecificOutput` en SubagentStop: la documentacion de
+// hooks lista para ese evento solo los campos comunes (`continue`,
+// `stopReason`, `systemMessage`, `suppressOutput`). Ahi el aviso va como
+// `systemMessage`, que Codex muestra como advertencia: lo ve la persona, no el
+// modelo. Codex se reconoce por `turn_id`, que su documentacion nombra como
+// extension propia de Codex en la entrada de todos los eventos.
+const enCodex = typeof ev.turn_id === "string";
+process.stdout.write(JSON.stringify(enCodex
+  ? { systemMessage: aviso }
+  : { hookSpecificOutput: { hookEventName: "SubagentStop", additionalContext: aviso } }) + "\n");
 process.stderr.write(aviso + "\n");
 ' || {
     # Sin `2>/dev/null`: el stderr de node es el unico lugar donde se ve POR QUE

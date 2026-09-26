@@ -209,8 +209,9 @@ Si la tarea no produce archivos —un análisis, una revisión— escribí
 > **Dónde se verifica solo.** En Claude Code el hook `verify-artefactos.sh` corre
 > en `SubagentStop`, resuelve esa lista contra el disco y devuelve el aviso al
 > orquestador. **En OpenCode y Copilot no corre**: ninguno de los dos expone ese
-> evento. En Codex está registrado, pero como hook asíncrono — no verificamos si
-> su salida llega al orquestador, así que no cuentes con el aviso.
+> evento. **En Codex corre, pero el aviso lo ves vos, no el modelo**: su
+> `SubagentStop` sólo acepta `systemMessage`, que Codex muestra como advertencia.
+> Si aparece, verificá la lista antes de dar la tarea por cerrada.
 >
 > Donde no corre, la lista la comprobás vos antes de dar la tarea por cerrada. La
 > declaración sigue siendo obligatoria en los cuatro: es lo que hace auditable el

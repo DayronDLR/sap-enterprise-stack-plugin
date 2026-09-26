@@ -352,19 +352,73 @@ La regla: `git` tiene que **empezar una palabra**, y se matchea sobre el comando
 crudo y sobre una forma aplanada con lo que bash resuelve antes de ejecutar —el
 citado ANSI-C, las llaves sin espacios, comillas y barras—. Lo que **no**
 reconoce, a sabiendas: funciones y alias, la indireccion por variable, `xargs`,
-`find -exec`, un `python -c`. Esas las frena el nivel 2.
+`find -exec`, un `python -c`, y un script de python o node que otro segmento del
+mismo comando escribe y despues ejecuta. Esas las frena el nivel 2. Un PR
+creado sin `gh pr create` —con `gh alias set` o con `gh api` contra el endpoint
+de pulls— tampoco lo ve el nivel 1, y ahi el respaldo es el trailer que CI exige
+a cada commit del rango.
+
+Un costo a sabiendas: `rg` y `ag` no estan en la lista de comandos de solo
+lectura (`--pre` y `--pager` ejecutan un programa), asi que buscar la frase de
+una entrega con ellos deniega. Con `grep` pasa.
 
 **Severidad para los gates**: una forma que evade el nivel 1 y que el nivel 2
 frena es **MEDIUM**. Una que entrega codigo productivo sin gates —que pasa el
 nivel 2— es **CRITICAL**. Se clasifica midiendo el nivel 2, no suponiendolo (ver
 `agents/reviewer.md`).
 
-**El precio del lado seguro: `echo "git commit"` deniega.** Es a proposito: un
-falso positivo cuesta un mensaje, un falso negativo en el aviso manda al agente a
-chocar contra git sin explicacion. No hay allowlist de `echo|cat|grep` al
-principio del comando, porque `echo hola; git commit` tambien empieza con `echo`.
-Si el gate bloquea un comando que solo *menciona* la frase, la salida es
-`SES_GATES=off` para ese comando, o no citarla.
+**Lo que solo *menciona* una entrega ya no deniega** (roadmap F8-a). Antes
+`echo "git commit"`, un heredoc hacia `cat` con un procedimiento de git o un
+`# git push` en un comentario denegaban como la entrega, y ese costo empujaba a
+`SES_GATES=off`. `hooks/scripts/lib/comando.mjs` borra del comando lo que con
+seguridad es dato antes del matcher:
+
+- comentarios;
+- el cuerpo de un heredoc cuyo comando no es un shell;
+- los argumentos citados de un comando que solo lee o imprime (`echo`, `printf`,
+  `cat`, `grep`…) o de `python -c` / `node -e`, que ya eran punto ciego.
+
+Lo que se ejecuta nunca se borra:
+
+- `$( )`, backticks y `<( )`, aunque vayan entre comillas;
+- lo que lee un shell (`sh -c`, `eval`, `bash <<EOF`, `| sh`, `| xargs`);
+- la palabra del comando;
+- los argumentos de todo comando que no esté en esa lista.
+
+La decision es **por segmento**, que es la objecion que habia al allowlist:
+`echo hola; git commit` sigue denegando, porque `git commit` es otro comando.
+Y la lista es **cerrada**: sólo se borra algo si todos los comandos, a
+cualquier profundidad, son de solo lectura o impresión, `cd` o un intérprete que
+no es shell, sin asignaciones delante. Con cualquier otro no se borra nada,
+porque puede ejecutar lo que otro segmento citó o escribió
+(`echo … > f; bash f`, `> >(bash)`, `env -u X sh -c …`):
+
+- un shell, `make`, `npm`, un envoltorio como `env`, un ejecutable por ruta o
+  del `PATH`;
+- tambien `git` y `gh`, que ejecutan texto de su configuracion (un alias `!…`,
+  `core.editor`);
+- y los que corren un programa por opcion (`rg --pre`,
+  `sort --compress-program`).
+
+Una lista de lo peligroso no converge; una de lo seguro, sí. Sin node, o
+ante un comando que el analizador no entiende, se decide sobre el texto entero,
+como antes.
+
+**Una entrega en otro repositorio no es de este proyecto** (F8-b). Si cada
+entrega del comando se resuelve —por el `cwd` del evento, un `cd <dir>`
+encadenado con `;` o `&&`, o `git -C`— a un directorio de otro repo, el gate
+permite con un aviso. La exencion es estrecha a proposito: una entrega en un
+subshell, en `sh -c`, con variables, con `--git-dir` o `GIT_DIR`, un `cd`
+detras de `||` o en un pipe, `cd -`, o cualquier comando de primer nivel que no
+sea `cd <dir>`, `git`, `gh` o de solo lectura (`pushd`, `eval`, `source`,
+`if`/`for`, `export`, y tambien `ln`, `mv` o `rm`, que cambian a que apunta una
+ruta antes de que el `cd` corra), cuenta como de este proyecto. Tampoco se
+sigue un `cd` a un nombre sin barra (`cd sub`), que bash busca antes en
+`CDPATH`: solo rutas absolutas, `./`, `../` o `~`. Y un comando con cualquier
+sustitucion (`$( )`, backticks) no se exime: la sustitucion corre antes y puede
+mover el destino. Otro worktree de este mismo repo
+tambien pasa, con un aviso que dice que alla la DoD la hace cumplir
+`.husky/pre-commit`.
 
 ## Quien lo enforce
 

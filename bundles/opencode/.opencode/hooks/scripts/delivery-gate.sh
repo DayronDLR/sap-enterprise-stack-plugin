@@ -160,19 +160,128 @@ if [[ -z "$CMD" ]]; then
     echo "[dod] sin python3 ni node no puedo parsear el comando: se decide sobre el JSON crudo." >&2
 fi
 
+# Lo que el comando EJECUTA, sin lo que solo menciona (roadmap F8-a).
+#
+# `cat > adr.md <<'EOF'` con un procedimiento de git adentro, un
+# `echo "git push"` o un `# git commit` en un comentario denegaban igual que la
+# entrega: el matcher lee texto, y el texto no es el hecho. `lib/comando.mjs`
+# reemplaza por espacios las regiones que con seguridad son DATO —comentarios,
+# heredocs y argumentos citados de comandos que solo leen o imprimen— y deja
+# intacto todo lo que puede ejecutarse: sustituciones, lo que lee un shell, la
+# palabra que ocupa el lugar del comando. La decision es por SEGMENTO, asi que
+# `echo hola; git commit` sigue siendo una entrega.
+#
+# Sin node, o sin el modulo, se decide sobre el comando entero: mirar de mas es
+# el lado seguro. Lo mismo si el analizador no entiende algo (una comilla sin
+# cerrar): devuelve el comando tal cual.
+#
+# Un solo arranque de node para F8-a y F8-b: cuesta ~80 ms en frio y este camino
+# corre en cada comando que menciona una entrega. Las salidas van a archivos y no
+# por stdout, para no tocar los saltos de linea (una barra + salto separa
+# comandos, y el matcher lo sabe).
+CMD_EJECUTA="$CMD"
+_F8_DIR=""
+if command -v node >/dev/null 2>&1 && [[ -f "${SCRIPT_DIR}/lib/comando.mjs" ]]; then
+    _F8_DIR=$(mktemp -d 2>/dev/null) || _F8_DIR=""
+    # El hook sale por muchos caminos (`allow`, `deny`, `exit`): el temporal se
+    # borra en todos.
+    [[ -n "$_F8_DIR" ]] && trap 'rm -rf "$_F8_DIR"' EXIT
+fi
+if [[ -n "$_F8_DIR" ]]; then
+    if printf '%s' "$INPUT" | node --input-type=module -e '
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+const [modulo, dir, home] = process.argv.slice(1);
+const { sinDatos, destinos } = await import(pathToFileURL(modulo).href);
+const ev = JSON.parse(fs.readFileSync(0, "utf8"));
+const i = ev.tool_input || {};
+const v = i.command || i.cmd || i.argv || "";
+// Un `argv` en array no pasa por un shell: cada elemento es UNA palabra. Se cita
+// cada una para que el analizador lo vea asi —unirlas con espacios convertia el
+// argumento "git commit" de un `echo` en dos palabras sueltas, que no son dato—.
+const palabra = (x) => "\x27" + String(x).split("\x27").join("\x27\\\x27\x27") + "\x27";
+const cmd = Array.isArray(v) ? v.map(palabra).join(" ") : String(v);
+fs.writeFileSync(path.join(dir, "ejecuta"), sinDatos(cmd));
+const d = destinos(cmd, typeof ev.cwd === "string" ? ev.cwd : "", home);
+fs.writeFileSync(path.join(dir, "resto"), d.resto);
+const ok = Array.isArray(d.dirs) && d.dirs.length > 0 && d.dirs.every((x) => !x.includes("\n"));
+fs.writeFileSync(path.join(dir, "dirs"), ok ? d.dirs.join("\n") : "");
+' "${SCRIPT_DIR}/lib/comando.mjs" "$_F8_DIR" "${HOME:-}"; then
+        CMD_EJECUTA=$(cat "$_F8_DIR/ejecuta")
+    else
+        # Sin `2>/dev/null`: el error de node es lo unico que explica por que
+        # vuelven los falsos positivos. El resultado es seguro igual.
+        echo "[delivery-gate] el analizador de comandos fallo: se decide sobre el texto entero." >&2
+        rm -rf "$_F8_DIR"
+        _F8_DIR=""
+    fi
+fi
+
 # Confirmar sobre el comando real: el fast path tambien matchea si la frase
 # aparece solo en `description`, o en un `echo "git push"`.
 #
 # `git` seguido de cualquier cantidad de opciones globales y despues el
 # subcomando: `-C <dir>`, `-c <k=v>`, `--no-pager`, `--git-dir=…`, `--work-tree=…`.
 # El fast path ya dejo pasar de mas a proposito; la precision vive aca.
-if ! dod_es_subcomando_git "$CMD" 'commit' \
-   && ! dod_es_subcomando_git "$CMD" 'push' \
-   && ! dod_es_gh_pr_create "$CMD"; then
+if ! dod_es_subcomando_git "$CMD_EJECUTA" 'commit' \
+   && ! dod_es_subcomando_git "$CMD_EJECUTA" 'push' \
+   && ! dod_es_gh_pr_create "$CMD_EJECUTA"; then
     allow
 fi
 # `--dry-run` no entrega nada.
-echo "$CMD" | grep -q -- '--dry-run' && allow
+echo "$CMD_EJECUTA" | grep -q -- '--dry-run' && allow
+
+# ── ¿La entrega es en ESTE repo? (roadmap F8-b) ─────────────────────────────
+#
+# El gate evaluaba contra `CLAUDE_PROJECT_DIR` sin mirar DONDE cae el comando:
+# un commit en un repo temporal de `/tmp`, en un clon de cliente o en otro
+# worktree se bloqueaba con un mensaje sobre archivos que no tenian nada que ver.
+#
+# `lib/comando.mjs` resuelve el directorio de cada entrega de primer nivel —el
+# `cwd` del evento, los `cd <dir>` encadenados con `;` o `&&`, el `git -C`— y
+# devuelve tambien el comando con esas entregas borradas. Se exime SOLO si:
+#   - todas las entregas se resolvieron (sin variables, sin `--git-dir`, sin un
+#     `cd` detras de `||` o en un pipe);
+#   - en lo que queda el matcher ya no ve ninguna entrega: una en un subshell,
+#     en un `sh -c` o detras de un `find -exec` no se atribuyo y no se exime;
+#   - y cada directorio pertenece a OTRO repositorio que este.
+# Ante cualquier duda la entrega es de este proyecto, como hasta ahora.
+if [[ -n "$_F8_DIR" ]]; then
+    _RESTO=$(cat "$_F8_DIR/resto")
+    _DIRS=$(cat "$_F8_DIR/dirs")
+    rm -rf "$_F8_DIR"
+    if [[ -n "$_DIRS" ]] \
+       && ! dod_es_subcomando_git "$_RESTO" 'commit' \
+       && ! dod_es_subcomando_git "$_RESTO" 'push' \
+       && ! dod_es_gh_pr_create "$_RESTO"; then
+        _PROPIO=$(cd "$PROJECT_DIR" 2>/dev/null && git rev-parse --show-toplevel 2>/dev/null)
+        _COMUN=$(cd "$PROJECT_DIR" 2>/dev/null && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P)
+        _REPOS=""
+        _WORKTREES=""
+        _TODOS_AJENOS=true
+        while IFS= read -r _d; do
+            [[ -z "$_d" ]] && continue
+            _top=$(git -C "$_d" rev-parse --show-toplevel 2>/dev/null) || { _TODOS_AJENOS=false; break; }
+            if [[ -z "$_PROPIO" || "$_top" == "$_PROPIO" ]]; then _TODOS_AJENOS=false; break; fi
+            # Otro worktree del MISMO repositorio: el nivel 1 evalua el arbol de
+            # este directorio, no el de ese, asi que no puede decidir por el.
+            # `.husky/pre-commit` si corre alla. Se dice con esas palabras.
+            _c=$(cd "$_d" 2>/dev/null && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P)
+            if [[ -n "$_COMUN" && "$_c" == "$_COMUN" ]]; then
+                [[ "$_WORKTREES " == *" $_top "* ]] || _WORKTREES="$_WORKTREES $_top"
+            else
+                [[ "$_REPOS " == *" $_top "* ]] || _REPOS="$_REPOS $_top"
+            fi
+        done <<< "$_DIRS"
+        if $_TODOS_AJENOS && [[ -n "$_REPOS$_WORKTREES" ]]; then
+            _NOTA="La entrega no cae en este proyecto, asi que la Definition of Done de este repo no la evalua."
+            [[ -n "$_REPOS" ]] && _NOTA="$_NOTA Otro repositorio:$_REPOS."
+            [[ -n "$_WORKTREES" ]] && _NOTA="$_NOTA Otro worktree de este repositorio:$_WORKTREES (este aviso temprano evalua el arbol de $PROJECT_DIR; alla la DoD la sigue haciendo cumplir .husky/pre-commit)."
+            allow_with_note "$_NOTA"
+        fi
+    fi
+fi
 
 # ── Escape hatches ───────────────────────────────────────────────────────────
 
@@ -193,8 +302,8 @@ esac
 # ventana de 50. Un push de 60 commits de SOLO documentacion salia denegado — la
 # misma regresion que `--union` existe para eliminar.
 ES_PUSH=false
-if dod_es_subcomando_git "$CMD" 'push' \
-   || dod_es_gh_pr_create "$CMD"; then
+if dod_es_subcomando_git "$CMD_EJECUTA" 'push' \
+   || dod_es_gh_pr_create "$CMD_EJECUTA"; then
     ES_PUSH=true
 fi
 
