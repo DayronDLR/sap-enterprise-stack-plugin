@@ -58,9 +58,22 @@ _hay_entrega() {
         # `$'` al slow path sin mas: el citado ANSI-C puede esconder la palabra
         # entera (`git $'\x63ommit'`), y ni el crudo ni un aplanado por `tr` la
         # ven. Lo resuelve el aplanado del matcher. Lo midieron los dos gates.
-        *push*|*commit*|*"pr create"*|*"pr new"*|*"\$'"*) return 0 ;;
-        *) return 1 ;;
+        *push*|*commit*|*"pr create"*|*"pr new"*|*createPullRequest*|*alias*import*|*"\$'"*) return 0 ;;
+        *) ;;
     esac
+    # `gh api …/pulls` solo si ademas trae algo que lo vuelve escritura (campos,
+    # `-X`, `--method`, `--input`): un `gh api …/pulls` de lectura pagaba ~250 ms
+    # de node en cada llamada (lo midio el Gate 3). `-f` cubre tambien `--field`
+    # y `--raw-field`.
+    case "$1" in
+        *api*pulls*)
+            case "$1" in
+                *-f*|*-F*|*-X*|*--method*|*--input*) return 0 ;;
+                *) ;;
+            esac ;;
+        *) ;;
+    esac
+    return 1
 }
 if ! _hay_entrega "$INPUT"; then
     if (( ${#INPUT} > 256 )); then
@@ -182,7 +195,20 @@ fi
 CMD_EJECUTA="$CMD"
 _F8_DIR=""
 if command -v node >/dev/null 2>&1 && [[ -f "${SCRIPT_DIR}/lib/comando.mjs" ]]; then
-    _F8_DIR=$(mktemp -d 2>/dev/null) || _F8_DIR=""
+    # Un SIGKILL no pasa por el `trap` de abajo y deja el temporal. Con un
+    # prefijo propio se pueden barrer: los de este usuario con mas de una hora
+    # son de una corrida que ya no existe (el hook tiene timeout de 60 s).
+    _TMP_BASE="${TMPDIR:-/tmp}"
+    # La barra final hace que `find` entre aunque sea un symlink: en macOS
+    # `/tmp` apunta a `private/tmp`, y sin ella el barrido no hacia nada.
+    find "${_TMP_BASE%/}/" -maxdepth 1 -type d -name 'ses-gate.*' -user "$(id -u)" -mmin +60 \
+        -exec rm -rf {} + 2>/dev/null
+    # Si `TMPDIR` no existe o no se puede escribir, se cae a `/tmp`: sin
+    # temporal no corre el analizador y lo que solo menciona una entrega volveria
+    # a denegar. `/tmp` explicito y no `mktemp -d` pelado: el de GNU tambien lee
+    # `TMPDIR`, asi que en Linux fallaba igual (lo encontro CI; el de macOS no).
+    _F8_DIR=$(mktemp -d "${_TMP_BASE%/}/ses-gate.XXXXXX" 2>/dev/null) \
+        || _F8_DIR=$(mktemp -d /tmp/ses-gate.XXXXXX 2>/dev/null) || _F8_DIR=""
     # El hook sale por muchos caminos (`allow`, `deny`, `exit`): el temporal se
     # borra en todos.
     [[ -n "$_F8_DIR" ]] && trap 'rm -rf "$_F8_DIR"' EXIT
@@ -800,7 +826,7 @@ check_flag "$QA_FLAG"     "Gate 3 (QA + NFR): agente 'sap-qa' con shared/non-fun
 # tiene que tener su propia evidencia.
 if [[ "$ES_PUSH" = "true" && -n "${SIN_GATE:-}" ]]; then
     MISSING="${MISSING}
-  - Hay commits sin gatear en el rango que publica este push (ver abajo)"
+  - Hay commits sin gatear en el rango que publica esta entrega —push o PR nuevo— (ver abajo)"
 fi
 # La ventana excedida bloquea POR SI SOLA, aunque no haya nada que listar.
 #

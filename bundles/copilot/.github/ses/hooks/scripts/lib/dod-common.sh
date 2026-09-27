@@ -286,9 +286,25 @@ def esc(m):
     return L.get(e, e)
 def seg(m):
     return re.sub(r"\\(x[0-9a-fA-F]{1,2}|u[0-9a-fA-F]{1,4}|U[0-9a-fA-F]{1,8}|[0-7]{1,3}|[\s\S])", esc, m.group(1))
+# DOS LECTURAS, y se decide sobre la union (ver `_dod_aplanar`):
+#   - la que respeta comillas: un escape y las cadenas entre comillas se copian
+#     tal cual, y solo un $\x27...\x27 fuera de ellas se resuelve;
+#   - la ingenua: todo $\x27...\x27, este donde este.
+# Ninguna sola alcanza: bash resuelve $\x27 dentro de una $( ) entre comillas
+# dobles, y un # o un heredoc abren comillas que bash no abre.
+INGENUA = re.compile(r"\$\x27((?:[^\x27\\]|\\[\s\S])*)\x27")
+TOK = re.compile(r"(\\[\s\S])|(\x27[^\x27]*\x27)|(\"(?:[^\"\\]|\\[\s\S])*\")|\$\x27((?:[^\x27\\]|\\[\s\S])*)\x27")
+def tok(m):
+    if m.group(4) is None:
+        return m.group(0)
+    return seg(re.match(r"([\s\S]*)", m.group(4)))
 try:
     d = b.decode("utf-8", "surrogateescape")
-    sys.stdout.buffer.write(re.sub(r"\$\x27((?:[^\x27\\]|\\[\s\S])*)\x27", seg, d).encode("utf-8", "surrogateescape"))
+    q = TOK.sub(tok, d)
+    v = INGENUA.sub(seg, d)
+    # Linea en blanco entre las dos: si la primera termina en barra, el `awk` que
+    # une barra + salto se come la vacia y no pega las lecturas.
+    sys.stdout.buffer.write((q if q == v else q + "\n\n" + v).encode("utf-8", "surrogateescape"))
 except Exception:
     sys.stdout.buffer.write(b)
 '
@@ -326,7 +342,7 @@ _dod_aplanar() {
     # UTF-8, y `echo \xff; git $'\x63ommit'` quedaba sin resolver. Lo midio el
     # Gate 3. Todo lo que se busca aca es ASCII.
     local LC_ALL=C
-    local s="$1" i m inner r
+    local s="$1" i m inner r q v
     if [[ "$1" == "$_DOD_APLANADO_DE" && -n "$1" ]]; then
         return 0
     fi
@@ -353,16 +369,27 @@ _dod_aplanar() {
         # 1. `$'...'`: se resuelven los escapes como lo haria bash. ANTES de borrar
         #    barras: sin esto `\x20` quedaba como `x20`. `printf %b` corta en `\c`
         #    (`$'git\ccommit'` da `git`): limite conocido, el nivel 2 lo frena.
-        for (( i=0; i<20; i++ )); do
-            [[ "$s" =~ \$\'([^\']*)\' ]] || break
-            m="${BASH_REMATCH[0]}"; inner="${BASH_REMATCH[1]}"
-            printf -v r '%b' "$inner"
-            s="${s/"$m"/$r}"
-        done
+        #
+        #    DOS LECTURAS y se decide sobre la UNION, separadas por una linea en
+        #    blanco (los matchers son `grep`, por linea). La que respeta comillas
+        #    ve `echo '$'; git $'\x63ommit'`, que la ingenua lee como un solo
+        #    `$'…'` desde el primer `$'`. La ingenua ve lo que un lexer de a un
+        #    caracter no: bash resuelve `$'…'` dentro de `"$( … )"`, y un `#` o
+        #    un heredoc con apostrofo abren comillas que bash no abre. La primera
+        #    version usaba solo la que respeta comillas, y el Gate 3 midio nueve
+        #    formas que `main` denegaba y ella dejaba pasar.
+        #
+        #    El costo: `echo 'A$'\x67'it'` sigue leyendose como `Agit` en la
+        #    ingenua. Es un falso positivo, del lado seguro (D-01, por diseno).
+        if [[ "$s" == *"\$'"* ]]; then
+            q=$(_dod_ansi_c_chico "$s")
+            v=$(_dod_ansi_c_ingenuo "$s")
+            if [[ "$q" == "$v" ]]; then s="$q"; else s="$q"$'\n\n'"$v"; fi
+        fi
         # 2. Llaves sin espacios adentro: `{git,commit}` -> `git commit`. Bash
         #    expande `x{a,b}` a `xa xb` y esto da `xa b`; para decidir si hay una
         #    entrega alcanza, y el error cae del lado de denegar.
-        for (( i=0; i<20; i++ )); do
+        for (( i=0; i<40; i++ )); do
             [[ "$s" =~ \{([^{}[:space:]]*,[^{}[:space:]]*)\} ]] || break
             m="${BASH_REMATCH[0]}"; inner="${BASH_REMATCH[1]}"
             s="${s/"$m"/${inner//,/ }}"
@@ -375,6 +402,56 @@ _dod_aplanar() {
     fi
     _DOD_APLANADO_DE="$1"
     _DOD_APLANADO="$s"
+}
+
+# Resuelve los `$'...'` de un texto CHICO (el camino de <= 256 caracteres de
+# `_dod_aplanar`), recorriendolo una vez: un escape y las cadenas entre comillas
+# simples o dobles se copian tal cual; solo un `$'` fuera de ellas es ANSI-C.
+_dod_ansi_c_chico() {
+    local s="$1" out="" i=0 n=${#1} c j r
+    while (( i < n )); do
+        c="${s:i:1}"
+        if [[ "$c" == '\' ]]; then
+            out+="${s:i:2}"; i=$((i + 2)); continue
+        fi
+        if [[ "$c" == "'" || "$c" == '"' ]]; then
+            j=$((i + 1))
+            while (( j < n )) && [[ "${s:j:1}" != "$c" ]]; do
+                [[ "$c" == '"' && "${s:j:1}" == '\' ]] && j=$((j + 1))
+                j=$((j + 1))
+            done
+            out+="${s:i:j-i+1}"; i=$((j + 1)); continue
+        fi
+        if [[ "$c" == '$' && "${s:i+1:1}" == "'" ]]; then
+            # Dentro de `$'…'` una `\'` no cierra: igual que el patron de python
+            # del camino largo, para que las dos puertas no diverjan.
+            j=$((i + 2))
+            while (( j < n )) && [[ "${s:j:1}" != "'" ]]; do
+                [[ "${s:j:1}" == '\' ]] && j=$((j + 1))
+                j=$((j + 1))
+            done
+            printf -v r '%b' "${s:i+2:j-i-2}"
+            out+="$r"; i=$((j + 1)); continue
+        fi
+        out+="$c"; i=$((i + 1))
+    done
+    printf '%s' "$out"
+}
+
+# La lectura ingenua: todo `$'…'`, este donde este (la de antes de D-01). El
+# cierre es la primera `'`, como en bash: dentro de `$'…'` una `\'` no cierra,
+# pero `printf %b` tampoco la entiende. El techo acota el costo: con 20, veinte
+# `$'x'` de relleno antes del verbo lo dejaban sin resolver (lo midio el Gate 2).
+# El camino chico son 256 caracteres, o sea a lo sumo ~85 `$''`.
+_dod_ansi_c_ingenuo() {
+    local s="$1" i m inner r
+    for (( i=0; i<90; i++ )); do
+        [[ "$s" =~ \$\'([^\']*)\' ]] || break
+        m="${BASH_REMATCH[0]}"; inner="${BASH_REMATCH[1]}"
+        printf -v r '%b' "$inner"
+        s="${s/"$m"/$r}"
+    done
+    printf '%s' "$s"
 }
 
 # El aplanado de `$1`, impreso. Para quien lo necesite como texto (los tests).
@@ -413,9 +490,29 @@ dod_es_subcomando_git() {
 dod_es_gh_pr_create() {
     # `new` es el alias oficial de `create` (`gh pr create --help` lo lista).
     local re="(^|${DOD_GIT_PRE})gh[[:space:]]+pr[[:space:]]+(create|new)($|[^A-Za-z0-9_-])"
-    printf '%s' "$1" | LC_ALL=C grep -qE "$re" && return 0
+    # Las otras dos puertas a un PR nuevo, que el literal no veia:
+    #   - `gh api …/pulls` con POST: explicito (`-X POST`, `--method POST`) o
+    #     implicito, porque `gh api` pasa a POST cuando lleva campos (`-f`, `-F`,
+    #     `--field`, `--raw-field`, `--input`). La ruta tiene que TERMINAR en
+    #     `pulls`: `…/pulls/1/comments` es un comentario, no un PR.
+    #     El campo puede ir pegado (`-ftitle=t`) y el metodo en minuscula
+    #     (`--method post`): gh acepta los dos, asi que el POST se busca sin
+    #     distinguir mayusculas.
+    #   - la mutacion de GraphQL `createPullRequest` por `gh api graphql`.
+    #   - un alias de gh que expande a `pr create|new` (`gh alias set c 'pr create'`),
+    #     y `gh alias import`, cuyo contenido no se ve: se deniega a ciegas.
+    local api="(^|${DOD_GIT_PRE})gh[[:space:]]+api[[:space:]][^;&|]*pulls([[:space:]?]|$)"
+    local post="(-X[[:space:]]*POST|--method[[:space:]=]*POST|[[:space:]]-[fF]|--(raw-)?field|--input)"
+    local gql="(^|${DOD_GIT_PRE})gh[[:space:]]+api[[:space:]][^;&|]*graphql[^;&|]*createPullRequest"
+    # Entre `set` y `pr` puede haber opciones (`--clobber`, `--`) ademas del nombre.
+    local alias="(^|${DOD_GIT_PRE})gh[[:space:]]+alias[[:space:]]+(set([[:space:]]+[^[:space:]]+)+[[:space:]]+pr[[:space:]]+(create|new)|import)($|[^A-Za-z0-9_-])"
     _dod_aplanar "$1"
-    printf '%s' "$_DOD_APLANADO" | LC_ALL=C grep -qE "$re"
+    local t
+    for t in "$1" "$_DOD_APLANADO"; do
+        printf '%s' "$t" | LC_ALL=C grep -qE "$re|$alias|$gql" && return 0
+        printf '%s' "$t" | LC_ALL=C grep -E "$api" | LC_ALL=C grep -qiE "$post" && return 0
+    done
+    return 1
 }
 
 # Arboles GENERADOS por los emisores. Se escanea la FUENTE, no la salida.
@@ -1906,8 +2003,10 @@ _dod_seal() {
 # necesita rotacion.
 DOD_LOCK_LOG="${DOD_LOCK_LOG:-logs/dod-lock-degradado.log}"
 
+# `$2` es lo que paso: `abandonada` (la operacion NO corrio) o `huerfano-intento`
+# (se intento borrar un lock viejo; si no se pudo, sigue una linea `abandonada`).
 dod_log_lock_degradado() {
-    local recurso="$1" archivo
+    local recurso="$1" evento="${2:-huerfano-intento}" archivo
     archivo="${CLAUDE_PROJECT_DIR:-.}/${DOD_LOCK_LOG}"
     mkdir -p "$(dirname "$archivo")" 2>/dev/null
     # No alcanza con `$$`: en bash devuelve el PID del shell INVOCANTE, asi que
@@ -1928,8 +2027,8 @@ dod_log_lock_degradado() {
     # fork" deja el campo indiagnosticable en silencio.
     local pid="${BASHPID:-}"
     [[ -n "$pid" ]] || pid=$(exec sh -c 'echo $PPID')
-    printf '%s pid=%s recurso=%s sin-exclusion\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$pid" "$recurso" >> "$archivo" 2>/dev/null
+    printf '%s pid=%s recurso=%s %s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$pid" "$recurso" "$evento" >> "$archivo" 2>/dev/null
 }
 
 # Segundos tras los cuales un lock se considera HUERFANO (proceso muerto sin
@@ -2009,7 +2108,7 @@ dod_con_lock() {
             # nadie lo pueda redirigir.
             # No se ejecuta la operacion. Devolver un error es lo unico honesto:
             # el llamador tiene que saber que su sello NO quedo registrado.
-            dod_log_lock_degradado "$recurso"
+            dod_log_lock_degradado "$recurso" abandonada
             printf '[DoD] no se pudo tomar el lock de %s tras %s intentos: la operacion NO se ejecuto.\n' \
                 "$(basename "$recurso")" "$intentos" >&2
             return 75
@@ -2115,7 +2214,9 @@ dod_commit_files() {
 dod_tool_command() {
     local entrada="$1" cmd=""
     if command -v python3 >/dev/null 2>&1; then
-        cmd=$(printf '%s' "$entrada" | python3 -c "
+        # `-I -S`: sin `PYTHON*` del entorno ni site-packages. Este parser decide
+        # que comando evalua el gate; un `PYTHONPATH` plantado no puede cambiarlo.
+        cmd=$(printf '%s' "$entrada" | python3 -I -S -c "
 import json,sys
 try:
     i = json.load(sys.stdin).get('tool_input') or {}

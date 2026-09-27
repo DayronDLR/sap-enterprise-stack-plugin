@@ -307,10 +307,15 @@ crudo y sobre una forma aplanada con lo que bash resuelve antes de ejecutar —e
 citado ANSI-C, las llaves sin espacios, comillas y barras—. Lo que **no**
 reconoce, a sabiendas: funciones y alias, la indireccion por variable, `xargs`,
 `find -exec`, un `python -c`, y un script de python o node que otro segmento del
-mismo comando escribe y despues ejecuta. Esas las frena el nivel 2. Un PR
-creado sin `gh pr create` —con `gh alias set` o con `gh api` contra el endpoint
-de pulls— tampoco lo ve el nivel 1, y ahi el respaldo es el trailer que CI exige
-a cada commit del rango.
+mismo comando escribe y despues ejecuta. Esas las frena el nivel 2.
+
+Un PR nuevo tambien se reconoce cuando no pasa por `gh pr create`: con
+`gh api …/pulls` y POST (explicito, en cualquier caja, o por llevar campos,
+pegados o no), con la mutacion `createPullRequest` por `gh api graphql`, con
+`gh alias set <x> 'pr create'` y con `gh alias import`, que se deniega sin mirar
+el archivo. Lo que queda afuera —un alias ya definido antes de la sesion, una
+mutacion leida de un archivo (`-F query=@q.graphql`), la API llamada con `curl`—
+lo cubre el trailer que CI exige a cada commit del rango.
 
 Un costo a sabiendas: `rg` y `ag` no estan en la lista de comandos de solo
 lectura (`--pre` y `--pager` ejecutan un programa), asi que buscar la frase de
@@ -368,7 +373,8 @@ sea `cd <dir>`, `git`, `gh` o de solo lectura (`pushd`, `eval`, `source`,
 `if`/`for`, `export`, y tambien `ln`, `mv` o `rm`, que cambian a que apunta una
 ruta antes de que el `cd` corra), cuenta como de este proyecto. Tampoco se
 sigue un `cd` a un nombre sin barra (`cd sub`), que bash busca antes en
-`CDPATH`: solo rutas absolutas, `./`, `../` o `~`. Y un comando con cualquier
+`CDPATH`: solo rutas absolutas, `.`, `..`, `~` o las que empiezan con `./`,
+`../` o `~/`. Y un comando con cualquier
 sustitucion (`$( )`, backticks) no se exime: la sustitucion corre antes y puede
 mover el destino. Otro worktree de este mismo repo
 tambien pasa, con un aviso que dice que alla la DoD la hace cumplir

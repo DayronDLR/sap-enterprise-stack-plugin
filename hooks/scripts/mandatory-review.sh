@@ -109,9 +109,11 @@ if [[ "$_CONSUMO_PURO" = "si" ]]; then
     dod_flag_release "$QA_FLAG" "$ENTREGADO" || RC_REL=$?
     if [[ "$RC_REL" -ne 0 ]]; then
         say "[DoD] AVISO: no se pudo consumir el approval del arbol ${ENTREGADO:0:12} (rc=${RC_REL}). Sigue vigente: la proxima entrega del mismo contenido pasaria sin revision nueva."
-    else
-        say "[DoD] Approval del arbol ${ENTREGADO:0:12} consumido."
+        # El rc sale: `.husky/post-commit` manda la salida a /dev/null y es el
+        # unico que lo puede contar.
+        exit "$RC_REL"
     fi
+    say "[DoD] Approval del arbol ${ENTREGADO:0:12} consumido."
     exit 0
 fi
 
