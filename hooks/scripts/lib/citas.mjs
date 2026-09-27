@@ -37,8 +37,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** Lo que puede formar un nombre: letras y dígitos de cualquier alfabeto (pédido, año). */
-const C = String.raw`[\p{L}\p{N}_.@-]`;
+/**
+ * Lo que puede formar un nombre: letras y dígitos de cualquier alfabeto (pédido,
+ * año). El `@` va aparte: sólo puede EMPEZAR un segmento (`@sap/cds/x.js`). En el
+ * medio es un correo (`me@dominio.com:3`), no una ruta.
+ */
+const C = String.raw`[\p{L}\p{N}_.-]`;
 /**
  * El último segmento de una ruta: con extensión (hasta 20 caracteres, por
  * `.hdbcalculationview`, que tiene 18), un dotfile (`.gitignore`), o un nombre
@@ -46,8 +50,8 @@ const C = String.raw`[\p{L}\p{N}_.@-]`;
  */
 const FINAL = String.raw`(?:[\p{L}\p{N}_@-]${C}*\.\p{L}[\p{L}\p{N}]{0,19}|\.[\p{L}\p{N}_-]${C}*|Makefile|Dockerfile|Jenkinsfile|Procfile)`;
 /** Dentro de una carpeta oculta (`.husky/pre-commit`, `.github/CODEOWNERS`) el archivo no suele tener extensión. */
-const OCULTA = String.raw`\.[\p{L}\p{N}_-]${C}*\/(?:${C}+\/)*[\p{L}\p{N}_@-]${C}*`;
-const ARCHIVO = String.raw`(?:\/?(?:${C}+\/)*${FINAL}|${OCULTA})`;
+const OCULTA = String.raw`\.[\p{L}\p{N}_-]${C}*\/(?:@?${C}+\/)*[\p{L}\p{N}_@-]${C}*`;
+const ARCHIVO = String.raw`(?:\/?(?:@?${C}+\/)*${FINAL}|${OCULTA})`;
 /**
  * Una cita no empieza después de una letra, un dígito, `/`, `:`, `.`, `@`, `-` o
  * `\`: así un host o una ruta de URL (`https://api.sap.com:443`) no se toma por
@@ -81,8 +85,13 @@ export function normalizar(mensaje) {
   return String(mensaje || '').slice(0, MAX_TEXTO)
     .replace(/^([ \t]*)(```|~~~)[^\n]*\n[\s\S]*?^[ \t]*\2[^\n]*$/gm, '')
     .replace(/\bat\s+[^\s()]*\s*\([^()\n]*:\d+(?::\d+)?\)/g, '')
-    .replace(/\bat\s+\S+:\d+:\d+/g, '')
-    .replace(/(\d)\s*[–—]\s*(\d)/g, '$1-$2')
+    // Un marco sin paréntesis (`at x.js:50:3`) sólo cuenta al principio de una
+    // línea, que es donde lo imprime un stack trace. En prosa —«falla at
+    // x.js:50:3»— es una cita.
+    .replace(/^[ \t]*at\s+\S+:\d+:\d+/gm, '')
+    // Una raya ENTRE dos números sin espacios es un rango (`42–50`). Con espacios
+    // es prosa: `x.js:5 – 3 casos` no es el rango 5-3.
+    .replace(/(\d)[–—](\d)/g, '$1-$2')
     .replace(/(?<=[\p{L}\p{N}_.-])\\(?=[\p{L}\p{N}_.-])/gu, '/');
 }
 
@@ -108,23 +117,28 @@ export function citasDe(mensaje) {
 function indiceDe(base) {
   const archivos = [];
   const pila = [''];
+  // Una carpeta que no se pudo leer deja el índice incompleto: lo que no se
+  // encontró puede estar ahí, y entonces no se afirma «no existe».
+  let ilegible = false;
   while (pila.length && archivos.length < MAX_INDICE) {
     const rel = pila.pop();
-    for (const e of entradasDe(path.join(base, rel))) {
+    const entradas = entradasDe(path.join(base, rel));
+    if (entradas == null) { ilegible = true; continue; }
+    for (const e of entradas) {
       const r = rel ? `${rel}/${e.name}` : e.name;
       if (e.isDirectory()) pila.push(r);
       else if (e.isFile()) archivos.push(r);
     }
   }
-  return { archivos, completo: pila.length === 0 };
+  return { archivos, completo: pila.length === 0 && !ilegible };
 }
 
-/** Las entradas indexables de un directorio; uno ilegible no tiene ninguna. */
+/** Las entradas indexables de un directorio, o `null` si no se pudo leer. */
 function entradasDe(dir) {
   try {
     return fs.readdirSync(dir, { withFileTypes: true }).filter((e) => !NO_INDEXAR.has(e.name));
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -192,14 +206,23 @@ function contarLineas(abs) {
  * rota. Una cita ambigua (varios archivos terminan igual) sólo se afirma rota
  * si NINGUNO de los candidatos tiene esa línea.
  */
-function verificarUna(c, base, baseReal, indice) {
+function verificarUna(c, base, baseReal, indice, lineasDe) {
   if (c.desde < 1 || c.hasta < c.desde) return 'el rango está mal escrito';
   const donde = resolver(c.ruta, base, baseReal, indice);
   if (donde.estado === 'no existe') return 'el archivo no existe';
   if (donde.estado) return 'sin verificar';
-  const lineas = donde.rels.map((rel) => contarLineas(path.join(base, rel)));
-  if (lineas.some((l) => l === null)) return 'sin verificar';
-  if (lineas.some((l) => c.hasta <= l)) return 'ok';
+  // Se corta en el primer candidato que llega a la línea, y cada archivo se
+  // cuenta una sola vez por verificación: 50 citas ambiguas sobre un repo grande
+  // recorrían todos los candidatos una y otra vez.
+  let sinContar = false;
+  const lineas = [];
+  for (const rel of donde.rels) {
+    const l = lineasDe(path.join(base, rel));
+    if (l === null) { sinContar = true; continue; }
+    if (c.hasta <= l) return 'ok';
+    lineas.push(l);
+  }
+  if (sinContar) return 'sin verificar';
   if (donde.rels.length === 1) return `${donde.rels[0]} tiene ${lineas[0]} línea${lineas[0] === 1 ? '' : 's'}`;
   return `ninguno de los ${donde.rels.length} archivos que terminan en ${c.ruta} llega a la línea ${c.hasta}`;
 }
@@ -215,10 +238,21 @@ export function verificarCitas(citas, raiz = process.cwd()) {
   try { baseReal = fs.realpathSync(base); } catch { /* se compara con la ruta tal cual */ }
   let idx = null;
   const indice = () => { idx ??= indiceDe(base); return idx; };
+  const cache = new Map();
+  // Un candidato que no se puede leer cuenta como «no se sabe» (`null`) y la
+  // búsqueda sigue con los demás: otro puede confirmar la cita.
+  const lineasDe = (abs) => {
+    if (!cache.has(abs)) {
+      let l = null;
+      try { l = contarLineas(abs); } catch { /* ilegible: queda en null */ }
+      cache.set(abs, l);
+    }
+    return cache.get(abs);
+  };
   const r = { total: citas.length, ok: 0, sinVerificar: 0, malas: [] };
   for (const c of citas) {
     let v;
-    try { v = verificarUna(c, base, baseReal, indice); } catch { v = 'sin verificar'; }
+    try { v = verificarUna(c, base, baseReal, indice, lineasDe); } catch { v = 'sin verificar'; }
     if (v === 'ok') r.ok += 1;
     else if (v === 'sin verificar') r.sinVerificar += 1;
     else r.malas.push({ texto: c.texto, motivo: v });
