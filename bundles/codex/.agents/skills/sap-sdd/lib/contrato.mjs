@@ -8,12 +8,17 @@
  * `citas` dice qué archivos tienen que citar el requerimiento y con qué rigor:
  *   'por-seccion' → cada sección (`##` / `###` / `####`) con contenido lleva al menos una
  *   'alguna'      → el archivo lleva al menos una
+ *
+ * `sinCodigo` dice qué archivos no pueden traer código (`lib/sin-codigo.mjs`):
+ * la captura describe el negocio, y el código que mande el cliente queda en
+ * `entradas/`.
  */
 export const CONTRATO = {
   C1: {
     obligatorios: ['requerimiento.md', 'fs.md', 'handoff.md'],
     opcionales: ['gap-analysis.md', 'preguntas.md'],
     citas: { 'fs.md': 'alguna' },
+    sinCodigo: ['requerimiento.md', 'fs.md'],
   },
   C2: {
     obligatorios: ['escenarios.md', 'casos-prueba.md', 'handoff.md'],

@@ -111,6 +111,33 @@ qué supuesto tomaste mientras tanto.
 - Supuestos tomados.
 - Preguntas abiertas que afectan a C2.
 
+## Sin código
+
+`requerimiento.md` y `fs.md` describen **qué** necesita el negocio; el **cómo**
+se decide en C3. El gate de C1 rechaza código en esos dos archivos: bloques
+cercados (` ```abap `, ` ```sql `…), sentencias ABAP (`SELECT SINGLE`,
+`LOOP AT`, `CALL FUNCTION`…), clases (`ZCL_`, `CL_SALV_`…), CDS y anotaciones
+(`define view`, `@UI.`) y endpoints OData (`/sap/opu/odata`, `$filter`). La
+lista completa está en `lib/sin-codigo.mjs`, y es la misma que usa el eval de
+`/sap-req`.
+
+Nombrar la tecnología sí se puede: «CDS analítico + Fiori», una transacción
+(FBL5N), una tabla (BSID) o un objeto de autorización describen el
+requerimiento sin decidir cómo se programa. Si el cliente mandó código, queda
+en `entradas/` y la regla lo describe en palabras. Si hace falta describir cómo
+funciona hoy —el servicio OData que consume el CRM, la clase Z del legado—, eso
+es AS-IS y va en `gap-analysis.md`, que no está sujeto a esta regla:
+
+| No | Sí |
+| --- | --- |
+| `RQ-04 Se valida con SELECT SINGLE sobre KNA1.` | `RQ-04 Sólo se aceptan clientes que existen en el maestro (KNA1).` |
+| `RQ-05 No se usa SELECT * en los reportes.` | `RQ-05 Las lecturas no traen columnas que el proceso no usa.` |
+
+Una regla negativa también cuenta: nombra la sentencia igual. Lo que va entre
+backticks cuenta como código (al revés que en las citas), y una URL no: un
+enlace a la documentación o al servicio que hoy consume el CRM es una
+referencia.
+
 ## No hacer
 
 - Inventar volúmenes, reglas o integraciones que la documentación no menciona.

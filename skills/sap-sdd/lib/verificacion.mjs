@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { CONTRATO, REQUERIMIENTO, MINIMO_CARACTERES, MARCA_PENDIENTE, esIgnorable } from './contrato.mjs';
+import { codigoEn } from './sin-codigo.mjs';
 import { FASES, VERSION_ESTADO, validarNombre, errorDeUso, bloqueEstado, fecha as fechaLocal } from './proyecto.mjs';
 import { leerInventario, verificarEstimacion, riesgosDe, leerSi, rutaSapdiag } from './estimacion.mjs';
 
@@ -341,6 +342,14 @@ function esUtf8(p) {
   try { UTF8.decode(fs.readFileSync(p)); return true; } catch { return false; }
 }
 
+// `ignoreBOM: true` deja el BOM en el texto, igual que `readFileSync(p, 'utf8')`:
+// las citas cuentan líneas y el requerimiento lo saca aparte.
+const UTF8_TEXTO = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+/** El texto de `p` si es UTF-8 válido, o null. Una sola lectura del disco. */
+function textoUtf8(p) {
+  try { return UTF8_TEXTO.decode(fs.readFileSync(p)); } catch { return null; }
+}
+
 /** Completitud, whitelist y citas de los archivos de una fase. */
 function revisarArtefactos(dir, fase) {
   const c = CONTRATO[fase.id];
@@ -355,24 +364,63 @@ function revisarArtefactos(dir, fase) {
     if (!permitidos.has(n)) h.push(`${fase.dir}/${n} no es un artefacto de ${fase.id} (permitidos: ${lista})`);
   }
 
-  const leer = (n) => fs.readFileSync(path.join(dir, fase.dir, n), 'utf8');
+  // Cada archivo se lee UNA vez: validar UTF-8, revisar el contenido, las citas
+  // y el código lo leían cuatro veces, y con un fs.md de 2 MB se notaba.
+  const textos = new Map();
+  const leer = (n) => {
+    if (!textos.has(n)) textos.set(n, fs.readFileSync(path.join(dir, fase.dir, n), 'utf8'));
+    return textos.get(n);
+  };
   const noUtf8 = new Set();
   for (const n of c.obligatorios) {
     if (!presentes.has(n)) { h.push(`falta ${fase.dir}/${n}`); continue; }
-    if (!esUtf8(path.join(dir, fase.dir, n))) {
+    const texto = textoUtf8(path.join(dir, fase.dir, n));
+    if (texto === null) {
       h.push(`${fase.dir}/${n} no es UTF-8: guardalo como UTF-8 (en otro encoding, acentos y citas se leen mal)`);
       noUtf8.add(n);
       continue;
     }
-    h.push(...revisarObligatorio(`${fase.dir}/${n}`, leer(n)));
+    textos.set(n, texto);
+    h.push(...revisarObligatorio(`${fase.dir}/${n}`, texto));
   }
 
+  const legibles = new Set([...presentes].filter((n) => !noUtf8.has(n)));
+  h.push(...revisarContenido(dir, fase, legibles, leer));
+  return h;
+}
+
+/** Citas y código, sobre los archivos de la fase que están y se pueden leer. */
+function revisarContenido(dir, fase, legibles, leer) {
+  const c = CONTRATO[fase.id];
+  const h = [];
   const pReq = path.join(dir, REQUERIMIENTO);
   const lineasReq = fs.existsSync(pReq) ? lineasDe(fs.readFileSync(pReq, 'utf8').replace(/^\uFEFF/, '')) : null;
   for (const [n, modo] of Object.entries(c.citas)) {
-    if (presentes.has(n) && !noUtf8.has(n)) h.push(...revisarCitas(`${fase.dir}/${n}`, leer(n), modo, lineasReq));
+    if (legibles.has(n)) h.push(...revisarCitas(`${fase.dir}/${n}`, leer(n), modo, lineasReq));
+  }
+  for (const n of c.sinCodigo ?? []) {
+    if (legibles.has(n)) h.push(...revisarSinCodigo(`${fase.dir}/${n}`, leer(n)));
   }
   return h;
+}
+
+/** Cuántas líneas con código se nombran por archivo; el resto se cuenta. */
+const MAX_LINEAS_CODIGO = 10;
+
+/**
+ * Código en un artefacto que describe el negocio: el cómo se decide en C3.
+ * Un hallazgo por archivo, no uno por línea: un report pegado entero daba
+ * cientos de líneas con el mismo consejo (lo midió el Gate 3).
+ */
+function revisarSinCodigo(rel, texto) {
+  const hallados = codigoEn(texto);
+  if (!hallados.length) return [];
+  const nombradas = hallados.slice(0, MAX_LINEAS_CODIGO).map(({ linea, aguja }) => `${rel}:${linea} («${aguja}»)`);
+  const resto = hallados.length - nombradas.length;
+  const mas = resto > 0 ? ` y ${resto} línea${resto === 1 ? '' : 's'} más` : '';
+  return [`${rel} trae código: ${nombradas.join(', ')}${mas}. La captura dice qué necesita el negocio; `
+    + 'el cómo se decide en C3. Describí la regla en palabras. Si describe cómo funciona hoy (AS-IS), va en '
+    + 'gap-analysis.md; si es código del cliente, en entradas/'];
 }
 
 /**

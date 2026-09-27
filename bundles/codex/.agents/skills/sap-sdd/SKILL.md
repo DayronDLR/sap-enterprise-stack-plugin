@@ -93,6 +93,7 @@ Aprobar otra vez algo que no cambió no agrega otra decisión.
 | Completitud | falta un obligatorio, tiene menos de 100 caracteres o lleva `<!-- sdd:pendiente -->` |
 | Whitelist | hay un archivo que la fase no declara |
 | Citas | una `[C1-captura/requerimiento.md:N]` o `:N-M` no apunta a una regla `RQ-NN` vigente, o está mal escrita; un `Fuente:` sin cita; se cita `entradas/`; o falta cita donde se exige. Lo que está entre backticks o en bloques de código no cuenta |
+| Sin código (C1) | `requerimiento.md` o `fs.md` traen código: un bloque cercado, una sentencia ABAP, una clase, CDS o un endpoint OData (`lib/sin-codigo.mjs`). Nombrar la tecnología, una transacción o una tabla sí se puede |
 | Reglas estables (C1) | una regla que cita una fase aprobada cambió de línea o desapareció; o un código `RQ-NN` está repetido |
 | Encoding | un obligatorio no es UTF-8 |
 | Inventario (C3) | falta la tabla «Inventario de objetos», un `OBJ-NN` repetido, un objeto sin cita o con Clean Core `Modificación` |
