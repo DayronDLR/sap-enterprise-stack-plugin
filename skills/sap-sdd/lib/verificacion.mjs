@@ -394,7 +394,10 @@ function revisarContenido(dir, fase, legibles, leer) {
   const c = CONTRATO[fase.id];
   const h = [];
   const pReq = path.join(dir, REQUERIMIENTO);
-  const lineasReq = fs.existsSync(pReq) ? lineasDe(fs.readFileSync(pReq, 'utf8').replace(/^\uFEFF/, '')) : null;
+  // En C1 el requerimiento es un artefacto de la fase y ya está leído: no se
+  // vuelve a leer para las citas.
+  const textoReq = () => (fase.id === 'C1' ? leer(path.basename(REQUERIMIENTO)) : fs.readFileSync(pReq, 'utf8'));
+  const lineasReq = fs.existsSync(pReq) ? lineasDe(textoReq().replace(/^\uFEFF/, '')) : null;
   for (const [n, modo] of Object.entries(c.citas)) {
     if (legibles.has(n)) h.push(...revisarCitas(`${fase.dir}/${n}`, leer(n), modo, lineasReq));
   }

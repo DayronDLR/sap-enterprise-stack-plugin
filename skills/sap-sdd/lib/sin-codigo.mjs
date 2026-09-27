@@ -43,6 +43,12 @@ const RE_CODIGO_G = new RegExp(RE_CODIGO.source, 'g');
 // un enlace a la documentación de SAP no deciden la implementación.
 const RE_URL = /\bhttps?:\/\/\S+/g;
 
+// Un bloque cercado se nombra por su marca completa: ```javascript contiene
+// ```java, y el mensaje decía «```java» ante un bloque de JavaScript. Con tope:
+// una marca de 1 MB no puede terminar entera en el hallazgo.
+const RE_CERCA = /^```[\w+#-]{0,20}/;
+const nombreDe = (linea, aguja) => (aguja.startsWith('```') ? RE_CERCA.exec(linea.slice(linea.indexOf(aguja)))[0] : aguja);
+
 /**
  * Las líneas de `texto` que traen código: `[{ linea, aguja }]`, una por línea.
  * La comparación es por subcadena y sensible a mayúsculas, igual que la del eval,
@@ -70,8 +76,9 @@ export function codigoEn(texto) {
     for (let k = texto.indexOf('\n', contadoHasta); k !== -1 && k < ini; k = texto.indexOf('\n', k + 1)) linea += 1;
     contadoHasta = ini;
     // La coincidencia puede estar dentro de una URL: la línea se evalúa sin ellas.
-    const r = RE_CODIGO.exec(texto.slice(ini, fin).replace(RE_URL, ''));
-    if (r) hallados.push({ linea, aguja: r[0] });
+    const l = texto.slice(ini, fin).replace(RE_URL, '');
+    const r = RE_CODIGO.exec(l);
+    if (r) hallados.push({ linea, aguja: nombreDe(l, r[0]) });
     re.lastIndex = fin + 1;
   }
   return hallados;
