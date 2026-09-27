@@ -196,16 +196,50 @@ function seleccionar(dir, conEntradas) {
   const archivos = [];
   const omitidos = [];
   for (const n of fs.readdirSync(dir).sort()) {
-    const st = fs.lstatSync(path.join(dir, n));
+    // Lo propio del motor se descarta por NOMBRE, antes del `lstat`: el
+    // temporal que escribe otro `sdd` en paralelo puede desaparecer entre el
+    // `readdir` y el `lstat` (lo midió el Gate 3).
+    if (n === '.sdd.lock' || n === '.importado.json' || n.endsWith('.tmp')) continue;
+    const st = lstatSiExiste(path.join(dir, n));
+    if (!st) continue;
     if (carpetas.includes(n) && st.isDirectory()) {
       archivos.push(...archivosBajo(dir, n, symlinks).filter((r) => !r.split('/').some((s) => s.startsWith('.'))));
     } else if (RAIZ_PERMITIDA.has(n) && st.isFile()) {
       archivos.push(n);
-    } else if (n !== 'entradas' && n !== '.sdd.lock' && n !== '.importado.json' && !n.endsWith('.tmp')) {
+    } else if (n !== 'entradas') {
       omitidos.push(st.isDirectory() ? `${n}/` : n);
     }
   }
   return { archivos, omitidos, symlinks };
+}
+
+/**
+ * Lo que hay en la raíz del proyecto y no es del SDD: no entra en la huella de
+ * ninguna fase ni va al paquete. `sdd estado` lo muestra, para que una nota
+ * suelta no se lea como parte de lo aprobado.
+ */
+export function sueltos(dir) {
+  // Sólo la raíz: recorrer las fases y `entradas/` para esto costaba +37 % en
+  // `sdd estado` con 20.000 entradas (lo midió el Gate 3).
+  const carpetas = new Set([...FASES.map((f) => f.dir), 'entradas']);
+  const fuera = [];
+  for (const n of fs.readdirSync(dir).sort()) {
+    if (n === '.sdd.lock' || n === '.importado.json' || n.endsWith('.tmp')) continue;
+    const st = lstatSiExiste(path.join(dir, n));
+    if (!st || (carpetas.has(n) && st.isDirectory()) || (RAIZ_PERMITIDA.has(n) && st.isFile()) || n === 'entradas') continue;
+    fuera.push(st.isDirectory() ? `${n}/` : n);
+  }
+  return fuera;
+}
+
+/** `lstat`, o null si el archivo ya no está. */
+function lstatSiExiste(ruta) {
+  try {
+    return fs.lstatSync(ruta);
+  } catch (e) {
+    if (e.code === 'ENOENT') return null;
+    throw e;
+  }
 }
 
 /** Borra los zips a medio escribir que dejó una corrida matada (más de un minuto). */

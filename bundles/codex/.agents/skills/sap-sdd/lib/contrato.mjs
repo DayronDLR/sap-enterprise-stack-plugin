@@ -8,6 +8,8 @@
  * `citas` dice qué archivos tienen que citar el requerimiento y con qué rigor:
  *   'por-seccion' → cada sección (`##` / `###` / `####`) con contenido lleva al menos una
  *   'alguna'      → el archivo lleva al menos una
+ *   'si-hay'      → no se exige ninguna, pero las que haya tienen que apuntar a
+ *                   una regla vigente (el traspaso de cada fase)
  *
  * `sinCodigo` dice qué archivos no pueden traer código (`lib/sin-codigo.mjs`):
  * la captura describe el negocio, y el código que mande el cliente queda en
@@ -17,23 +19,23 @@ export const CONTRATO = {
   C1: {
     obligatorios: ['requerimiento.md', 'fs.md', 'handoff.md'],
     opcionales: ['gap-analysis.md', 'preguntas.md'],
-    citas: { 'fs.md': 'alguna' },
+    citas: { 'fs.md': 'alguna', 'handoff.md': 'si-hay' },
     sinCodigo: ['requerimiento.md', 'fs.md'],
   },
   C2: {
     obligatorios: ['escenarios.md', 'casos-prueba.md', 'handoff.md'],
     opcionales: [],
-    citas: { 'escenarios.md': 'por-seccion', 'casos-prueba.md': 'alguna' },
+    citas: { 'escenarios.md': 'por-seccion', 'casos-prueba.md': 'alguna', 'handoff.md': 'si-hay' },
   },
   C3: {
     obligatorios: ['diseno.md', 'arquitectura.sapdiag.json', 'handoff.md'],
     opcionales: ['arquitectura.drawio', 'arquitectura.svg', 'prototipo.html'],
-    citas: { 'diseno.md': 'alguna' },
+    citas: { 'diseno.md': 'alguna', 'handoff.md': 'si-hay' },
   },
   C4: {
     obligatorios: ['plan.md', 'estimacion.md', 'handoff.md'],
     opcionales: [],
-    citas: { 'plan.md': 'alguna' },
+    citas: { 'plan.md': 'alguna', 'handoff.md': 'si-hay' },
   },
 };
 

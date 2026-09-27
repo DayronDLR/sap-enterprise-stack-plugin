@@ -296,12 +296,23 @@ function destinoDeCita(desde, hasta, lineasReq) {
   // Las puntas tienen que ser reglas; en el medio se aceptan líneas en blanco,
   // pero no títulos ni reglas retiradas: un rango que las cruza cita ruido.
   for (let n = desde; n <= hasta; n += 1) {
-    const l = lineasReq[n - 1];
-    const punta = n === desde || n === hasta;
-    if (!l.trim()) { if (punta) return `la línea ${n} está vacía`; continue; }
-    if (!RE_RQ.test(l)) return `la línea ${n} no es una regla (tiene que empezar con RQ- y sólo dígitos, como RQ-07): «${l.trim().slice(0, 60)}»`;
-    if (/\(retirad[oa]\)/i.test(l)) return `la línea ${n} es una regla retirada`;
+    const problema = problemaDeLinea(lineasReq[n - 1], n, n === desde || n === hasta, desde, hasta);
+    if (problema) return problema;
   }
+  return null;
+}
+
+/** Qué tiene de malo la línea `n` de un rango citado, o null. */
+function problemaDeLinea(l, n, punta, desde, hasta) {
+  if (!l.trim()) return punta ? `la línea ${n} está vacía` : null;
+  if (!RE_RQ.test(l)) {
+    if (desde !== hasta && /^#{1,6}\s/.test(l)) {
+      const como = !punta ? 'cruza' : `${n === desde ? 'empieza' : 'termina'} en`;
+      return `el rango ${desde}-${hasta} ${como} el título «${l.trim().slice(0, 60)}» (línea ${n}): citá cada bloque de reglas por separado`;
+    }
+    return `la línea ${n} no es una regla (tiene que empezar con RQ- y sólo dígitos, como RQ-07): «${l.trim().slice(0, 60)}»`;
+  }
+  if (/\(retirad[oa]\)/i.test(l)) return `la línea ${n} es una regla retirada`;
   return null;
 }
 

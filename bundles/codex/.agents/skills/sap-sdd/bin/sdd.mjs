@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { crearProyecto, raizSdd, normalizarRuta, errorDeUso, FASES } from '../lib/proyecto.mjs';
 import { abrirProyecto, gate, aprobar, calcularEstado, estimacionDe } from '../lib/verificacion.mjs';
-import { empaquetar } from '../lib/paquete.mjs';
+import { empaquetar, sueltos } from '../lib/paquete.mjs';
 import { entradasProhibidas } from '../lib/entradas.mjs';
 import { importarPaquete, traspaso, briefMarkdown } from '../lib/traspaso.mjs';
 
@@ -168,6 +168,12 @@ function cmdEstado(args) {
     console.log(`  ${f.id} ${f.titulo.padEnd(11)} ${e.estado}${aprob}`);
     for (const m of e.motivos) console.log(`       · ${m}`);
     if (e.nota) console.log(`       nota: ${e.nota}`);
+  }
+  const fuera = sueltos(proyecto.dir);
+  if (fuera.length) {
+    // Un nombre con saltos de línea no puede imitar una línea de estado.
+    const nombres = fuera.map((n) => (/[\u0000-\u001f\u007f]/.test(n) ? JSON.stringify(n) : n));
+    console.log(`  fuera del SDD (no cuentan para ninguna aprobación ni van al paquete): ${nombres.join(', ')}`);
   }
   return 0;
 }

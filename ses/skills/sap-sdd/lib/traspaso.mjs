@@ -34,6 +34,10 @@ import { leerInventario, riesgosDe, tablaBajo, leerSi } from './estimacion.mjs';
 export const MAX_DESCOMPRIMIDO = 512 * 1024 ** 2;
 /** Una entrada de más de 1 MB que comprime más que esto no es un documento: es una bomba. */
 export const MAX_RAZON = 100;
+/** Un proyecto SDD son decenas de archivos; miles es otra cosa. */
+export const MAX_ENTRADAS = 5000;
+/** Sobre esto descomprimido, la razón se mide también sobre el paquete entero. */
+const MIN_RAZON_TOTAL = 8 * 1024 ** 2;
 
 // ── Lectura de un zip ───────────────────────────────────────────────────────
 
@@ -67,6 +71,7 @@ function finDeDirectorio(buf) {
 export function leerZip(buf) {
   const fin = finDeDirectorio(buf);
   const n = buf.readUInt16LE(fin + 10);
+  if (n > MAX_ENTRADAS) throw new Error(`el paquete trae ${n} entradas (el máximo es ${MAX_ENTRADAS}): no es un proyecto SDD`);
   let p = buf.readUInt32LE(fin + 16);
   const entradas = [];
   let total = 0;
@@ -84,7 +89,15 @@ export function leerZip(buf) {
     if (nombre.endsWith('/')) { entradas.push({ nombre, esDir: true, datos: null }); continue; }
     total += e.tam;
     if (total >= MAX_DESCOMPRIMIDO) throw new Error(`el paquete descomprime ${MAX_DESCOMPRIMIDO / 1024 ** 2} MB o más: no es un proyecto SDD`);
+    // Primero la entrada (su mensaje dice cuál es), después el paquete entero.
     entradas.push({ nombre, esDir: false, datos: descomprimir(buf, nombre, e) });
+    // Contra los bytes REALES del archivo, no contra el tamaño comprimido que
+    // declara cada entrada: una cabecera que miente, o varias entradas que
+    // apuntan a los mismos datos, esquivaban la razón (lo midió el Gate 3).
+    if (total > MIN_RAZON_TOTAL && total / buf.length > MAX_RAZON) {
+      throw new Error(`el paquete comprime ${Math.round(total / buf.length)} a 1 entre todas sus entradas: no son documentos, es una bomba. `
+        + 'Si es un proyecto legítimo con muchos archivos repetidos, sacá los duplicados de entradas/ y volvé a empaquetar');
+    }
   }
   exigirSinColisiones(entradas);
   return entradas;
@@ -256,7 +269,10 @@ export function traspaso(proyecto) {
 
 /** El brief en markdown: lo que `/sap-techlead` lee como su plan. */
 export function briefMarkdown(b) {
-  const fila = (xs) => `| ${xs.join(' | ')} |`;
+  // Un solo formato decimal: los números calculados salían con punto (9.2) y los
+  // leídos de las tablas del SDD con coma (9,2).
+  const num = (x) => (typeof x === 'number' ? String(x).replace('.', ',') : x);
+  const fila = (xs) => `| ${xs.map(num).join(' | ')} |`;
   return [
     `# Traspaso a implementación — ${b.proyecto}`,
     '',
@@ -282,7 +298,7 @@ export function briefMarkdown(b) {
     fila(['---', '---', '---', '---', '---', '---', '---']),
     ...b.tareas.map((t) => fila([t.id, t.tarea, t.obj, t.o, t.m, t.p, t.e])),
     '',
-    `Estimación: base ${b.estimacion.base} h + contingencia ${b.estimacion.contingencia} h = **${b.estimacion.total} h** (P80 ${b.estimacion.p80} h; transversales ${b.estimacion.transversal} h).`,
+    `Estimación: base ${num(b.estimacion.base)} h + contingencia ${num(b.estimacion.contingencia)} h = **${num(b.estimacion.total)} h** (P80 ${num(b.estimacion.p80)} h; transversales ${num(b.estimacion.transversal)} h).`,
     '',
     '## Riesgos',
     '',
