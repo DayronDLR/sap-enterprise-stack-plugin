@@ -18,7 +18,8 @@ Cuando un proceso lee/escribe >1.000 registros, el diseño debe incluir:
 
 ### Reglas duras
 
-- **NUNCA** un `SELECT ... INTO TABLE` sin `PACKAGE SIZE` cuando el universo puede crecer
+- **NUNCA** un `SELECT ... INTO TABLE` sin `PACKAGE SIZE` (o paginación por clave) cuando el universo puede crecer
+- **NUNCA** un `COMMIT WORK` dentro de `SELECT … PACKAGE SIZE … ENDSELECT`: cierra el cursor. Un job que commitea por paquete pagina por clave (`ORDER BY` + `UP TO n ROWS` desde el checkpoint)
 - **NUNCA** un `LOOP AT … MODIFY DB` (acoplar SELECT y UPDATE)
 - **NUNCA** un job sin estrategia de reinicio definida (¿que pasa si cae en el registro 47.000?)
 - **SIEMPRE** estimar volumen pico antes de elegir tamaño de paquete

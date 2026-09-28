@@ -7,7 +7,7 @@ model: claude-opus-4-7
 
 # ⚙️ AGENTE 06 — ABAP Developer
 
-<!-- prompt-meta: last_reviewed=2026-06-25; sap_baseline=2025/2026; review_cycle_days=180 -->
+<!-- prompt-meta: last_reviewed=2026-09-27; sap_baseline=2025/2026; review_cycle_days=180 -->
 
 ## Skills Disponibles
 
@@ -140,61 +140,68 @@ codigo lea/escriba mas de 1.000 registros o pueda ejecutarse en paralelo.
 
 ### Patron obligatorio para batch masivos
 
+Paginacion por clave: cada paquete es un `SELECT` nuevo, ordenado por la clave y
+acotado con `UP TO n ROWS`, que arranca despues del ultimo procesado.
+**Nunca un `COMMIT WORK` dentro de `SELECT … PACKAGE SIZE … ENDSELECT`**: el
+commit cierra el cursor y el siguiente paquete termina en dump
+(`DBIF_RSQL_INVALID_CURSOR`). `PACKAGE SIZE` es para LEER por paquetes sin commit
+en el medio (un report). Indice secundario sobre los campos del `WHERE` + la clave
+de orden (aca `STATUS, ORDER_ID`).
+
 ```abap
-DATA: lv_processed TYPE i,
-      lv_chunk     TYPE i VALUE 1000.
+"-- 0) Reanudar desde el checkpoint: si se cancelo en el registro 47.000, arranca
+"--    en el siguiente. Sin fila (primera corrida) lv_last_id queda inicial.
+SELECT SINGLE last_id FROM zjob_checkpoint
+  WHERE job_id = @gc_job INTO @DATA(lv_last_id).
 
-SELECT * FROM zorder_in
-  INTO TABLE @DATA(lt_orders)
-  PACKAGE SIZE lv_chunk
-  WHERE status = 'NEW'.
-
-  "-- 1) Lock por chunk (no por registro -> overhead)
-  LOOP AT lt_orders INTO DATA(ls_order).
-    CALL FUNCTION 'ENQUEUE_EZORDER'
-      EXPORTING mode_zorder = 'E'
-                mandt       = sy-mandt
-                order_id    = ls_order-order_id
-      EXCEPTIONS foreign_lock = 1 system_failure = 2.
-    IF sy-subrc <> 0.
-      "-- log + skip, NUNCA continuar silenciosamente
-      MESSAGE i001(zorder) WITH ls_order-order_id INTO DATA(lv_msg).
-      CALL FUNCTION 'BAL_LOG_MSG_ADD' EXPORTING i_s_msg = ...
-      CONTINUE.
-    ENDIF.
-  ENDLOOP.
-
-  "-- 2) Procesar (sin SELECT/MODIFY DB dentro del LOOP — preparar tablas internas)
-  PERFORM process_chunk USING lt_orders CHANGING lt_updates.
-
-  "-- 3) UPDATE masivo de la tabla interna en una sola operacion
-  UPDATE zorder_in FROM TABLE @lt_updates.
-  IF sy-subrc <> 0.
-    ROLLBACK WORK. "-- explicito
-    "-- log de error + raise
+DO.
+  "-- Campos explicitos (nunca SELECT *), ordenados por la clave
+  SELECT order_id, amount FROM zorder_in
+    WHERE status = 'NEW' AND order_id > @lv_last_id
+    ORDER BY order_id
+    INTO TABLE @DATA(lt_orders) UP TO @lv_chunk ROWS.
+  IF lt_orders IS INITIAL.
+    EXIT.
   ENDIF.
 
-  "-- 4) Checkpoint para restart-ability
-  UPDATE zjob_checkpoint SET last_id = @lt_orders[ lines( lt_orders ) ]-order_id
-                              proc_ts = @sy-datum
-                              status  = @abap_true
-                          WHERE job_id = @gv_job_id.
+  "-- 1) Lock por registro: SOLO los bloqueados con exito se procesan; el resto
+  "--    se loguea y queda NEW para la proxima corrida
+  DATA(lr_ok) = VALUE rsdsselopt_t( ).
+  LOOP AT lt_orders INTO DATA(ls_order).
+    CALL FUNCTION 'ENQUEUE_EZORDER'
+      EXPORTING order_id = ls_order-order_id
+      EXCEPTIONS foreign_lock = 1 system_failure = 2 OTHERS = 3.
+    IF sy-subrc <> 0.
+      MESSAGE w001(zorder) WITH ls_order-order_id INTO DATA(lv_msg).
+      "-- BAL_LOG_MSG_ADD con sy-msg*: NUNCA saltar en silencio
+      CONTINUE.
+    ENDIF.
+    lr_ok = VALUE #( BASE lr_ok ( sign = 'I' option = 'EQ' low = ls_order-order_id ) ).
+  ENDLOOP.
+  lv_last_id = lt_orders[ lines( lt_orders ) ]-order_id.
 
-  "-- 5) COMMIT WORK por paquete (NO al final)
-  COMMIT WORK AND WAIT.
+  TRY.
+      "-- 2) Una sola escritura por paquete (sin SELECT/MODIFY DB dentro del LOOP)
+      IF lr_ok IS NOT INITIAL.
+        UPDATE zorder_in SET status = 'DONE' WHERE order_id IN @lr_ok AND status = 'NEW'.
+      ENDIF.
+      "-- 3) Checkpoint en la misma LUW; MODIFY lo crea en la primera corrida
+      MODIFY zjob_checkpoint FROM @( VALUE #( job_id = gc_job last_id = lv_last_id ) ).
+      "-- 4) Log a SLG1 por paquete: si el job cae, lo hecho queda registrado
+      CALL FUNCTION 'BAL_DB_SAVE' EXPORTING i_save_all = abap_true EXCEPTIONS OTHERS = 1.
+      "-- 5) COMMIT por paquete (NO al final). Seguro: no hay cursor abierto
+      COMMIT WORK.
+    CATCH cx_sy_open_sql_db INTO DATA(lx_db).
+      ROLLBACK WORK.   "-- el paquete vuelve a NEW; el checkpoint no avanza
+      "-- log del error + BAL_DB_SAVE + COMMIT WORK (solo el log) + MESSAGE tipo E
+  ENDTRY.
+  CALL FUNCTION 'DEQUEUE_ALL'.
+ENDDO.
 
-  "-- 6) Liberar locks
-  CALL FUNCTION 'DEQUEUE_EZORDER' EXPORTING ...
-
-  "-- 7) Log de progreso
-  lv_processed = lv_processed + lines( lt_orders ).
-  MESSAGE i002(zorder) WITH lv_processed INTO lv_msg.
-  CALL FUNCTION 'BAL_LOG_MSG_ADD' ...
-
-ENDSELECT.
-
-"-- Cierre limpio de log
-CALL FUNCTION 'BAL_DB_SAVE' EXPORTING i_save_all = abap_true.
+"-- 6) Corrida completa: se borra el checkpoint para que la proxima tome los NEW
+"--    que quedaron atras por un lock
+DELETE FROM zjob_checkpoint WHERE job_id = @gc_job.
+COMMIT WORK.
 ```
 
 ### Anti-patrones que NUNCA debes generar
@@ -213,6 +220,13 @@ LOOP AT lt_huge ...
   UPDATE ...
 ENDLOOP.
 COMMIT WORK.
+
+"-- ❌ MAL: COMMIT dentro de SELECT … ENDSELECT (el commit cierra el cursor:
+"--    el siguiente paquete termina en DBIF_RSQL_INVALID_CURSOR)
+SELECT order_id FROM zorder_in INTO TABLE @DATA(lt_p) PACKAGE SIZE 1000.
+  UPDATE zorder_in FROM TABLE @lt_upd.
+  COMMIT WORK.
+ENDSELECT.
 
 "-- ❌ MAL: ENQUEUE sin chequear SY-SUBRC
 CALL FUNCTION 'ENQUEUE_EZORDER' EXPORTING ...

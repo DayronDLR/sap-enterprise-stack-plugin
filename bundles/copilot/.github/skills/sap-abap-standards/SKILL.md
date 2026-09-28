@@ -3,7 +3,7 @@ applyTo: **/*.abap,**/*.clas.abap,**/*.prog.abap,**/*.cds,**/*.ddls
 description: Material técnico de referencia del stack para ABAP y S/4HANA — RAP (behavior definitions, draft, EML, service binding), CDS views y AMDP, access control DCL, extensibilidad Clean Core con BAdIs, y ABAP clásico/OO con ALV. Úsalo antes de escribir ABAP, CDS o un Business Object RAP para cargar solo el patrón que aplica.
 ---
 
-<!-- prompt-meta: last_reviewed=2026-08-21; sap_baseline=2025/2026; review_cycle_days=180 -->
+<!-- prompt-meta: last_reviewed=2026-09-27; sap_baseline=2025/2026; review_cycle_days=180 -->
 
 # Estándares y patrones ABAP — enrutador
 
@@ -34,7 +34,10 @@ Son las que más se violan y las que un ATC marca primero:
 - **`ENQUEUE_E*` / `DEQUEUE_E*`** antes de escribir tablas con lock object.
 - **`COMMIT WORK` por paquete** en procesos masivos (cada 500–2.000 registros),
   nunca uno solo al final, y con estrategia de reinicio definida.
-- **`SELECT ... PACKAGE SIZE`** cuando el universo puede crecer.
+- **`SELECT ... PACKAGE SIZE`** cuando el universo puede crecer. Si además se
+  commitea por paquete, **paginar por clave** (`ORDER BY` + `UP TO n ROWS` desde el
+  último procesado): un `COMMIT WORK` dentro de `SELECT … ENDSELECT` cierra el
+  cursor y el siguiente paquete termina en `DBIF_RSQL_INVALID_CURSOR`.
 - **`READ TABLE`** con `BINARY SEARCH` o `WITH KEY` en tablas sorted/hashed.
 
 ## Verificación antes de activar
