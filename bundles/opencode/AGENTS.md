@@ -75,6 +75,15 @@ estas tres, que son la misma evidencia por vías distintas:
 | Trailer `SES-Gated-Tree` | Va dentro del commit, anclado a su árbol | squash, clon nuevo, CI |
 | `logs/gate-deliveries.log` | Registro local, por sha o por árbol | `--amend` de solo mensaje |
 | Anterior al mecanismo | El commit precede al que **introdujo** `.husky/prepare-commit-msg` | clonar, rotar el log, borrar el hook |
+| Merge limpio | Dos padres, y un árbol idéntico al que arma `git merge-tree --write-tree` sin conflictos | «Update branch» de GitHub, `git merge main` |
+
+Un **merge limpio** no trae contenido propio: su árbol es función de sus dos
+padres, y cada padre se verifica por su cuenta. Es el commit que agrega el botón
+«Update branch» de GitHub, que antes dejaba el PR denegado por CI para siempre.
+Un merge con un conflicto resuelto a mano, con contenido agregado después o con
+tres padres o más **no** es limpio y sigue exigiendo trailer. Sin git 2.38 o
+posterior (`merge-tree --write-tree`) no se puede comprobar, y el commit no
+queda cubierto.
 
 ### Cuando el commit trae varios trailers
 

@@ -1748,6 +1748,40 @@ dod_trailer_cubre_su_arbol() {
     [[ -n "$trailer" && "$trailer" = "$arbol" ]]
 }
 
+# ¿El commit es un MERGE LIMPIO: dos padres, y un arbol que es exactamente el que
+# git arma solo al mergearlos, sin conflictos? (D-52)
+#
+# Es el commit que agrega el boton «Update branch» de GitHub, o un `git merge
+# main` sin conflictos. No trae contenido propio: su arbol es funcion de sus dos
+# padres, y cada padre se verifica por su cuenta —si esta en el rango, por el
+# mismo recorrido; si no, ya estaba publicado—. Exigirle un trailer no protegia
+# nada y hacia que CI denegara el PR para siempre (le paso al #123).
+#
+# Lo que NO es un merge limpio, y sigue exigiendo trailer:
+#   - un merge con conflicto, resuelto a mano: `merge-tree` sale distinto de 0;
+#   - un merge con contenido agregado o enmendado: el arbol no coincide;
+#   - un octopus (tres padres o mas) o un commit comun (un padre).
+#
+# `merge-tree --write-tree` llego en git 2.38. Sin el, no se puede comprobar, y
+# el commit NO queda cubierto: se falla cerrado, igual que ante cualquier duda.
+#
+# El merge se recalcula SIN la config global ni la del sistema: `diff.renames` o
+# `merge.renames` en el `~/.gitconfig` del dev cambian el resultado, y el gate
+# local tiene que decir lo mismo que CI, que corre con la de fabrica.
+dod_merge_limpio() {
+    local sha="$1" padres propio p1 p2 extra arbol calculado
+    [[ -n "$sha" ]] || return 1
+    padres=$(git rev-list --parents -n 1 "$sha" 2>/dev/null) || return 1
+    read -r propio p1 p2 extra <<< "$padres"
+    [[ -n "$propio" && -n "$p1" && -n "$p2" && -z "$extra" ]] || return 1
+    arbol=$(git rev-parse --verify --quiet "${sha}^{tree}" 2>/dev/null) || return 1
+    calculado=$(GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null \
+        git merge-tree --write-tree "$p1" "$p2" 2>/dev/null) || return 1
+    # Sin conflicto, la salida es SOLO el arbol (una linea): SHA-1 o SHA-256.
+    [[ "$calculado" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || return 1
+    [[ "$calculado" = "$arbol" ]]
+}
+
 # El arbol que declara un mensaje de commit, o vacio si no declara ninguno.
 #
 # Es una funcion y no un pipe inline por una razon concreta: el test que compara

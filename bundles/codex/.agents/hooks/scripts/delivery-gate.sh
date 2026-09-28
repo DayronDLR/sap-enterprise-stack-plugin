@@ -671,6 +671,7 @@ if [[ "$ES_PUSH" = "true" ]]; then
     SIN_GATE=""
     SIN_GATE_PROD=""
     CON_GATE=0
+    MERGES_LIMPIOS=0
     # El trailer NO depende del registro local: es evidencia que viaja dentro del
     # commit. Exigir que el registro exista para mirarlo dejaba sin reconocer a
     # cualquier clon nuevo, y al propio caso del squash merge — que es de donde
@@ -710,6 +711,12 @@ if [[ "$ES_PUSH" = "true" ]]; then
                 # Anterior al mecanismo: no pudo llevar trailer ni figurar en el
                 # registro. Se cuenta como exento, no como sin gatear.
                 CON_GATE=$((CON_GATE + 1))
+            elif dod_merge_limpio "$sha"; then
+                # Merge limpio (D-52): su arbol coincide con el que git arma solo
+                # mergeando sus dos padres, que se verifican por su cuenta. No
+                # trae contenido propio.
+                CON_GATE=$((CON_GATE + 1))
+                MERGES_LIMPIOS=$((MERGES_LIMPIOS + 1))
             else
                 _LINEA="
   $(git log -1 --format='%h %s' "$sha" 2>/dev/null)"
@@ -762,7 +769,11 @@ if [[ "$ES_PUSH" = "true" ]]; then
             # commit: antes decia siempre "el resto es anterior al registro",
             # incluso cuando el motivo habia sido el trailer y no existia registro
             # alguno. Un mensaje que inventa el motivo es peor que uno que no lo da.
-            allow_with_note "Push permitido: ${CON_GATE} commit(s) ya cuentan con los gates 2 y 3 (por trailer, por registro local, o por ser anteriores al mecanismo)."
+            NOTA_MERGES=""
+            if (( MERGES_LIMPIOS > 0 )); then
+                NOTA_MERGES=" De esos, ${MERGES_LIMPIOS} son merges limpios, sin contenido propio (D-52)."
+            fi
+            allow_with_note "Push permitido: ${CON_GATE} commit(s) ya cuentan con los gates 2 y 3 (por trailer, por registro local, por ser anteriores al mecanismo o por ser merges limpios).${NOTA_MERGES}"
         fi
     fi
 fi

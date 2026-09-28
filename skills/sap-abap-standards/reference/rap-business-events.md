@@ -3,9 +3,10 @@
 > Material de referencia del agente ABAP. Se lee bajo demanda.
 >
 > Aplica a SAP BTP ABAP Environment y a S/4HANA on-premise desde 2022 (ABAP
-> Platform 2022), donde RAP Business Events llegó al stack local. El entorno por
-> defecto del stack, S/4HANA 2023, lo soporta.
-> Lo que dependa de release o de configuración del sistema está marcado como
+> 7.57), donde RAP Business Events llegó al stack local. El consumo local con
+> handler ABAP llegó en S/4HANA 2023 (7.58), que es el entorno por defecto del
+> stack. Cada forma que llegó después lleva su release al lado.
+> Lo que depende de configuración del sistema está marcado como
 > **`[verificar]`** — no lo afirmes sin comprobarlo contra el sistema real.
 
 ## Cuándo sí y cuándo no
@@ -24,8 +25,8 @@ events del producto), o el evento se publica desde un BO Z propio.
 
 ## 1. Declarar el evento en la behavior definition
 
-El evento se declara **dentro del cuerpo del behavior** de la entidad (raíz o
-hija) del BO. El payload adicional, si hace falta, es una **CDS abstract
+El evento se declara **dentro del cuerpo del behavior** de la entidad raíz del
+BO (en una hija, sólo desde S/4HANA 2025). El payload adicional, si hace falta, es una **CDS abstract
 entity**.
 
 > **Nombres.** El ejemplo usa la nomenclatura de los tutoriales de SAP
@@ -85,14 +86,16 @@ Variantes de la sintaxis BDL:
 | --- | --- |
 | `event evt;` | Payload = clave de la instancia, nada más |
 | `event evt parameter ZA_Entity;` | Agrega el payload de la abstract entity |
-| `event evt deep parameter ZA_Entity;` **`[verificar]`** | Payload jerárquico; la abstract entity requiere `with hierarchy`. Release reciente |
-| `managed event evt2 on evt parameter ZA_Otra;` **`[verificar]`** | **Evento derivado**: se dispara cuando se dispara `evt`, con otro payload. Release reciente |
-| `event evt for side effects;` **`[verificar]`** | Evento para *side effects* de UI, referenciado desde el bloque `side effects { … }`; no sale del sistema. Release reciente |
+| `event evt deep parameter ZA_Hier;` | Payload jerárquico; el parámetro es una **abstract BDEF `with hierarchy`**. Desde S/4HANA 2022 (7.57) / Cloud 2208 |
+| `managed event evt2 on evt parameter ZI_Payload;` | **Evento derivado**: se dispara cuando se dispara `evt`, con otro payload. El parámetro es una **CDS view entity** plana, sin asociaciones y con las claves de la entidad, que se lee con acceso PRIVILEGED (ver 5.5). Desde S/4HANA 2023 (7.58) / Cloud 2308 |
+| `event evt for side effects;` | Evento para *side effects* de UI, referenciado desde el bloque `side effects { event evt affects … }`; no sale del sistema. Desde S/4HANA 2025 (8.16) / Cloud 2502 |
 
-Las dos primeras formas son las de base y valen en todo release con RAP Business
-Events. Las tres marcadas llegaron después: **antes de escribirlas en un BDEF,
-comprobá que el release del cliente las acepte** —un activate que las rechaza es
-el síntoma—. Los *side effects* de UI se declaran en el bloque
+Las dos primeras formas y `deep parameter` llegaron con los eventos básicos. Las
+otras dos, después: **antes de escribirlas en un BDEF, comprobá el release del
+cliente** —un activate que las rechaza es el síntoma—. En el entorno por
+defecto del stack (2023), `for side effects` todavía no existe. Los eventos en
+entidades **hijas** llegaron en S/4HANA 2025 (8.16) / Cloud 2405; antes, sólo en
+la raíz. Los *side effects* de UI se declaran en el bloque
 `side effects { … }` (ver `sap-abap-standards/reference/rap.md`); el evento
 `for side effects` sólo agrega un disparador a ese bloque.
 
@@ -104,8 +107,9 @@ permite publicar una transición de estado y no cada modificación.
 
 **Sin `with full data`**, `update-<entidad>` trae sólo los campos que el llamador
 modificó: `<up>-ApprovedBy` o `<up>-LastChangedAt` llegan vacíos si el update
-no los tocaba, y el payload sale con blancos. En ese caso, leé la instancia con
-`READ ENTITIES … IN LOCAL MODE` antes de armar el payload.
+no los tocaba, y el payload sale con blancos. **No lo arregles con un `READ
+ENTITIES` dentro de `save_modified`**: desde S/4HANA 2025 (8.16) y Cloud 2408
+las lecturas EML no están permitidas en el late save. Declará `with full data`.
 
 ## 2. Raise — y por qué el momento es lo único que importa
 
@@ -203,18 +207,28 @@ lo que el broker enruta.
 
 | Campo | Contenido | Ejemplo |
 | --- | --- | --- |
-| Namespace | Sin camelCase ni espacios | `zsales` |
-| Business object | Sin espacios | `salesorder` |
-| Root entity name | La behavior definition raíz | `ZR_SalesOrderTP` |
-| Entity event name | El evento declarado en la BDEF | `Approved` |
-| Operation / version | La operación y su versión mayor | `Approved` / `v1` |
+| Type Namespace | Sin camelCase ni espacios; el cliente no puede usar `sap` | `zsales` |
+| SAP Object Type | Sin espacios | `salesorder` |
+| Operation | La operación | `Approved` |
+| Versión | Mayor / menor / patch | `1` / `0` / `0` |
+| Entity Name | La entidad de la BDEF | `ZR_SalesOrderTP` |
+| Entity Event Name | El evento declarado en la BDEF | `Approved` |
 
-El type/topic resultante concatena namespace, business object, operación y
-versión (`zsales.salesorder.Approved.v1` en el tutorial oficial). **`[verificar]`**
-la forma exacta con la que ese type se traduce a topic en el broker: depende del
-namespace del canal y del release — los eventos estándar S/4 se ven como
-`sap/S4HANA/Events/ce/sap/s4/beh/<bo>/v1/<BO>/<Operación>/v1`, con el segmento
-`ce` marcando conformidad CloudEvents.
+El event binding existe desde S/4HANA 2022 FPS00. El *type* resultante es
+`<type namespace>.<SAP object type>.<operation>.v<mayor>`: acá,
+`zsales.salesorder.Approved.v1` (los tutoriales oficiales usan
+`zevent####.booking.Delete.v1`). En el broker, el topic es ese type con los
+puntos cambiados por barras, precedido de `ce/` y del topic namespace del canal:
+
+```text
+<namespace>/ce/zsales/salesorder/Approved/v1
+<namespace>/ce/sap/s4/beh/businesspartner/v1/BusinessPartner/Changed/v1   ← estándar
+```
+
+El topic namespace tiene tres segmentos (vendor, producto, identificador
+técnico) y sale del service key de Event Mesh o de la configuración del canal en
+Advanced Event Mesh. **`[verificar]`** el namespace concreto contra el canal del
+cliente: el resto de la forma es fijo.
 
 La **versión del event type es contrato público**: cambiar el payload de forma
 incompatible exige `v2` y convivencia de ambas, no editar `v1`.
@@ -228,16 +242,29 @@ Enterprise Event Enablement (EEE) es el framework que saca el evento del ABAP.
 | `/IWXBE/CONFIG` | Crear/administrar el **canal** (conexión a la instancia del broker, vía service key) |
 | `/IWXBE/OUTBOUND_CFG` | **Outbound bindings**: qué event types publica este sistema por ese canal |
 | `/IWXBE/INBOUND_CFG` | Inbound bindings, para eventos que el sistema consume |
-| `/IWXBE/EVENT_MONITOR` | Monitor de eventos — el primer lugar donde mirar cuando "el evento no llegó" |
-| `SBGRFCMON` | Monitor bgRFC: cola de salida con los mensajes que el sistema no pudo enviar **`[verificar]`** contra el release |
+| `/IWXBE/EVENT_MONITOR` | Monitor de eventos — el primer lugar donde mirar cuando "el evento no llegó". Requiere publicar el grupo OData V4 `/IWXBE/UI_V4_EVENT_MONITOR` en `/IWFND/V4_ADMIN` |
+| `/IWXBE/ERROR_LOG` | Log de errores de EEE |
+| `SBGRFCMON` | Monitor bgRFC — sólo del lado del **consumo** (inbound), que usa un destino bgRFC por consumidor. La salida no pasa por bgRFC |
+
+Lo que no se pudo publicar queda en la **cola interna de EEE**: se reintenta y,
+tras 5 intentos, pasa a *Failed* y queda retenido hasta que alguien lo reprocese
+o lo borre desde el Event Monitor.
 
 Sin outbound binding, el evento se dispara y no se publica. Es la causa número
 uno de "funciona en ADT pero el suscriptor no ve nada".
 
-En **BTP ABAP Environment** la configuración equivalente es un communication
-arrangement con el broker y las apps de Enterprise Event Enablement del sistema;
-los nombres de communication scenario dependen del release: **`[verificar]`**
-contra el sistema antes de escribirlos en un documento de diseño.
+En S/4HANA on-premise o Private Edition **no hay communication scenario**: el
+canal se crea en `/IWXBE/CONFIG` a partir del service key, con un destino `SM59`
+y una configuración OAuth 2.0.
+
+En **BTP ABAP Environment** el canal es un communication arrangement:
+
+| Scenario | Para qué |
+| --- | --- |
+| `SAP_COM_0092` | SAP Event Mesh |
+| `SAP_COM_0492` | Advanced Event Mesh (`SAP_COM_0493`: su validation service) |
+| `SAP_COM_0A22` / `SAP_COM_0A23` | Push directo ABAP↔ABAP, sender / receiver |
+| `SAP_COM_0892` | Sólo S/4HANA Cloud Public Edition: SAP Cloud Application Event Hub |
 
 ## 4. Consumo
 
@@ -263,18 +290,30 @@ CLASS lhe_salesorder IMPLEMENTATION.
   METHOD on_approved.
     "-- `approved` es TYPE TABLE FOR EVENT zr_salesordertp~Approved
 
-    "-- El handler corre en su PROPIO LUW, después del commit del emisor, y
-    "   arranca en fase de modificación. Para escribir directo en la base
-    "   (una tabla propia, un log) hay que pasar primero a fase de guardado:
-    "   sin esto, el runtime rechaza la escritura. [verificar] en el release
-    "   si, para modificar OTRO BO por EML, alcanza con MODIFY ENTITIES +
-    "   COMMIT ENTITIES sin este paso.
-    cl_abap_tx=>save( ).
-
+    "-- El handler corre en su PROPIA transacción RAP, después del commit del
+    "   emisor, y arranca en fase de modificación. Para modificar OTRO BO:
+    "   MODIFY ENTITIES primero y cl_abap_tx=>save( ) después. COMMIT ENTITIES,
+    "   COMMIT WORK y ROLLBACK WORK no están permitidos acá. Una vez en fase de
+    "   guardado no se vuelve a modificación.
+    "   (Para escribir directo en una tabla propia es al revés: save( ) va
+    "   ANTES del INSERT / MODIFY, o el runtime rechaza la escritura.)
     LOOP AT approved INTO DATA(ls_evt).
       "-- Lógica idempotente: este método puede ejecutarse más de una vez
       "   para la misma instancia. Verificar por clave natural antes de escribir.
     ENDLOOP.
+
+    " MODIFY ENTITIES OF zr_otro_bo … (armado a partir de `approved`)
+
+    TRY.
+        cl_abap_tx=>save( ).
+      CATCH cx_abap_behv_save_failed INTO DATA(lx_save).
+        "-- Una excepcion que hereda de CX_RAP_EVENT_HDLR_ERROR_RETRY hace que
+        "   el runtime reintente el handler (hasta 3 veces). Es lo normal ante
+        "   un fallo transitorio; zcx_evt_retry es la subclase propia.
+        "   Relanzar lx_save tal cual NO reintenta: sirve sólo para un fallo
+        "   permanente que no tiene sentido repetir.
+        RAISE EXCEPTION NEW zcx_evt_retry( previous = lx_save ).
+    ENDTRY.
   ENDMETHOD.
 ENDCLASS.
 ```
@@ -282,13 +321,17 @@ ENDCLASS.
 Los métodos de event handler se llaman **de forma asíncrona** respecto de la
 transacción que disparó el evento. No hay `COMMIT WORK` / `ROLLBACK WORK`
 permitido dentro de ellos, y no tienen parámetros de respuesta RAP: un error acá
-**no** revierte el BO.
+**no** revierte el BO. El consumo local llegó en S/4HANA 2023 (7.58).
+
+**En ABAP Cloud** el evento tiene que estar expuesto en una interface BDEF
+(`use event`) **liberada C1**, y el handler se declara `FOR EVENTS OF` esa
+interface. El ejemplo de arriba, sobre la BDEF base, sirve en ABAP clásico.
 
 ### Consumo externo (suscriptor)
 
 | Suscriptor | Cómo |
 | --- | --- |
-| Otro sistema ABAP | **Event Consumption Model** generado por el wizard de ADT **`[verificar]`** disponibilidad por release |
+| Otro sistema ABAP | **Event Consumption Model** generado por el wizard de ADT a partir del AsyncAPI del evento. Desde S/4HANA 2022 y en BTP ABAP Environment; requiere el rol `SAP_IWXBE_DT_XBE_DEVELOPER` |
 | App CAP | Servicio de messaging de CAP suscrito al topic — ver `sap-btp-standards/reference/cap-arquitectura.md` |
 | iFlow de CPI | Adapter AMQP sobre la queue del broker — ver el agente `02-integration` |
 | Endpoint HTTP propio | Webhook del broker (ver abajo: los webhooks **no** garantizan orden) |
@@ -312,10 +355,12 @@ exactly-once no existe como garantía del transporte.
 
 Patrones aceptables, en orden de preferencia:
 
-1. **Deduplicar por id del evento.** El header CloudEvents `ce-id` identifica la
-   entrega; guardarlo en una tabla de eventos procesados con TTL y descartar el
-   repetido. **`[verificar]`** que el broker y el release propaguen `ce-id` en el
-   canal usado antes de construir sobre eso.
+1. **Deduplicar por el `id` del evento**, idealmente junto con `source`. Es un
+   atributo CloudEvents obligatorio en todo evento de EEE; guardarlo en una tabla
+   de eventos procesados con TTL y descartar el repetido. EEE publica en formato
+   *structured*, así que el `id` viaja **dentro del sobre JSON**, no como header
+   `ce-id` (ese header es del formato *binary*). **`[verificar]`** si el adapter
+   del consumidor lo re-expone como header: depende del canal.
 2. **Idempotencia por clave natural + estado.** `UPSERT` con clave completa, o
    verificación previa: "¿esta orden ya está en estado aprobado?" → salir sin
    escribir. Funciona aunque no haya id de evento.
@@ -324,9 +369,9 @@ Patrones aceptables, en orden de preferencia:
 
 ### 5.2 Orden no garantizado
 
-Dos eventos de la misma instancia pueden llegar invertidos, y con webhooks es
-directamente esperable: el broker toma varios mensajes por adelantado y los entrega en
-paralelo. Consecuencia: `Approved` puede procesarse después de `Cancelled`.
+Dos eventos de la misma instancia pueden llegar invertidos: SAP Event Mesh no
+documenta garantía de orden de entrega. Consecuencia: `Approved` puede
+procesarse después de `Cancelled`.
 
 Mitigaciones, de menor a mayor costo:
 
@@ -336,8 +381,11 @@ Mitigaciones, de menor a mayor costo:
   desfasada si el read-back pega en una réplica.
 - **Marca monotónica en el payload**: incluir `LastChangedAt` (o la ETag) y
   descartar en el consumidor todo evento más viejo que lo ya aplicado.
-- **Ordenamiento por partición** en el broker, si el broker lo soporta para esa
-  queue: **`[verificar]`** contra el producto y el plan contratados.
+- **Ordenamiento por partición**: sólo Advanced Event Mesh (partitioned queues)
+  lo garantiza, y sólo dentro de una partición cuya key fija el **publicador**.
+  EEE no documenta cómo fijar esa key, así que desde S/4 no se puede asumir
+  orden por instancia: **`[verificar]`** en el tenant antes de construir sobre
+  eso.
 
 ### 5.3 El commit falla después del raise
 
@@ -346,7 +394,7 @@ Mitigaciones, de menor a mayor costo:
 | Antes del point of no return | El evento nunca se disparó | Nada: correcto por construcción |
 | Rollback tras el point of no return | El raise ocurrió dentro del LUW que se revirtió; el evento no se publica | Nada — **siempre que el raise esté en `save_modified`** |
 | Raise en la fase de interacción o en early save, y luego rollback | **Evento publicado de una transacción que no existió** | Bug: mover el raise a `save_modified` (o a `save` en unmanaged). El compilador ya impide disparar fuera del ABP; el error posible es el handler equivocado *dentro* del ABP |
-| Commit OK, envío al broker falla | El evento queda en la cola de salida y se reintenta | Monitorear `/IWXBE/EVENT_MONITOR` y la cola bgRFC; sin monitoreo es una integración silenciosamente detenida |
+| Commit OK, envío al broker falla | El evento queda en la cola interna de EEE y se reintenta; tras 5 intentos pasa a *Failed* | Monitorear `/IWXBE/EVENT_MONITOR` y `/IWXBE/ERROR_LOG`; sin monitoreo es una integración silenciosamente detenida |
 
 El último renglón es el que más duele: desde el ABAP "todo salió bien". El fallo
 vive en la cola, no en el BO. **Sin una alerta sobre esa cola no hay sign-off.**
@@ -373,10 +421,13 @@ precio o cualquier campo que el consumidor no tenga derecho a ver. Otro
 argumento a favor del evento delgado: el read-back sí pasa por la autorización
 del consumidor.
 
+El payload de un **`managed event`** se lee con acceso PRIVILEGED, sin chequeo de
+autorización: la view entity del parámetro decide qué sale, y nada más lo filtra.
+
 ### 5.6 Observabilidad
 
-- Del lado emisor: `/IWXBE/EVENT_MONITOR` y la cola bgRFC. Alerta sobre
-  entradas en error, no inspección manual.
+- Del lado emisor: `/IWXBE/EVENT_MONITOR` (eventos en *Failed*) y
+  `/IWXBE/ERROR_LOG`. Alerta sobre entradas en error, no inspección manual.
 - Del lado consumidor: log con el id del evento, la clave de negocio y el
   veredicto (aplicado / descartado por duplicado / descartado por viejo). Si a
   las 3 AM no se puede responder "¿este evento llegó y qué se hizo con él?", el
@@ -390,10 +441,22 @@ del consumidor.
 - Si el evento se dispara en `save_modified`, el test tiene que llegar a
   `COMMIT ENTITIES` para que la save sequence corra: un test que solo hace
   `MODIFY ENTITIES` no dispara nada.
-- **`[verificar]`** si el release permite **asertar directamente los eventos
-  disparados** desde el test double framework. Si no, la alternativa verificable es
-  testear el handler local de consumo como unidad, con su tabla
-  `TYPE TABLE FOR EVENT` armada a mano — incluyendo el caso de entrega duplicada.
+- Desde S/4HANA 2023 y en BTP, el **RAP Event Test Double Framework** asierta
+  el evento directamente:
+
+  ```abap
+  DATA(lo_env) = cl_rap_event_test_environment=>create(
+    VALUE #( ( entity_name = 'ZR_SALESORDERTP' event_name = 'APPROVED' ) ) ).
+  " … MODIFY ENTITIES + COMMIT ENTITIES …
+  lo_env->get_event( entity_name = 'ZR_SALESORDERTP' event_name = 'APPROVED'
+    )->verify( )->is_raised_times( 1 ).
+  ```
+
+  `get_event( … )->get_payload( )` devuelve el payload; `clear( )` entre tests y
+  `destroy( )` al final.
+- Además, y en releases anteriores como única opción: testear el handler local
+  de consumo como unidad, con su tabla `TYPE TABLE FOR EVENT` armada a mano —
+  incluyendo el caso de entrega duplicada.
 
 ## 7. Checklist antes de dar por cerrado un evento
 
@@ -427,22 +490,19 @@ del consumidor.
 | Cambiar el payload de `v1` en producción | Rompe a todo suscriptor existente sin aviso |
 | Asumir exactly-once | Ningún broker del stack lo garantiza |
 
-## Afirmaciones que este material NO verificó
+## Lo que depende del sistema
 
-Marcadas arriba como **`[verificar]`**. Resumen, para que nadie las copie a un
-documento de cliente como si fueran hechos:
+Verificado contra la documentación oficial el 2026-09-27 (ABAP Keyword
+Documentation 7.57, 7.58 y 8.16, guía RAP, ABAP Integration and Connectivity,
+ADT User Guide, advanced event mesh). Lo que sigue marcado **`[verificar]`** no
+lo decide la documentación, sino el sistema del cliente:
 
-| Afirmación | Por qué no se verificó |
+| Afirmación | Por qué depende del sistema |
 | --- | --- |
-| Forma exacta del topic en el broker para un evento custom | Depende del namespace del canal y del release |
-| Nombres de communication scenario en BTP ABAP Environment | Varían por release |
-| Disponibilidad de `SBGRFCMON` / nombre de la cola de salida de EEE | Documentado en blogs de SAP, no confirmado contra un sistema |
-| Propagación del header `ce-id` en todos los canales | Depende del broker y del release |
-| Soporte de ordenamiento por partición en la queue | Depende del producto y del plan contratado |
-| Wizard de Event Consumption Model en ADT por release | No confirmado contra un sistema |
-| Aserción directa de eventos disparados en el test double framework | No confirmado contra la documentación de la versión |
-| Sintaxis `deep parameter`, `managed event … on …` y `event … for side effects` | Llegaron en releases posteriores a los eventos básicos; el release exacto no se confirmó |
-| Si un handler local que modifica otro BO por EML necesita `cl_abap_tx=>save( )` | La documentación lo exige para escrituras directas; para EML no se confirmó |
+| Topic namespace del canal | Sale del service key o de la configuración del canal |
+| `id` del evento como header en el consumidor | Depende del adapter del canal |
+| Orden por instancia en la queue | Sólo AEM lo garantiza por partición, y EEE no documenta cómo fijar la key |
+| Capacidad del canal y de la queue | Depende del plan contratado |
 
 ## Fuentes
 

@@ -149,6 +149,11 @@ en el medio (un report). Indice secundario sobre los campos del `WHERE` + la cla
 de orden (aca `STATUS, ORDER_ID`).
 
 ```abap
+"-- Patron: declara el job y el tamaño del paquete; los tipos del paquete, de
+"   los rangos OK/error y lv_last_id salen de la tabla del proceso real.
+CONSTANTS gc_job TYPE zjob_checkpoint-job_id VALUE 'ZORDER_BATCH'.
+DATA lv_chunk TYPE i VALUE 1000.
+
 "-- 0) Reanudar desde el checkpoint: si se cancelo en el registro 47.000, arranca
 "--    en el siguiente. Sin fila (primera corrida) lv_last_id queda inicial.
 SELECT SINGLE last_id FROM zjob_checkpoint
@@ -186,7 +191,7 @@ DO.
         UPDATE zorder_in SET status = 'DONE' WHERE order_id IN @lr_ok AND status = 'NEW'.
       ENDIF.
       "-- 3) Checkpoint en la misma LUW; MODIFY lo crea en la primera corrida
-      MODIFY zjob_checkpoint FROM @( VALUE #( job_id = gc_job last_id = lv_last_id ) ).
+      MODIFY zjob_checkpoint FROM @( VALUE zjob_checkpoint( job_id = gc_job last_id = lv_last_id ) ).
       "-- 4) Log a SLG1 por paquete: si el job cae, lo hecho queda registrado
       CALL FUNCTION 'BAL_DB_SAVE' EXPORTING i_save_all = abap_true EXCEPTIONS OTHERS = 1.
       "-- 5) COMMIT por paquete (NO al final). Seguro: no hay cursor abierto

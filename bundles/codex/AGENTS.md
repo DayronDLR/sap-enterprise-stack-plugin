@@ -29,15 +29,16 @@ Se invocan como skills, con `$nombre`:
 Codex soporta hooks bloqueantes, así que los 3 gates aplican en el momento
 de la entrega, igual que en el host de referencia.
 
-> ⚠️ **Un paso manual, una sola vez: confiar la carpeta.**
+> ⚠️ **Dos pasos manuales: confiar la carpeta y aprobar los hooks.**
 > Codex no carga los hooks de un proyecto hasta que confiás en él — te lo
-> pregunta la primera vez que lo abrís. Hasta que digas que sí, los 3 gates
-> **no te frenan al escribir**: quedan en `git` (husky) y en CI. Corré
-> `$ses-sap-gates` antes de entregar.
+> pregunta la primera vez que lo abrís. Además, cada hook nuevo o cambiado
+> queda en «Hooks need review» hasta que lo aprobás en `/hooks`; `codex exec`
+> ni avisa. Mientras tanto, los 3 gates **no te frenan al escribir**: quedan
+> en `git` (husky) y en CI. Corré `$ses-sap-gates` antes de entregar.
 >
-> No es "habilitar cada hook": `enabled` es `true` por defecto en Codex. Es la
-> confianza en la carpeta lo que decide. Verificado contra `codex-cli 0.153.3`;
-> `ses doctor --host codex --dir <proyecto>` te dice en qué estado estás.
+> Medido contra `codex-cli 0.153.4`: con la carpeta confiada y sin aprobar,
+> ningún hook corrió. `ses doctor --host codex --dir <proyecto>` te dice si
+> confiaste en la carpeta; la aprobación de cada hook se ve en `/hooks`.
 
 > **Si tu organización activó `allow_managed_hooks_only = true`** en
 > `requirements.toml`, los hooks de proyecto se ignoran y esta protección no
@@ -91,6 +92,15 @@ estas tres, que son la misma evidencia por vías distintas:
 | Trailer `SES-Gated-Tree` | Va dentro del commit, anclado a su árbol | squash, clon nuevo, CI |
 | `logs/gate-deliveries.log` | Registro local, por sha o por árbol | `--amend` de solo mensaje |
 | Anterior al mecanismo | El commit precede al que **introdujo** `.husky/prepare-commit-msg` | clonar, rotar el log, borrar el hook |
+| Merge limpio | Dos padres, y un árbol idéntico al que arma `git merge-tree --write-tree` sin conflictos | «Update branch» de GitHub, `git merge main` |
+
+Un **merge limpio** no trae contenido propio: su árbol es función de sus dos
+padres, y cada padre se verifica por su cuenta. Es el commit que agrega el botón
+«Update branch» de GitHub, que antes dejaba el PR denegado por CI para siempre.
+Un merge con un conflicto resuelto a mano, con contenido agregado después o con
+tres padres o más **no** es limpio y sigue exigiendo trailer. Sin git 2.38 o
+posterior (`merge-tree --write-tree`) no se puede comprobar, y el commit no
+queda cubierto.
 
 ### Cuando el commit trae varios trailers
 
