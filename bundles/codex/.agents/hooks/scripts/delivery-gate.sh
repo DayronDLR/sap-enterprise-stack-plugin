@@ -207,8 +207,16 @@ if command -v node >/dev/null 2>&1 && [[ -f "${SCRIPT_DIR}/lib/comando.mjs" ]]; 
     # temporal no corre el analizador y lo que solo menciona una entrega volveria
     # a denegar. `/tmp` explicito y no `mktemp -d` pelado: el de GNU tambien lee
     # `TMPDIR`, asi que en Linux fallaba igual (lo encontro CI; el de macOS no).
-    _F8_DIR=$(mktemp -d "${_TMP_BASE%/}/ses-gate.XXXXXX" 2>/dev/null) \
-        || _F8_DIR=$(mktemp -d /tmp/ses-gate.XXXXXX 2>/dev/null) || _F8_DIR=""
+    _F8_DIR=$(mktemp -d "${_TMP_BASE%/}/ses-gate.XXXXXX" 2>/dev/null) || _F8_DIR=""
+    if [[ -z "$_F8_DIR" ]]; then
+        # Solo en el fallback se barre `/tmp`: es donde quedan los huerfanos de
+        # un SIGKILL mientras `TMPDIR` no sirve. Barrerlo siempre costaba en
+        # cada comando (en macOS `TMPDIR` nunca es `/tmp`): +26 ms con 10.000
+        # entradas, lo midio el Gate 3.
+        find /tmp/ -maxdepth 1 -type d -name 'ses-gate.*' -user "$(id -u)" -mmin +60 \
+            -exec rm -rf {} + 2>/dev/null
+        _F8_DIR=$(mktemp -d /tmp/ses-gate.XXXXXX 2>/dev/null) || _F8_DIR=""
+    fi
     # El hook sale por muchos caminos (`allow`, `deny`, `exit`): el temporal se
     # borra en todos.
     [[ -n "$_F8_DIR" ]] && trap 'rm -rf "$_F8_DIR"' EXIT

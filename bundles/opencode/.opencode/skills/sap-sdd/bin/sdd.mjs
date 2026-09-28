@@ -160,7 +160,8 @@ function cmdAprobar(args) {
 function cmdEstado(args) {
   const { flags, proyecto } = proyectoDe(args, { '--json': 'bool' }, false);
   const calc = calcularEstado(proyecto);
-  if (flags['--json']) { console.log(JSON.stringify(calc, null, 2)); return 0; }
+  const fuera = sueltos(proyecto.dir);
+  if (flags['--json']) { console.log(JSON.stringify({ ...calc, sueltos: fuera }, null, 2)); return 0; }
   console.log(`${proyecto.nombre} — ${proyecto.dir}`);
   for (const f of FASES) {
     const e = calc[f.id];
@@ -169,7 +170,6 @@ function cmdEstado(args) {
     for (const m of e.motivos) console.log(`       · ${m}`);
     if (e.nota) console.log(`       nota: ${e.nota}`);
   }
-  const fuera = sueltos(proyecto.dir);
   if (fuera.length) {
     // Un nombre con saltos de línea no puede imitar una línea de estado.
     const nombres = fuera.map((n) => (/[\u0000-\u001f\u007f]/.test(n) ? JSON.stringify(n) : n));

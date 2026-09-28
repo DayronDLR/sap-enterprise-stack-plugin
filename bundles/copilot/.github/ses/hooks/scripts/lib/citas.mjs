@@ -257,17 +257,31 @@ export function verificarCitas(citas, raiz = process.cwd()) {
     else if (v === 'sin verificar') r.sinVerificar += 1;
     else r.malas.push({ texto: c.texto, motivo: v });
   }
+  // Si hubo que indexar y alguna carpeta no se pudo leer, lo citado por sufijo
+  // quedó «sin verificar» en vez de «no existe»: el informe lo tiene que decir.
+  r.indiceIncompleto = idx !== null && !idx.completo;
   return r;
 }
 
-/** El aviso para el orquestador, o '' si todas las citas resuelven o no se pudieron juzgar. */
-export function informeCitas({ total, malas }) {
-  if (!malas.length) return '';
+/**
+ * El aviso para el orquestador, o '' si todas las citas resuelven o no se
+ * pudieron juzgar por una razón normal (fuera del proyecto, ruta absoluta). Si
+ * quedaron sin verificar porque hay carpetas ilegibles, eso sí se dice: antes
+ * el informe callaba y una cita a un archivo inexistente pasaba sin aviso.
+ */
+export function informeCitas({ total, malas, sinVerificar = 0, indiceIncompleto = false }) {
+  const ilegibles = indiceIncompleto && sinVerificar
+    ? `${sinVerificar} de ${total} quedaron sin verificar y el índice del proyecto está incompleto (hay `
+      + 'carpetas que no se pudieron leer, o demasiados archivos): de lo citado por sufijo no se puede afirmar '
+      + 'que no exista. Confirmalas antes de usarlas como evidencia.'
+    : '';
+  if (!malas.length) return ilegibles ? `[citas] ${ilegibles}` : '';
   const lista = malas.slice(0, 10).map((m) => `\`${m.texto}\` (${m.motivo})`).join(' · ');
   const mas = malas.length > 10 ? ` y ${malas.length - 10} más` : '';
   return `[citas] El subagente citó ${total} ubicación(es) y ${malas.length} no resuelve(n): ${lista}${mas}. `
     + 'No las uses como evidencia —ni para aprobar un hallazgo ni para sellar una entrega— hasta confirmarlas: '
-    + 'una cita que no apunta a nada es una afirmación sin respaldo.';
+    + 'una cita que no apunta a nada es una afirmación sin respaldo.'
+    + (ilegibles ? ` Además, ${ilegibles}` : '');
 }
 
 // ─── Fuentes externas por ID (F2 sobre el catálogo de F5) ───────────────────

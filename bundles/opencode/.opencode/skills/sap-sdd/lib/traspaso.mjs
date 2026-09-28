@@ -270,9 +270,14 @@ export function traspaso(proyecto) {
 /** El brief en markdown: lo que `/sap-techlead` lee como su plan. */
 export function briefMarkdown(b) {
   // Un solo formato decimal: los números calculados salían con punto (9.2) y los
-  // leídos de las tablas del SDD con coma (9,2).
-  const num = (x) => (typeof x === 'number' ? String(x).replace('.', ',') : x);
-  const fila = (xs) => `| ${xs.map(num).join(' | ')} |`;
+  // leídos de las tablas del SDD con coma (9,2). También los que vienen escritos
+  // con punto en una columna numérica (O, M, P, E, horas). SÓLO en esas: una
+  // fuente «2.4» es un número de sección y no se toca.
+  const num = (x) => {
+    if (typeof x === 'number') return String(x).replace('.', ',');
+    return typeof x === 'string' && /^-?\d+\.\d+$/.test(x.trim()) ? x.replace('.', ',') : x;
+  };
+  const fila = (xs) => `| ${xs.join(' | ')} |`;
   return [
     `# Traspaso a implementación — ${b.proyecto}`,
     '',
@@ -290,13 +295,13 @@ export function briefMarkdown(b) {
     '',
     fila(['ID', 'Objeto', 'Tipo', 'Capa', 'Clean Core', 'Reglas', 'Horas (E)']),
     fila(['---', '---', '---', '---', '---', '---', '---']),
-    ...b.inventario.map((o) => fila([o.id, o.objeto, o.tipo, o.capa, o.cleanCore, o.fuente, o.horas])),
+    ...b.inventario.map((o) => fila([o.id, o.objeto, o.tipo, o.capa, o.cleanCore, o.fuente, num(o.horas)])),
     '',
     '## Tareas estimadas',
     '',
     fila(['ID', 'Tarea', 'OBJ', 'O', 'M', 'P', 'E']),
     fila(['---', '---', '---', '---', '---', '---', '---']),
-    ...b.tareas.map((t) => fila([t.id, t.tarea, t.obj, t.o, t.m, t.p, t.e])),
+    ...b.tareas.map((t) => fila([t.id, t.tarea, t.obj, num(t.o), num(t.m), num(t.p), num(t.e)])),
     '',
     `Estimación: base ${num(b.estimacion.base)} h + contingencia ${num(b.estimacion.contingencia)} h = **${num(b.estimacion.total)} h** (P80 ${num(b.estimacion.p80)} h; transversales ${num(b.estimacion.transversal)} h).`,
     '',

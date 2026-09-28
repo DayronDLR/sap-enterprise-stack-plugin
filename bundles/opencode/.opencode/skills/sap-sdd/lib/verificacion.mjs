@@ -254,7 +254,9 @@ export function lineasDe(texto) {
 
 /** Hallazgos de citas de un archivo: rotas, a `entradas/`, o faltantes. */
 function revisarCitas(rel, original, modo, lineasReq) {
-  const texto = sinCodigo(original);
+  // Sin el BOM: con él, una primera línea «Fuente: …» no empezaba con «Fuente»
+  // y el chequeo no la veía. Las líneas no cambian: el BOM no es un salto.
+  const texto = sinCodigo(original.replace(/^\uFEFF/, ''));
   const h = [];
   for (const m of texto.matchAll(RE_CASI_CITA)) {
     if (!/^\[C1-captura\/requerimiento\.md:\d+(?:-\d+)?\]$/.test(m[0])) {
@@ -262,7 +264,7 @@ function revisarCitas(rel, original, modo, lineasReq) {
     }
   }
   for (const m of texto.matchAll(RE_CITA_ENTRADAS)) {
-    h.push(`${rel}:${lineaDe(texto, m.index)} cita ${m[0]}: las fases posteriores a C1 citan ${REQUERIMIENTO}, nunca entradas/`);
+    h.push(`${rel}:${lineaDe(texto, m.index)} cita ${m[0]}: se cita ${REQUERIMIENTO}, nunca entradas/: la fuente del cliente se resume en el requerimiento y se cita desde ahí`);
   }
   for (const m of texto.matchAll(RE_CITA)) {
     const problema = destinoDeCita(Number(m[1]), m[2] === undefined ? Number(m[1]) : Number(m[2]), lineasReq);

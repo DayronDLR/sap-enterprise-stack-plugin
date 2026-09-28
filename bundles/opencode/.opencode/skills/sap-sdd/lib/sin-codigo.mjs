@@ -40,8 +40,10 @@ const RE_CODIGO = new RegExp([...CODIGO].sort((a, b) => b.length - a.length).map
 const RE_CODIGO_G = new RegExp(RE_CODIGO.source, 'g');
 
 // Una URL es una referencia, no código pegado: `https://…/sap/opu/odata/…` o
-// un enlace a la documentación de SAP no deciden la implementación.
-const RE_URL = /\bhttps?:\/\/\S+/g;
+// un enlace a la documentación de SAP no deciden la implementación. Termina en
+// un espacio o en un backtick: `` `https://x/y`LOOP AT `` escondía el código
+// pegado detrás. `scripts/eval/run-agent-evals.js` usa la misma, y un test lo exige.
+export const RE_URL = /\bhttps?:\/\/[^\s`]+/g;
 
 // Un bloque cercado se nombra por su marca completa: ```javascript contiene
 // ```java, y el mensaje decía «```java» ante un bloque de JavaScript. Con tope:
