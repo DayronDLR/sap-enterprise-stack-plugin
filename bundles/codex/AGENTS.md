@@ -257,6 +257,7 @@ los 3 gates.
 | `SES_GATES=off` | Desactiva el gate de entrega. El dev asume el riesgo; queda avisado en la sesion. |
 | `SES_SKIP_DOD_GATES=1` | Opt-out para consumidores del plugin. |
 | `tmp/.hotfix-override` | HOTFIX-OVERRIDE auditado con two-person rule (ADR-005). Gate 1 CRITICAL sigue bloqueando. |
+| `SES_CONFIG_RISK=allow` | Aprueba, para esa entrega, un hallazgo CRITICAL del scan de configuración del Gate 1 (un `postinstall`, una dependencia fuera del registro). Lo exporta la persona en su shell y queda en `logs/config-risk-overrides.log`. |
 | `SES_MODE=lite` | Spike/prototipo: solo Gate 1 al entregar. `full` (default) exige los 3; `ultra` acorta a la mitad la red de vencimiento por tiempo. Ver ADR-009. |
 
 ## Gate 1 — Quality Gate Tecnico
@@ -268,6 +269,10 @@ Ejecutado por `hooks/scripts/quality-gate.sh`. Bloquea si:
 - ESLint falla (`.js` modificados)
 - ABAP smell scan reporta CRITICAL (`hooks/scripts/abap-smell-scan.sh`)
 - Clean Core scan detecta modificacion a SAP standard (`hooks/scripts/clean-core-scan.sh`)
+- La configuracion que ejecuta codigo cambia de forma riesgosa (`hooks/scripts/config-risk-scan.mjs`):
+  un script de ciclo de vida nuevo en `package.json`, una dependencia fuera del registro,
+  un lockfile que resuelve a un host ajeno o sin `integrity`, un comando de build que baja
+  y ejecuta codigo
 - Manifest UI5 invalido
 
 ## Gate 2 — Code Review (agente `reviewer`)

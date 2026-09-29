@@ -162,7 +162,7 @@ gates won't stop you as you type — they stay in git hooks and CI.
 | Subagents | `reviewer` (code review), `mentor` (educational review), Fiori (architect/implementer/debugger/tester) | `/agents` or keywords |
 | SAP reference skills | Technical material (ABAP, CDS, CAP, SQLScript, BTP, Fiori Tools, UI5) consulted on-demand | automatic |
 | Definition of Done hooks | Quality gates on `Stop` (quality-gate + code review), sensitive-file protection, auto-lint | after `/reload-plugins` |
-| 5 MCP servers | `sap-cap-capire`, `sap-ui5`, `sap-fiori-tools`, `github`, `sap-adt` | `mcp__…` tools |
+| 4 MCP servers | `sap-cap-capire`, `sap-ui5`, `sap-fiori-tools`, `sap-adt` | `mcp__…` tools |
 
 ## Prerequisites for full functionality (100%)
 
@@ -174,7 +174,7 @@ DoD hooks. The table maps the few capabilities that need one extra thing:
 | --- | --- | --- |
 | 11 agents · orchestrator · subagents · 17 SAP skills | ✅ | — |
 | DoD quality gates + auto-lint | ✅ | **Windows:** Git Bash or WSL (hooks are bash). Auto-lint uses **only** your project's own `cds` / `ui5lint` / `eslint` (`node_modules/.bin`) and skips if not installed — no download, no global tool, no imposed package manager |
-| 4 MCP servers (CAP, UI5, Fiori Tools, GitHub) | ✅ | first use downloads the package via `npx` (network, needs only Node); `GITHUB_TOKEN` raises GitHub rate limits |
+| 3 MCP servers (CAP, UI5, Fiori Tools) | ✅ | first use downloads the package via `npx` (network, needs only Node) |
 | MCP `sap-adt` — read ABAP from a **live** system | ⚠️ creds | export `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
 | `/ses:sap-doc` — document **content** | ✅ | — |
 | `/ses:sap-doc` — **Word/PPTX** output | ➕ add-on | `pandoc` 3.x + `python3` + `pip install python-pptx lxml` |
@@ -191,7 +191,7 @@ Legend: ✅ works out of the box · ⚠️ needs credentials · ➕ optional add
 - Let the **orchestrator** route by natural language (no need to memorize commands).
 - Run the **Definition of Done gates** automatically when closing tasks.
 - Consult the **SAP reference skills** on-demand.
-- Use the **5 MCP servers** (4 with no credentials; `sap-adt` needs credentials).
+- Use the **4 MCP servers** (3 with no credentials; `sap-adt` needs credentials).
 - **Update** with `/plugin update` and modify/fork it (under GPL-3.0).
 
 **You can't (by design or plugin limits):**
@@ -240,7 +240,7 @@ this variable.)
    export SAP_ADT_USER="..." SAP_ADT_PASSWORD="..." SAP_ADT_CLIENT="100"
    ```
 
-   The other 4 MCP (CAP, UI5, Fiori Tools, GitHub) start with no secrets.
+   The other 3 MCP (CAP, UI5, Fiori Tools) start with no secrets.
 
 2. **Context optimization (recommended)** — a plugin can't ship `env`, so these
    have to go in YOUR `settings.json`:
@@ -249,7 +249,7 @@ this variable.)
    { "env": { "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "82", "MAX_MCP_OUTPUT_TOKENS": "8000" } }
    ```
 
-   Measured on this plugin's 5 MCP servers (205 tools):
+   Measured on this plugin's MCP servers (205 tools):
 
    | Tool search | Cost per request |
    | --- | --- |
@@ -334,7 +334,7 @@ Issues and improvements: <https://github.com/DayronDLR/sap-enterprise-stack-plug
 Un stack completo de desarrollo SAP dentro de Claude Code. Instalas el plugin y
 tienes **11 agentes SAP especializados**, un **orquestador** que enruta por
 lenguaje natural, **subagentes** de apoyo, **skills SAP de referencia**, **gates
-de calidad (Definition of Done)** y **5 MCP servers SAP** — sin clonar ningún
+de calidad (Definition of Done)** y **4 MCP servers SAP** — sin clonar ningún
 repo.
 
 > 🌐 **Los agentes responden en tu idioma.** Escribes en español → respondes en
@@ -462,7 +462,7 @@ de actualizar, corre `/reload-plugins` para recargar comandos y hooks.
 
 **Podés:** usar los 11 agentes en cualquier proyecto SAP sin clonar; dejar que el
 orquestador enrute por lenguaje natural; correr los gates de DoD; consultar las
-skills; usar los 5 MCP; actualizar con `/plugin update` y forkear (bajo GPL-3.0).
+skills; usar los 4 MCP; actualizar con `/plugin update` y forkear (bajo GPL-3.0).
 
 **No puedes:** invocar comandos sin el prefijo `ses:` (namespacing obligatorio);
 desarrollar/regenerar el stack desde el plugin; el build branded de docs con
@@ -492,7 +492,7 @@ de DoD. Los extras solo habilitan capacidades puntuales:
 | --- | --- | --- |
 | Agentes · orquestador · subagentes · 17 skills | ✅ | — |
 | Gates de DoD + auto-lint | ✅ | **Windows:** Git Bash/WSL; el auto-lint usa **solo** el `cds` / `ui5lint` / `eslint` de **tu** proyecto (`node_modules/.bin`) y se omite si no está instalado — no descarga nada, no corre herramienta global, ni impone gestor |
-| 4 MCP (CAP, UI5, Fiori Tools, GitHub) | ✅ | 1er uso baja el paquete (red); `GITHUB_TOKEN` sube el rate limit |
+| 3 MCP (CAP, UI5, Fiori Tools) | ✅ | 1er uso baja el paquete (red) |
 | MCP `sap-adt` (ABAP del sistema **real**) | ⚠️ creds | `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
 | `/ses:sap-doc` — **contenido** | ✅ | — |
 | `/ses:sap-doc` — salida **Word/PPTX** | ➕ | `pandoc` + `python3` + `pip install python-pptx lxml` |
@@ -502,7 +502,7 @@ de DoD. Los extras solo habilitan capacidades puntuales:
 ## Configuración que requiere acción
 
 1. **MCP `sap-adt`** necesita credenciales (`SAP_ADT_URL/USER/PASSWORD/CLIENT`);
-   los otros 4 MCP arrancan sin secrets.
+   los otros 3 MCP arrancan sin secrets.
 2. **Env de optimización de contexto (opcional)** — se ponen a mano en tu
    `settings.json` (un plugin no puede shippear `env`).
 3. Primer uso de cada MCP descarga su paquete (`npx`, requiere red + Node).

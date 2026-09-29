@@ -21,11 +21,6 @@ command = "npx"
 args = ["-y", "@sap-ux/fiori-mcp-server@1.7.1", "fiori-mcp"]
 startup_timeout_sec = 30
 
-[mcp_servers.github]
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-github@2025.4.8"]
-startup_timeout_sec = 30
-
 [mcp_servers.sap-adt]
 command = "npx"
 args = ["-y", "@mcp-abap-adt/core@7.2.1"]

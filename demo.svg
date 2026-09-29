@@ -12,7 +12,7 @@
   <g>
     <text x="22" y="66"><tspan fill="#a6e3a1">$ </tspan><tspan fill="#cdd6f4">/plugin marketplace add DayronDLR/sap-enterprise-stack-plugin</tspan></text>
     <text x="22" y="89"><tspan fill="#a6e3a1">$ </tspan><tspan fill="#cdd6f4">/plugin install ses@sap-stack</tspan></text>
-    <text x="22" y="112"><tspan fill="#a6e3a1">  ✓ </tspan><tspan fill="#7f849c">Installed ses · 17 skills · 12 agents · 5 MCP servers</tspan></text>
+    <text x="22" y="112"><tspan fill="#a6e3a1">  ✓ </tspan><tspan fill="#7f849c">Installed ses · 17 skills · 12 agents · 4 MCP servers</tspan></text>
 
     <text x="22" y="150"><tspan fill="#89b4fa" font-weight="bold">› /ses:sap-abap</tspan><tspan fill="#cdd6f4">  AR aging report — buckets 0-30/31-60/61-90/90+ (BSID/BSAD)</tspan></text>
 

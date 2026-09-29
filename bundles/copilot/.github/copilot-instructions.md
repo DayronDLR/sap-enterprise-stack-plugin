@@ -44,7 +44,7 @@ ese trailer bloquea el pull request.
 
 ### Lo que directamente no está
 
-- Controla las llamadas a servidores MCP.
+- Deniega la escritura en el sistema SAP por sap-adt, pide confirmación para leer tablas y acota las llamadas MCP.
 - Comprime la entrada de comandos verbosos (ADR-009).
 - Reinyecta la persona del agente activo cada N turnos.
 - Comprueba que los archivos que un subagente dice haber producido existan.

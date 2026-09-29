@@ -245,6 +245,44 @@ if [[ -n "$ATC_CHANGED" ]]; then
     fi
 fi
 
+# 4.65) Configuracion que ejecuta codigo: package.json, lockfiles, mta.yaml, xs-app.json.
+#
+# Un `postinstall` corre en cada `npm install`, y una dependencia `git+`/`http:` se
+# baja sin pasar por el registro. Antes eso dependia de que el reviewer lo notara,
+# y el hook de archivos sensibles bloqueaba la edicion entera de `package.json`.
+# Ahora el agente edita la configuracion y ESTE scan, determinístico, decide.
+#
+# Un cambio legitimo de esa clase lo aprueba la persona, no el agente: exporta
+# `SES_CONFIG_RISK=allow` en su shell para esa entrega, y queda registrado.
+CONFIG_CHANGED=$(echo "$CHANGED_FILES" | grep -E '(^|/)(package\.json|package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|mta(-[^/]*)?\.ya?ml|[^/]*\.mtaext|xs-app\.json)$' || true)
+if [[ -n "$CONFIG_CHANGED" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if ! command -v node >/dev/null 2>&1; then
+        # No es un linter del proyecto: el remedio es instalar Node, no una devDependency.
+        NO_VERIFICABLE="${NO_VERIFICABLE}\n  ✗ Riesgo en configuracion: $(printf '%s\n' "$CONFIG_CHANGED" | wc -l | tr -d ' ') archivo(s) lo requieren y node no esta disponible.\n      Instala Node.js (el mismo que usa el proyecto) y volve a correr el gate."
+    else
+        CFG_ARR=()
+        while IFS= read -r _p; do [[ -n "$_p" ]] && CFG_ARR+=("$_p"); done <<< "$CONFIG_CHANGED"
+        CFG_RESULT=$(cd "$PROJECT_DIR" && node "${SCRIPT_DIR}/config-risk-scan.mjs" "${CFG_ARR[@]}" 2>&1)
+        CFG_EXIT=$?
+        if [[ "$CFG_EXIT" -eq 0 ]]; then
+            registrar_ok "Riesgo en configuracion"
+            [[ -n "$CFG_RESULT" ]] && printf '%s\n' "$CFG_RESULT"
+        elif [[ "$CFG_EXIT" -eq 1 && "${SES_CONFIG_RISK:-}" = "allow" ]]; then
+            registrar_ok "Riesgo en configuracion (aprobado con SES_CONFIG_RISK=allow)"
+            printf 'Aprobado por la persona (SES_CONFIG_RISK=allow):\n%s\n' "$CFG_RESULT"
+            mkdir -p "${PROJECT_DIR}/logs" 2>/dev/null && \
+                printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(git config user.email 2>/dev/null || echo desconocido)" \
+                    "$(printf '%s' "$CFG_RESULT" | grep -E '^\[CRITICAL\]' | tr '\n' ' ')" \
+                    >> "${PROJECT_DIR}/logs/config-risk-overrides.log"
+        elif [[ "$CFG_EXIT" -eq 1 ]]; then
+            ERRORS="${ERRORS}\n${CFG_RESULT}\n  Si el cambio es legitimo, la PERSONA lo aprueba: SES_CONFIG_RISK=allow en su shell para esta entrega."
+        else
+            ERRORS="${ERRORS}\n[CRITICAL] El scan de configuracion fallo (exit ${CFG_EXIT}): ${CFG_RESULT}"
+        fi
+    fi
+fi
+
 # 4.7) Diagramas SAP (.sapdiag.json) — el gate de composicion del motor sap-diagrams.
 #      Un diagrama entregable corre en perfil `showcase`: 0 errores y 0 warnings.
 #      Es el equivalente del linter para un artefacto visual: sin esto, un diagrama

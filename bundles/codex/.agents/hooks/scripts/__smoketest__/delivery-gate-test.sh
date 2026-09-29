@@ -179,9 +179,15 @@ spf() { printf '%s' "$1" | bash "$STACK_ROOT/hooks/scripts/protect-sensitive-fil
     && ok "bloquea una escritura a .env por exec_command (Codex)" \
     || bad "una escritura a .env por exec_command NO se bloqueo" ""
 
-[[ "$(spf '{"tool_name":"exec_command","tool_input":{"cmd":"cp tpl xs-security.json"}}')" = "2" ]] \
-    && ok "bloquea un cp sobre xs-security.json" \
-    || bad "un cp sobre xs-security.json NO se bloqueo" ""
+[[ "$(spf '{"tool_name":"exec_command","tool_input":{"cmd":"cp tpl default-env.json"}}')" = "2" ]] \
+    && ok "bloquea un cp sobre default-env.json" \
+    || bad "un cp sobre default-env.json NO se bloqueo" ""
+
+# La configuracion del proyecto NO es un secreto: el agente la edita, y el Gate 1
+# revisa lo que ejecuta codigo (config-risk-scan).
+[[ "$(spf '{"tool_name":"Edit","tool_input":{"file_path":"xs-security.json"}}')" = "0" ]] \
+    && ok "xs-security.json se puede editar (es configuracion)" \
+    || bad "se bloqueo la edicion de xs-security.json" ""
 
 # Exigir INTENCION de escritura, no la sola mencion: bloquear toda referencia
 # volveria el hook inusable y la gente lo terminaria desactivando.
@@ -267,8 +273,8 @@ sed 's|if command -v python3 >/dev/null 2>&1; then|if false; then|' \
 echo '{"tool_input":{"file_path":".env"}}' | bash "$PF" >/dev/null 2>&1 \
     && bad "sin python3 permitio escribir .env" \
     || ok "sin python3 el respaldo sigue bloqueando .env"
-echo '{"tool_input":{"path":"xs-security.json"}}' | bash "$PF" >/dev/null 2>&1 \
-    && bad "sin python3 permitio escribir xs-security.json" \
+echo '{"tool_input":{"path":"default-env.json"}}' | bash "$PF" >/dev/null 2>&1 \
+    && bad "sin python3 permitio escribir default-env.json" \
     || ok "el respaldo cubre las variantes de clave de ruta"
 echo '{"tool_input":{"file_path":"srv/normal.js"}}' | bash "$PF" >/dev/null 2>&1 \
     && ok "el respaldo no bloquea un archivo normal" \
@@ -390,7 +396,9 @@ echo "==> mcp-guard: techo por defecto solo si el modelo no puso uno"
 mg(){ printf '{"tool_name":"%s","tool_input":%s}' "$1" "$2" | bash hooks/scripts/mcp-guard.sh 2>/dev/null; }
 printf '%s' "$(mg mcp__sap-adt__GetTableContents '{"table_name":"MARA"}')" | grep -q '"max_rows":100' \
     && ok "GetTableContents sin limite -> 100 filas" || bad "no aplico el techo"
-[[ -z "$(mg mcp__sap-adt__GetTableContents '{"table_name":"MARA","max_rows":5000}')" ]] \
+# Con el limite puesto no se reescribe la entrada; si sale algo, es sólo la
+# confirmacion de lectura de datos (ask), no un techo nuevo.
+! printf '%s' "$(mg mcp__sap-adt__GetTableContents '{"table_name":"MARA","max_rows":5000}')" | grep -q updatedInput \
     && ok "respeta el limite explicito del modelo" || bad "piso el limite del modelo"
 [[ -z "$(mg mcp__sap-ui5__get_guidelines '{}')" ]] && ok "tool sin limite conocido: no interviene" || bad "toco una tool desconocida"
 

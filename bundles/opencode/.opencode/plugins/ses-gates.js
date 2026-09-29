@@ -32,7 +32,8 @@ const PRE_TOOL = [
     "id": "protect-sensitive-files",
     "verbos": [
       "write",
-      "edit"
+      "edit",
+      "exec"
     ]
   },
   {

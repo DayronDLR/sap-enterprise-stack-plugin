@@ -1,6 +1,7 @@
 #!/bin/bash
-# mcp-guard.sh — pone un techo por defecto a las llamadas MCP que pueden volcar
-# miles de filas al contexto.
+# mcp-guard.sh — politica sobre las llamadas MCP: deniega la escritura en el
+# sistema SAP, pide confirmacion para leer datos de tablas, y pone un techo por
+# defecto a las llamadas que pueden volcar miles de filas al contexto.
 #
 # PreToolUse sobre los MCP de SAP. Si el modelo no declaró un limite, se lo
 # inyecta via `updatedInput`. Si lo declaró, no se toca: el modelo sabe mejor
@@ -18,6 +19,69 @@
 set -u
 
 INPUT=$(cat)
+
+# ── sap-adt: lista de lo que SÍ se permite ────────────────────────────────────
+#
+# `sap-adt` (`@mcp-abap-adt/core`) no es de solo lectura: expone tools que crean,
+# modifican, activan y borran objetos, toman y liberan locks, crean transportes y
+# ejecutan clases y programas ABAP. La documentacion decia "solo lectura por
+# diseño" y lo unico que lo sostenia era el prompt del agente ABAP.
+#
+# La primera version de esta politica fue una lista de verbos PELIGROSOS, y la
+# revision encontro enseguida lo que le faltaba: `RuntimeRunProgram` (ejecuta un
+# programa ABAP arbitrario) y 31 `Lock*`/`Unlock*`. Una lista de lo peligroso no
+# converge; una de lo seguro, si. Lo que no esta aca —incluida cualquier tool
+# que una version nueva del paquete agregue— se deniega.
+#
+# Va ANTES de `SES_MCP_GUARD=off`, que apaga los limites de filas y no esta
+# politica. Y es bash puro: un control de escritura no depende de node.
+#
+#   SES_ADT_WRITE=ask  -> en vez de denegar, pide confirmacion llamada a llamada.
+#   SES_ADT_DATA=allow -> leer tablas no pide confirmacion.
+# Solo importa si la llamada es a sap-adt: las demas no pagan el parseo.
+TOOL_NAME=""
+case "$INPUT" in
+    *sap?adt__*)
+        # El nombre sale del JSON parseado: con el primer match del texto, una
+        # clave `tool_name` anidada en `tool_input` podia hacerse pasar por la de
+        # verdad. Si no hay python3 o el JSON no parsea, se falla CERRADO: si
+        # CUALQUIER `tool_name` del texto es una tool de sap-adt que no es de
+        # lectura, esa es la que se evalua.
+        if command -v python3 >/dev/null 2>&1; then
+            TOOL_NAME=$(printf '%s' "$INPUT" | python3 -I -S -c 'import json,sys
+try: print(json.load(sys.stdin).get("tool_name") or "")
+except Exception: print("")' 2>/dev/null)
+        fi
+        if [[ -z "$TOOL_NAME" ]]; then
+            CANDIDATOS=$(printf '%s' "$INPUT" | grep -oE '"tool_name"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -E 's/.*"([^"]*)"$/\1/')
+            TOOL_NAME=$(printf '%s\n' "$CANDIDATOS" | grep -E 'sap[-_]adt__' \
+                | grep -vE 'sap[-_]adt__(Get|Search|List|Read|Describe|Check|Validate|ResolveTransport|RunUnitTest|RunClassUnitTestsLow|RuntimeAnalyze|RuntimeGet|RuntimeList)' | head -1)
+            [[ -z "$TOOL_NAME" ]] && TOOL_NAME=$(printf '%s\n' "$CANDIDATOS" | tail -1)
+        fi
+        ;;
+    *) ;;  # no es sap-adt: no hay nombre que evaluar
+esac
+if [[ "$TOOL_NAME" =~ ^mcp__.*sap[-_]adt__([A-Za-z0-9_]+)$ ]]; then
+    TOOL_ADT="${BASH_REMATCH[1]}"
+    ADT_LECTURA_RE='^(Get|Search|List|Read|Describe|Check|Validate|ResolveTransport|RunUnitTest|RunClassUnitTestsLow|RuntimeAnalyze|RuntimeGet|RuntimeList)'
+    if [[ ! "$TOOL_ADT" =~ $ADT_LECTURA_RE ]]; then
+        if [[ "${SES_ADT_WRITE:-}" = "ask" ]]; then
+            printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"[mcp-guard] %s modifica o ejecuta en el sistema SAP de SAP_ADT_URL. Confirmá que es DEV y que corresponde."}}\n' "$TOOL_ADT"
+            exit 0
+        fi
+        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[mcp-guard] %s modifica o ejecuta en el sistema SAP, y el stack usa sap-adt en solo lectura. Entregá el código para activarlo en ADT, o, si la persona lo decide, exportá SES_ADT_WRITE=ask para confirmar cada llamada."}}\n' "$TOOL_ADT"
+        exit 0
+    fi
+    # Leer filas de una tabla las manda al modelo: pueden ser datos personales.
+    # La confirmacion no depende de node ni de SES_MCP_GUARD: si alguno de los dos
+    # falta, se pide aca y se pierde solo el limite de filas.
+    if [[ "$TOOL_ADT" =~ ^(GetTableContents|GetSqlQuery)$ && "${SES_ADT_DATA:-}" != "allow" ]] \
+       && { [[ "${SES_MCP_GUARD:-}" = "off" ]] || ! command -v node >/dev/null 2>&1; }; then
+        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"[mcp-guard] %s lee datos del sistema SAP (pueden ser datos personales). Confirmá la lectura; SES_ADT_DATA=allow la habilita sin preguntar."}}\n' "$TOOL_ADT"
+        exit 0
+    fi
+fi
+
 [[ "${SES_MCP_GUARD:-}" = "off" ]] && exit 0
 
 # AUDITORIA A6 — este guard tenia cinco salidas con `exit 0` y todas producian el
@@ -78,19 +142,30 @@ process.stdin.on("data", (d) => (raw += d)).on("end", () => {
 
   const [param, value] = rule;
   const input = ev.tool_input || {};
-  // El modelo ya eligio un limite: respetarlo.
-  if (input[param] !== undefined && input[param] !== null) process.exit(0);
 
-  const updated = { ...input, [param]: value };
-  process.stdout.write(JSON.stringify({
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      updatedInput: updated,
-      permissionDecisionReason:
-        `[mcp-guard] ${tool} sin ${param}: se aplica ${value} por defecto. ` +
-        `Volvé a llamarla con ${param} explícito si necesitás más.`,
-    },
-  }));
+  // Leer filas de una tabla del cliente las manda al modelo: pueden ser datos
+  // personales. Se pide confirmacion, salvo que la persona lo haya habilitado.
+  const esSapAdt = /sap[-_]adt__/.test(full);
+  const datos = esSapAdt && (tool === "GetTableContents" || tool === "GetSqlQuery")
+    && process.env.SES_ADT_DATA !== "allow";
+  const conLimite = input[param] !== undefined && input[param] !== null;
+  // El modelo ya eligio un limite y no hay nada que confirmar: respetarlo.
+  if (conLimite && !datos) process.exit(0);
+
+  const salida = { hookEventName: "PreToolUse" };
+  const motivos = [];
+  if (!conLimite) {
+    salida.updatedInput = { ...input, [param]: value };
+    motivos.push(`${tool} sin ${param}: se aplica ${value} por defecto. ` +
+      `Volvé a llamarla con ${param} explícito si necesitás más.`);
+  }
+  if (datos) {
+    salida.permissionDecision = "ask";
+    motivos.push(`${tool} lee datos del sistema SAP (pueden ser datos personales). ` +
+      "Confirmá la lectura; SES_ADT_DATA=allow la habilita sin preguntar.");
+  }
+  salida.permissionDecisionReason = `[mcp-guard] ${motivos.join(" ")}`;
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: salida }));
 });
 ' 2>/dev/null || aviso_no_evaluable "el evaluador de limites fallo"
 
