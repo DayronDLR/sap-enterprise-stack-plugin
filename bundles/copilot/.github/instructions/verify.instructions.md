@@ -30,7 +30,7 @@ npx @ui5/linter
 ## Step 4: Manifest validation (each UI5 app)
 
 Para cada `manifest.json` encontrado bajo `app/*/webapp/`:
-usar `run_manifest_validation` del MCP ui5-mcp.
+usar `run_manifest_validation` del MCP `sap-ui5`.
 
 ## Step 5: Tests
 

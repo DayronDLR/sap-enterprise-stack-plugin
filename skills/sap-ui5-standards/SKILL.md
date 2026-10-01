@@ -31,7 +31,7 @@ Catálogos de API, patrones completos y ejemplos de código. Misma regla: uno po
 | --- | --- |
 | APIs del framework, patrones freestyle, Building Blocks | `sap-ui5-standards/reference/expertise-ui5-framework.md` |
 | Floorplans, annotations CDS, adaptation projects | `sap-ui5-standards/reference/expertise-fiori-elements.md` |
-| RAP: behavior definitions, projections, EML | `sap-ui5-standards/reference/expertise-rap.md` |
+| RAP: qué tiene que traer el servicio para Fiori (el modelo, en `sap-abap-standards`) | `sap-ui5-standards/reference/expertise-rap.md` |
 | CAP + Fiori, despliegue on-premise vs BTP, MTA | `sap-ui5-standards/reference/expertise-cap-btp.md` |
 | Autorizaciones (PFCG) y testing (OPA5, wdi5) | `sap-ui5-standards/reference/expertise-ops.md` |
 | Smart Controls (SmartTable, SmartFilterBar) con OData V2 | `sap-ui5-standards/reference/smartcontrols-v2.md` |

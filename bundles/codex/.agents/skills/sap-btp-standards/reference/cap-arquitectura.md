@@ -128,7 +128,9 @@ module.exports = class OrderService extends cds.ApplicationService {
   init() {
     this.on('approve', 'Orders', async (req) => {
       const { ID } = req.params[0];
-      await UPDATE('my.app.Orders', ID).with({ status: 'A' });
+      // Transición atómica: el WHERE con el estado esperado es el control de concurrencia
+      const n = await UPDATE('my.app.Orders').set({ status: 'A' }).where({ ID, status: 'N' });
+      if (n !== 1) return req.reject(409, 'ORDER_STATE_CHANGED'); // otro usuario ya decidió
       return this.read('Orders', ID);
     });
 

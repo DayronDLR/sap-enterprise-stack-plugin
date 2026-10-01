@@ -26,6 +26,19 @@ description: "Documentacion tecnica entregable: Word con template de cliente y d
 
 **Regla:** la documentación entregable al cliente no debe contener APIs, features o servicios sin validar contra la fuente oficial **del stack que se está documentando** — la del stack equivocado no valida nada. Cada stack tiene la suya en `sap-fuentes-de-verdad/reference/` (ver §3); los skills instalados (`sap-cap-capire`, `sap-abap`, `sap-fiori-tools`, etc.) sirven para llegar al patrón, no como norma. La fuente oficial se cita por su ID del catálogo (`[fuente:cap.capire]`), que el hook de cierre verifica. Si una sección cita algo sin validación, marcarla con `[NO VERIFICADO]` y pedir confirmación antes de finalizar el `.docx`. Gap de MCP unificado registrado en `docs/MCP-ROADMAP.md`.
 
+## Herramientas MCP — documentar objetos reales
+
+Si las tools MCP de `sap-adt` están configuradas (solo lectura):
+
+| Tool | Para qué |
+| --- | --- |
+| `mcp__sap_adt__GetObjectInfo` / `mcp__sap_adt__GetPackageContents` | Inventario de objetos Z del paquete documentado (tipo, descripción, paquete) |
+| `mcp__sap_adt__GetWhereUsed` | Dependencias y puntos de uso para la sección de impacto o arquitectura |
+| `mcp__sap_adt__GetEnhancements` | BAdIs y enhancement implementations activas (complementa SE18/SE19) |
+| `mcp__sap_fiori_tools__list_fiori_apps` / `mcp__sap_ui5__get_project_info` | Apps Fiori del workspace y su configuración |
+
+Lo documentado sale de esas lecturas o de los archivos del proyecto; sin fuente, `[NO VERIFICADO]`. No usar `GetTableContents` para documentar (datos de cliente).
+
 ## Referencia de documentación — bajo demanda
 
 El material de referencia (estructura maestra del documento, catálogo de
@@ -313,7 +326,7 @@ Solo la sección de arquitectura, para usar en presentaciones o ADRs.
 | --- | --- |
 | SE80 / ADT | Explorar objetos ABAP a documentar |
 | SE18/SE19 | Verificar BAdIs y Enhancement Spots |
-| LTMC | Documentar objetos de migración |
+| Migrate Your Data / LTMOM | Documentar proyectos y objetos de migración (LTMC deprecada desde S/4HANA 2020) |
 | STMS | Documentar estrategia de transportes |
 | SU21/PFCG | Documentar modelo de autorización |
 | /n/IWFND/MAINT_SERVICE | Documentar servicios OData activos |

@@ -8,11 +8,11 @@ Cuando un proceso lee/escribe >1.000 registros, el diseño debe incluir:
 
 | Tecnica | ABAP | CAP/Node | HANA |
 |---|---|---|---|
-| Chunking | `SELECT ... PACKAGE SIZE N` | `for await (const chunk of …)` | `OFFSET/FETCH NEXT` o particion |
+| Chunking | `SELECT ... PACKAGE SIZE N` | `SELECT…limit(n)` paginado por clave o por estado | `OFFSET/FETCH NEXT` o particion |
 | Tamaño de paquete | 1.000–5.000 (datos), 100–500 (logica pesada) | 500–2.000 | depende particion |
-| Commit boundary | cada paquete | `await tx.commit()` cada chunk | `COMMIT` explicito |
+| Commit boundary | cada paquete | una `cds.tx(async () => …)` por ítem o por chunk | `COMMIT` explicito |
 | Restart-ability | flag de "procesado" en tabla origen | checkpoint en tabla aux | timestamp + watermark |
-| Paralelismo | `SPTA_PARA_PROCESS_START_2` / aRFC | worker threads / Cloud Tasks | particion fisica |
+| Paralelismo | `SPTA_PARA_PROCESS_START_2` / aRFC | N instancias / `cds.spawn` con **claim atómico** (`UPDATE … where status='P'` + relectura por `claimedBy`); Node no tiene SKIP LOCKED | particion fisica |
 | Progreso visible | log SLG1 cada paquete | `cds.log()` cada N | tabla de monitoreo |
 | Cancelacion limpia | check `sy-ucomm` en cada paquete | abort signal | `STATEMENT_HINT('LIMIT')` |
 
@@ -36,7 +36,7 @@ Cuando un proceso lee/escribe >1.000 registros, el diseño debe incluir:
 
 Toda operacion que puede reintentar (interface, job, retry de usuario) debe ser idempotente.
 
-- **Clave natural unica** verificada antes de INSERT (`SELECT SINGLE … WHERE clave = …`)
+- **Clave natural unica** como restricción en la base (PK / índice único / `@assert.unique`): se hace el INSERT y se captura la violación (ABAP `sy-subrc = 4`, HANA error 301, CAP: el error de la base tal cual). **Nunca** un SELECT antes del INSERT: dos procesos ven «no existe» a la vez
 - **UPSERT explicito** (`MODIFY` con clave completa) en lugar de INSERT
 - **Token de idempotencia** en headers de APIs externas
 - **Replay sin efectos colaterales**: el segundo intento produce el mismo resultado que el primero

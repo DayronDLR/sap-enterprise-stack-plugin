@@ -17,6 +17,7 @@ cargues entero**: son ~12k tokens (el de eventos solo, ~6k) y en una tarea dada 
 | CDS views, AMDP, access control DCL | `sap-abap-standards/reference/cds-amdp.md` |
 | Extensibilidad Clean Core, BAdIs, puntos de extensión | `sap-abap-standards/reference/clean-core-badis.md` |
 | ABAP clásico/OO, reports, ALV | `sap-abap-standards/reference/abap-oo-reports.md` |
+| Job masivo reanudable en ABAP Cloud (application job, `CL_BALI`, lock, checkpoint) | `sap-abap-standards/reference/job-masivo-cloud.md` |
 | Plantillas RAP end-to-end (interface → projection → BDEF → binding) | `sap-abap-standards/reference/rap-shared.md` |
 
 Leelos con la tool Read, por path relativo a este skill.

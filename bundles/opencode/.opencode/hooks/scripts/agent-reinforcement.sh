@@ -84,9 +84,9 @@ case "$ACTIVE_AGENT" in
     sap-abap)
         MSG="Agente activo: SAP ABAP Developer. Aplicar Clean Core (BAdIs, CDS, RAP — sin modificaciones estándar). Verificar con ATC + SyntaxCheck antes de activar." ;;
     sap-cap)
-        MSG="Agente activo: BTP & CAP Developer. Consultar cds-mcp:search_docs antes de implementar. Scope: CAP Node.js, MTA, XSUAA, Cloud Foundry." ;;
+        MSG="Agente activo: BTP & CAP Developer. Consultar search_docs del MCP sap-cap-capire antes de implementar. Scope: CAP Node.js, MTA, XSUAA, Cloud Foundry." ;;
     sap-fiori)
-        MSG="Agente activo: Fiori/UI5 Developer. Metodología ECPIV obligatoria. Consultar ui5-mcp:get_api_reference. Ejecutar run_ui5_linter + run_manifest_validation. viewPath PROHIBIDO en manifest v2." ;;
+        MSG="Agente activo: Fiori/UI5 Developer. Metodología ECPIV obligatoria. Consultar get_api_reference del MCP sap-ui5. Ejecutar run_ui5_linter + run_manifest_validation. viewPath PROHIBIDO en manifest v2." ;;
     sap-hana)
         MSG="Agente activo: HANA Cloud Specialist. Optimizar SQLScript para column store. Verificar cardinalidades y proyecciones en Calculation Views." ;;
     sap-integration)

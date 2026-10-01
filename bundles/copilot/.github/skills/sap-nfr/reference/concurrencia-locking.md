@@ -20,7 +20,10 @@ diseñarse asumiendo **N procesos paralelos sobre los mismos datos**.
 ### CAP / BTP
 
 - **Optimistic locking**: usar `@odata.etag` en entidades con concurrencia alta
-- **`cds.tx(req)`**: una transaccion por request HTTP, nunca compartir tx entre requests
+- **`cds.tx(req)`**: en un handler es la tx **anidada** del request; para una frontera de commit propia, `cds.tx(async () => …)`
+- **Pessimistic locking**: `SELECT.from(X, id).forUpdate({ wait: n })` en la misma tx que escribe. Sólo entidades de dominio, no SQLite; Node no tiene `SKIP LOCKED`
+- **Transiciones de estado**: `UPDATE … where({ ID, status: <esperado> })`, verificar filas afectadas y responder 409 si son 0
+- **Unicidad**: PK o `@assert.unique` + captura del error de la base (CAP no lo normaliza)
 - **Batch handlers**: si el handler procesa array, iterar en chunks con `Promise.allSettled`
 - **Idempotency-key**: aceptar header `Idempotency-Key` en endpoints POST/PATCH criticos
 - **`@requires` y `@restrict`** en TODAS las acciones que modifican estado

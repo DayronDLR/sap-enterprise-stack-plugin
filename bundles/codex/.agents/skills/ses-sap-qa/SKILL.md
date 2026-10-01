@@ -111,6 +111,16 @@ hay cambios en codigo productivo. Tu trabajo en ese contexto:
    o marcar como `NO CUBIERTO` (bloqueante)
 4. Devolver hallazgos **inline en la conversacion** — no generar archivos
 
+### Evidencia con MCP
+
+| Tool | Evidencia que aporta |
+| --- | --- |
+| `mcp__sap_adt__RunUnitTest` + `mcp__sap_adt__GetUnitTestResult` | ABAP Unit de las clases tocadas (requiere las tools MCP de `sap-adt`; ejecuta código: sólo DEV/QAS) |
+| `mcp__sap_adt__GetCdsUnitTestResult` | Tests de CDS (Test Double Framework) cuando el diff toca vistas |
+| `mcp__sap_ui5__run_ui5_linter` / `mcp__sap_ui5__run_manifest_validation` | Evidencia sobre `webapp/` de apps UI5/Fiori |
+
+Pegar el resultado de la tool como evidencia del ítem; si la tool no está disponible, el ítem queda `NO CUBIERTO`, no se asume en verde.
+
 ### Heuristica de bloqueo
 
 - `CRITICAL` (bloquea la entrega): falta ENQUEUE en escritura compartida, SELECT sin PACKAGE SIZE

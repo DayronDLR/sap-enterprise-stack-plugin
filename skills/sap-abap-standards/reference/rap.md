@@ -15,126 +15,177 @@
 ### CDS para RAP — Capas Completas
 
 ```abap
-"-- Tabla persistente del BO:
+"-- Tabla persistente del BO (nombre ≤ 16):
 @EndUserText.label: 'Z Purchase Order Extension'
-define table zpurchord_ext {
+define table zpurchord {
   key client      : abap.clnt not null;
   key po_number   : abap.char(10) not null;
   approval_status : abap.char(1);
   approved_by     : abap.char(12);
-  local_last_changed_at : abp_lastchange_tstmpl;
+  local_last_changed_at : abp_locinst_lastchange_tstmpl;
   last_changed_at : abp_lastchange_tstmpl;
   created_at      : abp_creation_tstmpl;
 }
 
-"-- Draft table (para Draft handling):
-define table zdraft_purchord {
-  key mandt         : abap.clnt not null;
-  key draftUUID     : sysuuid_x16 not null;
-  po_number         : abap.char(10);
-  approval_status   : abap.char(1);
-  draftEntityCreationDateTime : abp_creation_tstmpl;
-  draftEntityLastChangedDateTime : abp_lastchange_tstmpl;
-  draftIsCreatedByMe : abp_boolean;
+"-- Draft table: generarla con el quick fix del BDEF en ADT. Campos = elementos CDS. Nombre ≤ 16.
+@EndUserText.label : 'Draft - Z Purchase Order Extension'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zpurchord_d {
+  key client         : abap.clnt not null;
+  key purchaseorder  : abap.char(10) not null;
+  approvalstatus     : abap.char(1);
+  approvedby         : abap.char(12);
+  locallastchangedat : abp_locinst_lastchange_tstmpl;
+  lastchangedat      : abp_lastchange_tstmpl;
+  createdat          : abp_creation_tstmpl;
+  "%admin"           : include sych_bdl_draft_admin_inc;
 }
 ```
 
 ### Behavior Definition Managed con Draft
 
+> `managed` va sobre la root view entity base `ZI_PurchaseOrder`; la projection
+> `ZC_PurchaseOrder` lleva su propio BDEF `projection`. Comentarios BDL: `//`.
+
 ```abap
-managed implementation in class zbp_c_purchaseorder unique;
+// BDEF base: mismo nombre que la root view entity ZI_PurchaseOrder
+managed implementation in class zbp_i_purchaseorder unique;
 strict ( 2 );
 with draft;
 
-define behavior for ZC_PurchaseOrder alias PurchaseOrder
-persistent table zpurchord_ext
-draft table zdraft_purchord
+define behavior for ZI_PurchaseOrder alias PurchaseOrder
+persistent table zpurchord          // ≤ 16 caracteres
+draft table zpurchord_d             // ≤ 16 caracteres, sufijo _D
 etag master LocalLastChangedAt
 lock master total etag LastChangedAt
 authorization master ( global )
 {
-  -- Campos de sistema (read-only siempre):
+  // Campos de sistema (read-only siempre):
   field ( readonly )
-    PurchaseOrder, CreatedBy, LastChangedDate, LocalLastChangedAt;
+    PurchaseOrder, CreatedBy, LastChangedAt, LocalLastChangedAt;
 
-  -- Campos obligatorios:
+  // Campos obligatorios:
   field ( mandatory : create )
     Vendor, CompanyCode;
 
-  -- Feature control (habilita/deshabilita campos por estado):
+  // Feature control (habilita/deshabilita campos por estado):
   field ( features : instance )
     ApprovalStatus;
 
-  -- Operaciones estándar:
+  // Operaciones estándar:
   create;
   update;
   delete;
+  association _POItem { create; with draft; }
 
-  -- Draft workflow:
+  // Draft workflow (strict: todas explícitas):
   draft action Edit;
   draft action Activate optimized;
   draft action Discard;
   draft action Resume;
-  draft determine action Prepare;
+  draft determine action Prepare
+  {
+    validation validateVendor;
+    validation validateAmount;
+  }
 
-  -- Acciones de negocio:
-  action ( features : instance ) Approve
-    result [1] $self;
-  action ( features : instance ) Reject
-    parameter zs_reject_param
-    result [1] $self;
+  // Acciones de negocio:
+  action ( features : instance ) Approve result [1] $self;
+  action ( features : instance ) Reject parameter zs_reject_param result [1] $self;
 
-  -- Determinaciones (se ejecutan automáticamente):
+  // Determinaciones (se ejecutan automáticamente):
   determination setInitialStatus on modify { create; }
   determination recalculateTotals on modify { field NetAmount; }
 
-  -- Validaciones (se ejecutan en Save):
-  validation validateVendor   on save { create; update; }
-  validation validateAmount   on save { create; update; }
+  // Validaciones (se ejecutan en Save):
+  validation validateVendor on save { create; update; field Vendor; }
+  validation validateAmount on save { create; update; field NetAmount; }
 
-  -- Side effects (refresca campos en UI cuando otro cambia):
-  side effects {
+  // Side effects (refresca campos en UI cuando otro cambia):
+  side effects
+  {
     field Vendor affects field VendorName;
     field CompanyCode affects field Currency;
     action Approve affects field ApprovalStatus;
   }
 
-  -- Mapeo a tabla persistente:
-  mapping for zpurchord_ext corresponding including additional fields
+  // Mapeo a tabla persistente:
+  mapping for zpurchord corresponding
   {
-    PurchaseOrder   = po_number;
-    ApprovalStatus  = approval_status;
-    ApprovedBy      = approved_by;
+    PurchaseOrder      = po_number;
+    ApprovalStatus     = approval_status;
+    ApprovedBy         = approved_by;
     LocalLastChangedAt = local_last_changed_at;
-    LastChangedAt   = last_changed_at;
-    CreatedAt       = created_at;
+    LastChangedAt      = last_changed_at;
+    CreatedAt          = created_at;
   }
 }
 
-"-- Child entity (composición):
-define behavior for ZC_PurchaseOrderItem alias POItem
-persistent table zpurchord_item_ext
-draft table zdraft_purchord_item
+// Child entity (composición):
+define behavior for ZI_PurchaseOrderItem alias POItem
+persistent table zpurchord_itm
+draft table zpurchord_itm_d
+etag master LocalLastChangedAt
 lock dependent by _PurchaseOrder
 authorization dependent by _PurchaseOrder
-etag master LocalLastChangedAt
 {
-  field ( readonly ) PurchaseOrder, ItemNo;
   update;
   delete;
+  field ( readonly ) PurchaseOrder, ItemNo;
   field ( mandatory : create ) Material, Quantity;
-  validation validateMaterial on save { create; update; }
-  mapping for zpurchord_item_ext corresponding;
+  association _PurchaseOrder { with draft; }
+  validation validateMaterial on save { create; update; field Material; }
+  mapping for zpurchord_itm corresponding;
+}
+```
+
+### Behavior Definition de Projection
+
+```abap
+// BDEF projection: mismo nombre que ZC_PurchaseOrder (provider contract transactional_query)
+projection;
+strict ( 2 );
+use draft;
+use side effects;
+
+define behavior for ZC_PurchaseOrder alias PurchaseOrder
+use etag
+{
+  use create;
+  use update;
+  use delete;
+
+  use action Edit;
+  use action Activate;
+  use action Discard;
+  use action Resume;
+  use action Prepare;
+
+  use action Approve;
+  use action Reject;
+
+  use association _POItem { create; with draft; }
+}
+
+define behavior for ZC_PurchaseOrderItem alias POItem
+use etag
+{
+  use update;
+  use delete;
+  use association _PurchaseOrder { with draft; }
 }
 ```
 
 ### Behavior Implementation — Clase Global
 
 ```abap
-CLASS zbp_c_purchaseorder DEFINITION PUBLIC ABSTRACT FINAL
-  FOR BEHAVIOR OF ZC_PurchaseOrder.
+CLASS zbp_i_purchaseorder DEFINITION PUBLIC ABSTRACT FINAL
+  FOR BEHAVIOR OF ZI_PurchaseOrder.
 ENDCLASS.
-CLASS zbp_c_purchaseorder IMPLEMENTATION.
+CLASS zbp_i_purchaseorder IMPLEMENTATION.
 ENDCLASS.
 
 "-- Local handler class (dentro del global class include):
@@ -177,9 +228,9 @@ CLASS lhc_purchaseorder IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_instance_features.
-    READ ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
+    READ ENTITIES OF ZI_PurchaseOrder IN LOCAL MODE
       ENTITY PurchaseOrder FIELDS ( ApprovalStatus ) WITH CORRESPONDING #( keys )
-      RESULT DATA(lt_po) FAILED DATA(failed).
+      RESULT DATA(lt_po) FAILED failed.   "-- el parámetro implícito, no un local que lo tape
 
     result = VALUE #( FOR po IN lt_po
       ( %tky                           = po-%tky
@@ -193,24 +244,28 @@ CLASS lhc_purchaseorder IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD setInitialStatus.
-    MODIFY ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
+    MODIFY ENTITIES OF ZI_PurchaseOrder IN LOCAL MODE
       ENTITY PurchaseOrder UPDATE FIELDS ( ApprovalStatus )
         WITH VALUE #( FOR key IN keys ( %tky = key-%tky ApprovalStatus = 'P' ) )
-      REPORTED DATA(reported) FAILED DATA(failed).
+      REPORTED DATA(lt_upd_reported).
+    reported = CORRESPONDING #( DEEP lt_upd_reported ).
   ENDMETHOD.
 
   METHOD validateVendor.
-    READ ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
+    READ ENTITIES OF ZI_PurchaseOrder IN LOCAL MODE
       ENTITY PurchaseOrder FIELDS ( Vendor ) WITH CORRESPONDING #( keys )
-      RESULT DATA(lt_po) FAILED DATA(failed).
+      RESULT DATA(lt_po) FAILED failed.   "-- el parámetro implícito, no un local que lo tape
 
-    SELECT lifnr FROM lfa1
+    CHECK lt_po IS NOT INITIAL.  "-- FOR ALL ENTRIES con tabla vacía lee todo
+
+    "-- I_Supplier (released) en vez de LFA1 (notToBeReleased)
+    SELECT Supplier FROM I_Supplier
       FOR ALL ENTRIES IN @lt_po
-      WHERE lifnr = @lt_po-Vendor
+      WHERE Supplier = @lt_po-Vendor
       INTO TABLE @DATA(lt_vendors).
 
     LOOP AT lt_po INTO DATA(lo_po).
-      IF NOT line_exists( lt_vendors[ lifnr = lo_po-Vendor ] ).
+      IF NOT line_exists( lt_vendors[ Supplier = lo_po-Vendor ] ).
         APPEND VALUE #( %tky = lo_po-%tky ) TO failed-purchaseorder.
         APPEND VALUE #(
           %tky           = lo_po-%tky
@@ -224,17 +279,17 @@ CLASS lhc_purchaseorder IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD approve.
-    READ ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
+    READ ENTITIES OF ZI_PurchaseOrder IN LOCAL MODE
       ENTITY PurchaseOrder FIELDS ( ApprovalStatus ) WITH CORRESPONDING #( keys )
-      RESULT DATA(lt_po) FAILED DATA(failed).
+      RESULT DATA(lt_po) FAILED failed.   "-- el parámetro implícito, no un local que lo tape
 
-    MODIFY ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
+    MODIFY ENTITIES OF ZI_PurchaseOrder IN LOCAL MODE
       ENTITY PurchaseOrder UPDATE FIELDS ( ApprovalStatus ApprovedBy )
         WITH VALUE #( FOR po IN lt_po
           ( %tky           = po-%tky
             ApprovalStatus = 'A'
             ApprovedBy     = sy-uname ) )
-      REPORTED DATA(rep) FAILED DATA(fail).
+      REPORTED reported FAILED failed.   "-- los parámetros del handler: un local los perdería
 
     result = VALUE #( FOR po IN lt_po
       ( %tky    = po-%tky
@@ -242,11 +297,11 @@ CLASS lhc_purchaseorder IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD reject.
-    MODIFY ENTITIES OF ZC_PurchaseOrder IN LOCAL MODE
+    MODIFY ENTITIES OF ZI_PurchaseOrder IN LOCAL MODE
       ENTITY PurchaseOrder UPDATE FIELDS ( ApprovalStatus )
         WITH VALUE #( FOR key IN keys
           ( %tky = key-%tky ApprovalStatus = 'R' ) )
-      REPORTED DATA(rep) FAILED DATA(fail).
+      REPORTED reported FAILED failed.   "-- los parámetros del handler: un local los perdería
     result = VALUE #( FOR key IN keys ( %tky = key-%tky %param = VALUE #( ) ) ).
   ENDMETHOD.
 
@@ -266,7 +321,7 @@ ENDCLASS.
 
 ```abap
 "-- READ ENTITIES:
-READ ENTITIES OF ZC_PurchaseOrder
+READ ENTITIES OF ZI_PurchaseOrder
   ENTITY PurchaseOrder
     FIELDS ( PurchaseOrder Vendor NetAmount ApprovalStatus )
     WITH VALUE #( ( %key-PurchaseOrder = '4500000001' ) )
@@ -275,13 +330,13 @@ READ ENTITIES OF ZC_PurchaseOrder
   REPORTED DATA(lt_reported).
 
 "-- READ con ALL FIELDS:
-READ ENTITIES OF ZC_PurchaseOrder
+READ ENTITIES OF ZI_PurchaseOrder
   ENTITY PurchaseOrder ALL FIELDS
     WITH CORRESPONDING #( lt_keys )
   RESULT DATA(lt_result).
 
 "-- MODIFY — CREATE:
-MODIFY ENTITIES OF ZC_PurchaseOrder
+MODIFY ENTITIES OF ZI_PurchaseOrder
   ENTITY PurchaseOrder
     CREATE FIELDS ( Vendor CompanyCode DocumentDate )
       WITH VALUE #( ( %cid       = 'CID_1'
@@ -292,12 +347,12 @@ MODIFY ENTITIES OF ZC_PurchaseOrder
   FAILED   DATA(lt_failed)
   REPORTED DATA(lt_reported).
 COMMIT ENTITIES
-  RESPONSE OF ZC_PurchaseOrder
+  RESPONSE OF ZI_PurchaseOrder
   FAILED   DATA(lt_commit_failed)
   REPORTED DATA(lt_commit_reported).
 
 "-- MODIFY — EXECUTE ACTION:
-MODIFY ENTITIES OF ZC_PurchaseOrder
+MODIFY ENTITIES OF ZI_PurchaseOrder
   ENTITY PurchaseOrder
     EXECUTE Approve
       FROM VALUE #( ( %key-PurchaseOrder = '4500000001' ) )
@@ -307,7 +362,7 @@ MODIFY ENTITIES OF ZC_PurchaseOrder
 COMMIT ENTITIES.
 
 "-- DEEP INSERT (con composición hijo):
-MODIFY ENTITIES OF ZC_PurchaseOrder
+MODIFY ENTITIES OF ZI_PurchaseOrder
   ENTITY PurchaseOrder
     CREATE FIELDS ( Vendor CompanyCode )
       WITH VALUE #( ( %cid = 'PO1' Vendor = '1000' CompanyCode = '1000' ) )
@@ -338,7 +393,7 @@ ENDCLASS.
 CLASS ztc_po_behavior IMPLEMENTATION.
   METHOD class_setup.
     mo_env = cl_abap_behv_test_environment=>create(
-               entity_name = 'ZC_PURCHASEORDER' ).
+               entity_name = 'ZI_PURCHASEORDER' ).
   ENDMETHOD.
 
   METHOD class_teardown.
@@ -347,18 +402,19 @@ CLASS ztc_po_behavior IMPLEMENTATION.
 
   METHOD test_approve_changes_status.
     "-- Arrange: crear PO de prueba
-    mo_env->insert_test_data( EXPORTING instances = VALUE zpurchord_ext#(
-      ( po_number = '4500000001' approval_status = 'P' ) ) ).
+    DATA lt_po TYPE STANDARD TABLE OF zpurchord WITH EMPTY KEY.
+    lt_po = VALUE #( ( po_number = '4500000001' approval_status = 'P' ) ).
+    mo_env->insert_test_data( EXPORTING instances = lt_po ).
 
     "-- Act: ejecutar acción Approve via EML
-    MODIFY ENTITIES OF ZC_PurchaseOrder
+    MODIFY ENTITIES OF ZI_PurchaseOrder
       ENTITY PurchaseOrder EXECUTE Approve
         FROM VALUE #( ( %key-PurchaseOrder = '4500000001' ) )
       FAILED DATA(failed) REPORTED DATA(reported).
     COMMIT ENTITIES.
 
     "-- Assert: verificar estado
-    READ ENTITIES OF ZC_PurchaseOrder
+    READ ENTITIES OF ZI_PurchaseOrder
       ENTITY PurchaseOrder FIELDS ( ApprovalStatus )
         WITH VALUE #( ( %key-PurchaseOrder = '4500000001' ) )
       RESULT DATA(lt_result).
@@ -376,8 +432,8 @@ ENDCLASS.
 ```abap
 "-- Service Definition:
 @EndUserText.label: 'Purchase Order Service'
-define service ZUI_PurchaseOrder_O4 {
-  expose ZC_PurchaseOrder    as PurchaseOrder;
+define service ZUI_PurchaseOrder {
+  expose ZC_PurchaseOrder     as PurchaseOrder;
   expose ZC_PurchaseOrderItem as PurchaseOrderItem;
 }
 

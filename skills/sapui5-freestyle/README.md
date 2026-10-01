@@ -1,6 +1,6 @@
 # SAPUI5 FreeStyle Application Builder
 
-Skill para crear y extender aplicaciones SAPUI5 FreeStyle usando los MCP tools `ui5-mcp` y `fiori-mcp`.
+Skill para crear y extender aplicaciones SAPUI5 FreeStyle usando los servidores MCP `sap-ui5` y `sap-fiori-tools`.
 
 ## Auto-Trigger Keywords
 
@@ -40,8 +40,8 @@ i18n sapui5, accesibilidad sapui5, aria labels ui5, sapui5 typescript, sapui5 ja
 
 ## MCP Tools Used
 
-- `ui5-mcp`: get_guidelines, create_ui5_app, get_api_reference, run_ui5_linter, run_manifest_validation, get_version_info
-- `fiori-mcp`: list_functionality, get_functionality_details, execute_functionality, search_docs
+- `sap-ui5`: get_guidelines, create_ui5_app, get_api_reference, run_ui5_linter, run_manifest_validation, get_version_info
+- `sap-fiori-tools`: list_functionality, get_functionality_details, execute_functionality, search_docs
 
 ## Version
 

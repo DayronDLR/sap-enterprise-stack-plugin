@@ -9,7 +9,7 @@ Genera el mapeo de campos para migrar materiales de manufactura desde Oracle EBS
 Sistema legacy: Oracle EBS R12 (tabla MTL_SYSTEM_ITEMS_B).
 Objeto SAP: Material Master vistas: Basic, MRP1, MRP2, Storage, Purchasing, Accounting.
 Volumen: 8,500 materiales activos.
-Herramienta: LTMC (SAP S/4HANA Migration Cockpit).
+Herramienta: SAP S/4HANA Migration Cockpit (app *Migrate Your Data*, staging tables).
 ```
 
 **Output esperado del agente:**
@@ -31,7 +31,7 @@ Herramienta: LTMC (SAP S/4HANA Migration Cockpit).
   - MTART válido en tabla T134
   - MEINS válido en tabla T006
   - Deduplicación por MATNR
-- Plantilla LTMC: objeto `MM_MATERIAL` con hojas por vista
+- Plantilla de staging del objeto *Product* del Migration Cockpit, con hojas por vista
 - Reporte de calidad: % campos obligatorios llenos, distribución por MTART
 - Volumen de errores esperados: ~3-5% (materiales sin unidad de medida SAP equivalente)
 
@@ -48,7 +48,7 @@ Objeto: Saldos iniciales de todas las cuentas GL al 31/12/2024 (fecha de corte).
 Sociedad: 1000, Moneda: MXN, con moneda paralela USD.
 Volumen: 450 cuentas GL activas.
 Restricción: los débitos deben igual a créditos por cada período.
-Herramienta: FB01 / LTMC Financial Accounting Opening Balances.
+Herramienta: FB01 / Migration Cockpit, objeto de saldos de apertura FI.
 ```
 
 **Output esperado del agente:**
@@ -87,7 +87,7 @@ para cargar en SAP S/4HANA como Business Partners.
 El Excel tiene: RazonSocial, RFC, Calle, Ciudad, Estado, CP, Banco, CLABE.
 SAP espera: BP con rol FI-Vendor (FLVN00) + datos bancarios.
 Validaciones: RFC válido (México), CLABE 18 dígitos, datos obligatorios presentes.
-Herramienta destino: LTMC objeto BP_SUPPLIER.
+Herramienta destino: Migration Cockpit, objeto *Supplier*.
 ```
 
 **Output esperado del agente:**
@@ -125,7 +125,7 @@ def transform_suppliers(input_file: str, output_file: str):
             if pd.isna(row.get(field)) or str(row.get(field,'')) == '':
                 errors.append(f"Fila {idx+2}: Campo obligatorio vacío '{field}'")
 
-    # Transformación a plantilla LTMC
+    # Transformación a plantilla de staging del Migration Cockpit
     ltmc_df = pd.DataFrame({
         'BusinessPartnerName': df['RazonSocial'].str[:80],
         'TaxNumber1': df['RFC'].str.upper(),

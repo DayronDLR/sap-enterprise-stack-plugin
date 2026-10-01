@@ -25,12 +25,12 @@ que exista en el catálogo.
 
 ## Integración MCP — ADT (lectura sistema real, opcional)
 
-Si las variables `SAP_ADT_URL`/`SAP_ADT_USER`/`SAP_ADT_PASSWORD`/`SAP_ADT_CLIENT` están configuradas (ver `docs/ENVIRONMENT.md`), el MCP `las tools MCP de `sap-adt`` (paquete comunidad `@mcp-abap-adt/core`, no SAP oficial) permite leer objetos ABAP del SAP del cliente sin que el usuario pegue código.
+Si las variables `SAP_ADT_URL`/`SAP_ADT_USER`/`SAP_ADT_PASSWORD`/`SAP_ADT_CLIENT` están configuradas (ver `docs/ENVIRONMENT.md`), las tools MCP de `sap-adt` (paquete comunidad `@mcp-abap-adt/core`, no SAP oficial) permiten leer objetos ABAP del SAP del cliente sin que el usuario pegue código.
 
 **Reglas duras**:
 
 - **Sólo lectura**. Nunca usar este MCP para modificar objetos en el SAP — los cambios se proponen vía diff para que el desarrollador los aplique en ADT/Eclipse o BAS.
-- Antes de proponer un refactor o cambio sobre un objeto Z*, validarlo con la herramienta MCP de lectura correspondiente (`get_object_source` o equivalente).
+- Antes de proponer un refactor o cambio sobre un objeto Z*, leer su fuente actual con la tool del tipo de objeto: `mcp_sap_adt_GetClass`, `mcp_sap_adt_GetInterface`, `mcp_sap_adt_GetFunctionModule`, `mcp_sap_adt_GetInclude`, `mcp_sap_adt_GetTable`, `mcp_sap_adt_GetView` (CDS), `mcp_sap_adt_GetBehaviorDefinition`, `mcp_sap_adt_GetBehaviorImplementation`, `mcp_sap_adt_GetServiceDefinition`. Para ubicarlo y medir impacto: `mcp_sap_adt_SearchObject`, `mcp_sap_adt_GetWhereUsed`. No usar `GetTableContents`/`GetSqlQuery` para esto: leen datos del cliente.
 - Si la conexión falla o las variables no están configuradas, continuar trabajando sin ADT y avisar al usuario.
 
 **Gap conocido:** no hay MCP oficial SAP para validar release-state / Clean Core level de objetos ABAP (CL_*, TABL, DDLS, BDEF) ni para consultar ABAP feature matrix por release. Hoy se cubre con los skills `sap-abap` + `sap-abap-cds` y validación manual contra SAP Help Portal + ATC en el sistema del cliente. Registrado en `docs/MCP-ROADMAP.md`.
@@ -103,20 +103,22 @@ paquete en procesos masivos, nunca uno solo al final.
 ## CONVENTION NAMING (S/4HANA Clean)
 
 ```text
-CDS Interface View:   ZI_[Objeto]         → ZI_PurchaseOrder
-CDS Projection View:  ZC_[Objeto]         → ZC_PurchaseOrder
-CDS Analítico:        ZA_[Objeto]         → ZA_PurchaseOrderFact
-Behavior Definition:  misma raíz que CDS  → ZC_PurchaseOrder
-Behavior Impl Class:  ZBP_[CDS]           → ZBP_C_PurchaseOrder
-Service Definition:   ZUI_[Obj]_O4        → ZUI_PurchaseOrder_O4
-Service Binding:      ZUI_[Obj]_O4        → ZUI_PurchaseOrder_O4
-Draft Table:          ZDRAFT_[OBJETO]      → ZDRAFT_PURCHASEORDER
-Tabla Z:              Z[MOD][NOMBRE]       → ZPURCHORD_EXT
+CDS Interface View:   ZI_[Objeto]          → ZI_PurchaseOrder   (root view entity; BDEF managed)
+CDS Projection View:  ZC_[Objeto]          → ZC_PurchaseOrder   (BDEF projection)
+CDS Analítico:        ZA_[Objeto]          → ZA_PurchaseOrderFact
+Behavior Definition:  mismo nombre que la root entity → ZI_PurchaseOrder / ZC_PurchaseOrder
+Behavior Impl Class:  ZBP_I_[Objeto]       → ZBP_I_PurchaseOrder (pool del BDEF base)
+Service Definition:   ZUI_[Obj]            → ZUI_PurchaseOrder
+Service Binding:      ZUI_[Obj]_O4         → ZUI_PurchaseOrder_O4
+Tabla Z (≤ 16):       Z[MOD][NOMBRE]       → ZPURCHORD_EXT
+Draft Table (≤ 16):   [tabla persistente]_D → ZPURCHORD_D
 Report:               Z[MOD]_R_[NOMBRE]   → ZMM_R_PO_AGING
 Clase:                ZCL_[MOD]_[NOMBRE]  → ZCL_MM_PO_UTILS
 BAdI Impl:            ZBDI_[NOMBRE]       → ZBDI_PO_HEADER
 BAdI Spot:            ZEP_[PROCESO]       → ZEP_PO_PROCESSING
 ```
+
+> Límites DDIC/BDL: tabla ≤ 16 caracteres; CDS entity, BDEF y clase ≤ 30. Si el nombre no entra, se abrevia el objeto, nunca el sufijo `_D`.
 
 ## REGLAS DE DESARROLLO
 
@@ -129,7 +131,7 @@ BAdI Spot:            ZEP_[PROCESO]       → ZEP_PO_PROCESSING
 3. En S/4HANA: NUNCA acceder a tablas base si existe CDS View — usar CDS
 4. Para EML: SIEMPRE verificar FAILED y REPORTED después de MODIFY y COMMIT
 5. Para BAdIs: SIEMPRE usar Enhancement Framework, nunca User Exits en S/4HANA
-6. SIEMPRE CL_SALV_TABLE sobre CL_GUI_ALV_GRID para nuevos reports
+6. Reports clásicos (Standard ABAP): CL_SALV_TABLE sobre CL_GUI_ALV_GRID. En ABAP Cloud no hay ALV ni SAP GUI → CDS + Fiori Elements
 7. Para AMDP: SIEMPRE OPTIONS READ-ONLY si solo es lectura; incluir tablas en USING
 8. NUNCA hardcodear mandante — usar SY-MANDT o tabla con llave completa
 
@@ -148,66 +150,14 @@ commit cierra el cursor y el siguiente paquete termina en dump
 en el medio (un report). Indice secundario sobre los campos del `WHERE` + la clave
 de orden (aca `STATUS, ORDER_ID`).
 
-```abap
-"-- Patron: declara el job y el tamaño del paquete; los tipos del paquete, de
-"   los rangos OK/error y lv_last_id salen de la tabla del proceso real.
-CONSTANTS gc_job TYPE zjob_checkpoint-job_id VALUE 'ZORDER_BATCH'.
-DATA lv_chunk TYPE i VALUE 1000.
+> Patrón en **ABAP Cloud** (default del stack): **application job** (`IF_APJ_DT_EXEC_OBJECT` + `IF_APJ_RT_EXEC_OBJECT`), log `CL_BALI_*` (SLG1 on-prem y detalle del job), lock con `CL_ABAP_LOCK_OBJECT_FACTORY` (lock object propio). En Standard ABAP justificado: report con `ENQUEUE_<objeto>`/`BAL_*` — en ABAP Cloud esos FMs no están released. Clase completa: `sap-abap-standards/reference/job-masivo-cloud.md`.
 
-"-- 0) Reanudar desde el checkpoint: si se cancelo en el registro 47.000, arranca
-"--    en el siguiente. Sin fila (primera corrida) lv_last_id queda inicial.
-SELECT SINGLE last_id FROM zjob_checkpoint
-  WHERE job_id = @gc_job INTO @DATA(lv_last_id).
-
-DO.
-  "-- Campos explicitos (nunca SELECT *), ordenados por la clave
-  SELECT order_id, amount FROM zorder_in
-    WHERE status = 'NEW' AND order_id > @lv_last_id
-    ORDER BY order_id
-    INTO TABLE @DATA(lt_orders) UP TO @lv_chunk ROWS.
-  IF lt_orders IS INITIAL.
-    EXIT.
-  ENDIF.
-
-  "-- 1) Lock por registro: SOLO los bloqueados con exito se procesan; el resto
-  "--    se loguea y queda NEW para la proxima corrida
-  DATA(lr_ok) = VALUE rsdsselopt_t( ).
-  LOOP AT lt_orders INTO DATA(ls_order).
-    CALL FUNCTION 'ENQUEUE_EZORDER'
-      EXPORTING order_id = ls_order-order_id
-      EXCEPTIONS foreign_lock = 1 system_failure = 2 OTHERS = 3.
-    IF sy-subrc <> 0.
-      MESSAGE w001(zorder) WITH ls_order-order_id INTO DATA(lv_msg).
-      "-- BAL_LOG_MSG_ADD con sy-msg*: NUNCA saltar en silencio
-      CONTINUE.
-    ENDIF.
-    lr_ok = VALUE #( BASE lr_ok ( sign = 'I' option = 'EQ' low = ls_order-order_id ) ).
-  ENDLOOP.
-  lv_last_id = lt_orders[ lines( lt_orders ) ]-order_id.
-
-  TRY.
-      "-- 2) Una sola escritura por paquete (sin SELECT/MODIFY DB dentro del LOOP)
-      IF lr_ok IS NOT INITIAL.
-        UPDATE zorder_in SET status = 'DONE' WHERE order_id IN @lr_ok AND status = 'NEW'.
-      ENDIF.
-      "-- 3) Checkpoint en la misma LUW; MODIFY lo crea en la primera corrida
-      MODIFY zjob_checkpoint FROM @( VALUE zjob_checkpoint( job_id = gc_job last_id = lv_last_id ) ).
-      "-- 4) Log a SLG1 por paquete: si el job cae, lo hecho queda registrado
-      CALL FUNCTION 'BAL_DB_SAVE' EXPORTING i_save_all = abap_true EXCEPTIONS OTHERS = 1.
-      "-- 5) COMMIT por paquete (NO al final). Seguro: no hay cursor abierto
-      COMMIT WORK.
-    CATCH cx_sy_open_sql_db INTO DATA(lx_db).
-      ROLLBACK WORK.   "-- el paquete vuelve a NEW; el checkpoint no avanza
-      "-- log del error + BAL_DB_SAVE + COMMIT WORK (solo el log) + MESSAGE tipo E
-  ENDTRY.
-  CALL FUNCTION 'DEQUEUE_ALL'.
-ENDDO.
-
-"-- 6) Corrida completa: se borra el checkpoint para que la proxima tome los NEW
-"--    que quedaron atras por un lock
-DELETE FROM zjob_checkpoint WHERE job_id = @gc_job.
-COMMIT WORK.
-```
+1. **Reanudar** desde el checkpoint (`SELECT SINGLE last_id FROM zjob_checkpoint`): si cayó en el registro 47.000, sigue en el siguiente.
+2. **Leer el paquete** por clave: `WHERE status = 'NEW' AND order_id > @lv_last_id ORDER BY order_id … UP TO @gc_chunk ROWS`, campos explícitos.
+3. **Lock por registro** (`lo_lock->enqueue` en `TRY … CATCH cx_abap_foreign_lock`): sólo se procesan los bloqueados; el resto se loguea y queda NEW. Nunca saltar en silencio.
+4. **Una escritura por paquete** (`UPDATE … WHERE order_id IN @lr_ok AND status = 'NEW'`) + **checkpoint en la misma LUW** + log + `COMMIT WORK` por paquete (permitido en ABAP Cloud fuera de handlers RAP).
+5. **Error**: `ROLLBACK WORK` (el paquete vuelve a NEW, el checkpoint no avanza), log por 2ª conexión para que sobreviva y `RAISE EXCEPTION TYPE cx_apj_rt_content`.
+6. `dequeue_all` por paquete; al terminar, borrar el checkpoint para que la próxima corrida tome los NEW que quedaron atrás por un lock.
 
 ### Anti-patrones que NUNCA debes generar
 
@@ -233,14 +183,16 @@ SELECT order_id FROM zorder_in INTO TABLE @DATA(lt_p) PACKAGE SIZE 1000.
   COMMIT WORK.
 ENDSELECT.
 
-"-- ❌ MAL: ENQUEUE sin chequear SY-SUBRC
-CALL FUNCTION 'ENQUEUE_EZORDER' EXPORTING ...
+"-- ❌ MAL: enqueue sin tratar el lock ajeno (ABAP Cloud: la excepción ES el sy-subrc;
+"--    Standard ABAP: ENQUEUE_<objeto> sin chequear SY-SUBRC)
+lo_lock->enqueue( it_parameter = ... ).   "-- sin TRY/CATCH cx_abap_foreign_lock
 UPDATE ...  "-- el lock pudo NO haberse tomado
 ```
 
-### Paralelismo controlado (aRFC / SPTA)
+### Paralelismo controlado
 
-Para volumenes muy altos, usar `SPTA_PARA_PROCESS_START_2` o aRFC con destino paralelo:
+ABAP Cloud: `CL_ABAP_PARALLEL` (released). aRFC (`CALL FUNCTION … STARTING NEW TASK`) y
+`SPTA_PARA_PROCESS_START_2` son Standard ABAP — no disponibles en ABAP Cloud.
 
 - Particionar el universo por hash de la clave (no por rango → skew)
 - Limitar paralelismo al numero de WPs disponibles (`RZ12`)
@@ -251,34 +203,44 @@ Para volumenes muy altos, usar `SPTA_PARA_PROCESS_START_2` o aRFC con destino pa
 ### RAP bajo carga (lock master + EML)
 
 ```abap
-"-- En BDEF:
-managed implementation in class zbp_c_order unique;
+// BDEF base (managed va sobre la root view entity ZI_, nunca sobre la projection)
+managed implementation in class zbp_i_order unique;
 strict ( 2 );
 with draft;
 
-define behavior for ZC_Order alias Order
-  persistent table zorder_db
-  draft table zdraft_order
-  etag master LastChangedAt
-  lock master            "-- obligatorio para concurrencia
-  authorization master ( global )
+define behavior for ZI_Order alias Order
+persistent table zorder_db
+draft table zorder_d
+etag master LocalLastChangedAt
+lock master total etag LastChangedAt    // total etag: obligatorio con draft
+authorization master ( global )
+{
+  create; update; delete;
+  draft action Edit;
+  draft action Activate optimized;
+  draft action Discard;
+  draft action Resume;
+  draft determine action Prepare;
+}
+// Projection ZC_Order: projection; strict ( 2 ); use draft; … use action Edit/Activate/Discard/Resume/Prepare;
 ```
 
-En el handler EML, capturar `CX_ABAP_BEHV_CONFLICT` y reintentar con backoff
-solo para conflictos de etag, no para errores funcionales.
+Tras `MODIFY`/`COMMIT ENTITIES`, revisar `FAILED`: reintentar con backoff sólo si
+`%fail-cause` indica lock o conflicto de etag (valores en `IF_ABAP_BEHV`), nunca
+ante errores funcionales. Modelo completo: `sap-abap-standards/reference/rap-shared.md`.
 
 ### Idempotencia obligatoria
 
-- Interfaces inbound: SIEMPRE `SELECT SINGLE` antes de INSERT, o `MODIFY` con clave completa
+- Interfaces inbound: `INSERT` y tratar `sy-subrc = 4` (clave duplicada = ya procesado), o `MODIFY` con clave completa. **Nunca** `SELECT SINGLE` antes del `INSERT`: dos procesos ven «no existe» a la vez
 - Header `Idempotency-Key` en endpoints REST/OData expuestos
 - Tabla de mensajes procesados con TTL para deduplicar reintentos
 
 ### Observabilidad minima
 
-- SLG1 con `object/subobject` ESPECIFICO al modulo (no `ZGENERIC`)
+- Application log (`CL_BALI_*`, objeto creado en ADT; visible en SLG1 on-prem y en la app "Application Jobs") con `object/subobject` ESPECIFICO al modulo (no `ZGENERIC`)
 - Mensajes con severidad correcta: I=progreso, W=skip, E=dato invalido, A=corte
 - Cada paquete deja huella: `paquete N de M, registros procesados, latencia`
-- Si el proceso dura >30s, callback de progreso visible al usuario (SAPGUI: `SAPGUI_PROGRESS_INDICATOR`)
+- Si el proceso dura >30s: correrlo como application job; el progreso se ve en su log (`SAPGUI_PROGRESS_INDICATOR` sólo en Standard ABAP)
 
 > Si tu codigo va a procesar masivo o ejecutarse en paralelo y NO incluye estos
 > patrones, el Gate 1 (abap-smell-scan) y el Gate 3 (QA + NFR) van a bloquear

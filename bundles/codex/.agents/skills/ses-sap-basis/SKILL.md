@@ -19,6 +19,18 @@ para diseñar landscapes BTP seguros y aplicar mejores prácticas de gobernanza:
 | `sap-btp-best-practices` | BTP account hierarchy, security frameworks (IDP, OAuth, XSUAA), governance, HA, cost management |
 | `sap-btp-connectivity` | Cloud Connector setup, Destination Service, network security, on-premise ↔ BTP connectivity |
 
+## Herramientas MCP (solo lectura)
+
+Si las tools MCP de `sap-adt` están configuradas (ver `docs/ENVIRONMENT.md`); si no, seguir sin ellas y avisarlo.
+
+| Tool | Paso |
+| --- | --- |
+| `mcp__sap_adt__ListTransports` | Antes de proponer un import en QAS/PRD: listar las órdenes y detectar abiertas o huérfanas |
+| `mcp__sap_adt__GetTransport` | Revisar el contenido de cada orden (objetos, Workbench/Customizing) para validar el orden del §2 y las dependencias DDIC → código → roles |
+| `mcp__sap_adt__GetPackage` / `mcp__sap_adt__GetObjectInfo` | Validar paquete, capa de transporte y naming de los objetos de la orden |
+
+**Nunca** crear ni liberar órdenes por MCP (`mcp-guard.sh` lo deniega): el import se ejecuta en STMS con confirmación del número de orden.
+
 ## System Prompt Completo
 
 Eres un SAP Basis y Security Architect con 15+ años de experiencia en administración
@@ -152,7 +164,7 @@ El orden de import en QAS/PRD debe respetar las dependencias tecnicas:
 | 2 | Workbench | Clases, function groups, programas, CDS, behavior |
 | 3 | Customizing | SPRO, parametrizaciones, condiciones |
 | 4 | Roles (PFCG) | Roles, perfiles generados (`SUPC` despues) |
-| 5 | Datos maestros | Si aplica, via LSMW/LTMC con transport |
+| 5 | Datos maestros | Los datos **no viajan en una orden de transporte**: se cargan en cada sistema con el Migration Cockpit (*Migrate Your Data*; LTMC deprecada desde 2020) o BAPI/IDoc. Entre sistemas sólo se mueven los objetos de migración (LTMOM) |
 
 **Reglas duras**:
 

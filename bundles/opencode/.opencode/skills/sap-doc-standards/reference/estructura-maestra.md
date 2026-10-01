@@ -164,7 +164,7 @@ RAP BO: ZBO_PURCHASE_ORDER
 ├── Behavior Definition  : ZC_PURCHASEORDER.bdef    (managed, draft, approve)
 ├── Behavior Implementation: ZBP_C_PurchaseOrder
 ├── Access Control       : ZI_PurchaseOrder.dcl
-└── Draft Table          : ZDRAFT_PURCHORD
+└── Draft Table          : ZPURCHORD_D
 ```
 
 **CDS Interface View:**

@@ -32,12 +32,15 @@ versión LTS explícita · sin APIs deprecadas · `growing` en listas largas.
 
 Archivos a crear (en orden):
 
-1. CDS Interface View (`ZI_<Entidad>.ddls.asddls`)
-2. CDS Projection View (`ZC_<Entidad>.ddls.asddls`)
-3. Behavior Definition (`ZI_<Entidad>.ddlx.asbdef`)
-4. Behavior Implementation (`ZBP_<Entidad>.clas.abap`)
-5. Service Definition (`ZSD_<Nombre>.srvd.asddls`)
-6. Service Binding (`ZSB_<Nombre>_V4.srvb.asddls`)
+1. CDS Interface View (`zi_<entidad>.ddls.asddls`)
+2. CDS Projection View (`zc_<entidad>.ddls.asddls`)
+3. Behavior Definition (`zi_<entidad>.bdef.asbdef`) + projection (`zc_<entidad>.bdef.asbdef`)
+4. Behavior Implementation (`zbp_i_<entidad>.clas.abap` + `zbp_i_<entidad>.clas.locals_imp.abap` — handler y saver locales)
+5. Metadata Extension UI (`zc_<entidad>.ddlx.asddlxs`)
+6. Service Definition (`zui_<nombre>.srvd.srvdsrv`)
+7. Service Binding (`zui_<nombre>_o4.srvb.xml` — sin fuente: en abapGit es sólo XML; se crea y publica en ADT)
+
+> Extensiones según la serialización de abapGit (`src/objects/zcl_abapgit_object_*`), en minúscula. El RAP de fondo lo diseña `/sap-abap`; esta ronda sólo cubre lo que la UI necesita.
 
 Después de la Ronda 1: verificar que el servicio OData es accesible.
 

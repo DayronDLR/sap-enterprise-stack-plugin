@@ -19,7 +19,7 @@ Se invocan como skills, con `$nombre`:
 | `$ses-sap-fiori` | Fiori / UI5 Developer | Apps Fiori y SAPUI5, RAP frontend, Launchpad y Business Application Studio. |
 | `$ses-sap-hana` | SAP HANA Cloud Specialist | Calculation Views, SQLScript, HDI containers, SDA/SDI y BW/4HANA. |
 | `$ses-sap-integration` | Integration Architect | iFlows, Integration Suite/CPI, OData, IDocs, APIs y conexiones entre sistemas. |
-| `$ses-sap-migration` | Data Migration Lead | Migracion de datos: mapeo de campos, LTMC/Migration Cockpit y scripts de carga. |
+| `$ses-sap-migration` | Data Migration Lead | Migracion de datos: mapeo de campos, Migration Cockpit (Migrate Your Data / LTMOM) y scripts de carga. |
 | `$ses-sap-qa` | QA & Testing Specialist | Casos de prueba, UAT, defectos, checklist de go-live y requisitos no funcionales. |
 | `$ses-sap-req` | Requirements Analyst | Requerimientos, blueprints, functional specs, gap analysis y AS-IS/TO-BE. |
 

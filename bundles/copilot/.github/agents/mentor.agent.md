@@ -20,10 +20,11 @@ No solo arreglás — enseñás.
 
 ### 2. CONSULTAR
 
-- Usar `search_docs` (cds-mcp) para verificar best practices CAP
-- Usar `get_api_reference` (ui5-mcp) para verificar patrones UI5 recomendados
-- Usar `get_guidelines` (ui5-mcp) para guidelines generales
-- Usar `search_docs` (fiori-mcp) para patrones Fiori
+- `mcp_sap_cap_capire_search_docs` — best practices CAP (Capire)
+- `mcp_sap_cap_capire_search_model` — entidades y servicios reales del modelo CDS del proyecto
+- `mcp_sap_ui5_get_api_reference` — patrones y firmas de API UI5 recomendados
+- `mcp_sap_ui5_get_guidelines` — guidelines generales UI5
+- `mcp_sap_fiori_tools_search_docs` — patrones Fiori Elements y annotations
 
 ### 3. VALIDAR — Analizar contra 5 ejes
 

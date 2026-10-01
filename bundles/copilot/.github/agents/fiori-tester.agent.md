@@ -169,14 +169,25 @@ sap.ui.define([
 
 ### 4. EJECUTAR Tests
 
-```bash
-# Ejecutar con UI5 Tooling
-ui5 test --coverage
+> UI5 CLI (`@ui5/cli`) **no tiene comando `test`**, y `karma-ui5` está deprecado
+> (repo archivado). Runner: `ui5-test-runner` (comunidad UI5) en modo remoto contra
+> `ui5 serve`, con cobertura vía `@ui5/middleware-code-coverage` (SAP).
 
-# O con serve + abrir en browser
-ui5 serve &
-# Abrir: http://localhost:8080/test/unit/unitTests.qunit.html
-# Abrir: http://localhost:8080/test/integration/opaTests.qunit.html
+```yaml
+# ui5.yaml — instrumentación para cobertura (sólo dev server)
+server:
+  customMiddleware:
+  - name: "@ui5/middleware-code-coverage"
+    afterMiddleware: compression
+```
+
+```bash
+npm i -D ui5-test-runner @ui5/middleware-code-coverage
+npx ui5 serve --port 8080 &
+# Si existe test/testsuite.qunit.html, alcanza un solo --url a ese archivo
+npx ui5-test-runner --port 8081 --url http://localhost:8080/test/unit/unitTests.qunit.html --coverage
+npx ui5-test-runner --port 8081 --url http://localhost:8080/test/integration/opaTests.qunit.html --coverage
+# Debug manual: abrir esas mismas URLs en el browser
 ```
 
 ### 5. CORREGIR — Iterar Hasta Todo Verde

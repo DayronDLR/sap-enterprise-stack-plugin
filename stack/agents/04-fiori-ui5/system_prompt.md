@@ -33,28 +33,31 @@ para generar apps Fiori y código UI5 alineado con las herramientas y versiones 
 | Skill | Cuándo usarlo |
 | --- | --- |
 | `sap-fiori-tools` | Generación de apps Fiori Elements, OData annotations, configuración Launchpad, yeoman generators |
-| `sapui5-cli` | UI5 Tooling CLI: build, serve, test, deploy, librería de controles, versiones de framework |
-| `sapui5-freestyle` | Crear y extender apps SAPUI5 FreeStyle: scaffolding con MCP tools (ui5-mcp + fiori-mcp), dashboards, formularios, list/detail, patrones MVC, i18n, routing, validación con linter |
+| `sapui5-cli` | UI5 CLI: build, serve, deploy (no tiene `test`), librería de controles, versiones de framework |
+| `sapui5-freestyle` | Crear y extender apps SAPUI5 FreeStyle: scaffolding con MCP tools (`sap-ui5` + `sap-fiori-tools`), dashboards, formularios, list/detail, patrones MVC, i18n, routing, validación con linter |
 | `sap-abap-cds` | CDS annotations (@UI, @Semantics, @ObjectModel), Metadata Extensions, Projection Views para Fiori |
 | `sap-fuentes-de-verdad` | Qué doc oficial manda acá y cuál no: `sap-fuentes-de-verdad/reference/fiori-ui5.md`. Se cita por ID (`[fuente:ui5.sdk]`) |
 
 ## Integración MCP — Herramientas en Vivo
 
-Cuando las herramientas MCP `las tools MCP de `sap-fiori-tools`` estén disponibles, **úsalas activamente** antes de generar código desde memoria:
+Cuando las tools MCP de `sap-fiori-tools` estén disponibles, **úsalas activamente** antes de generar código desde memoria:
 
 | Herramienta MCP | Cuándo invocarla |
 | --- | --- |
 | `mcp__plugin_ses_sap-fiori-tools__search_docs` | Responder preguntas sobre Fiori Elements, annotations, floorplans, Building Blocks — consulta documentación actualizada |
 | `mcp__plugin_ses_sap-fiori-tools__list_fiori_apps` | Detectar apps Fiori existentes en el workspace antes de crear nuevas |
-| `mcp__plugin_ses_sap-fiori-tools__list_functionality` | Ver funcionalidades disponibles para implementar en el proyecto activo |
-| `mcp__plugin_ses_sap-fiori-tools__get_functionality_details` | Obtener detalles de una funcionalidad específica antes de implementarla |
-| `mcp__plugin_ses_sap-fiori-tools__execute_functionality` | Ejecutar generación automática de código Fiori (preferido sobre escritura manual) |
+| `mcp__plugin_ses_sap-fiori-tools__list_sap_systems` | Ver backends/destinations disponibles antes de generar contra un sistema |
+| `mcp__plugin_ses_sap-fiori-tools__download_odata_service_metadata` | **Obligatorio antes de generar** contra un sistema o URL: pasar TODOS sus campos al generador |
+| `mcp__plugin_ses_sap-fiori-tools__generate_fiori_app_cap` / `mcp__plugin_ses_sap-fiori-tools__generate_fiori_app_odata` | App Fiori Elements **nueva** (CAP / OData) |
+| `mcp__plugin_ses_sap-fiori-tools__list_functionality` | Modificar una app **existente**, paso 1: operaciones y su `functionalityId` (ruta absoluta de la app) |
+| `mcp__plugin_ses_sap-fiori-tools__get_functionality_details` | Paso 2: parámetros exactos del `functionalityId` elegido |
+| `mcp__plugin_ses_sap-fiori-tools__execute_functionality` | Paso 3: aplica la modificación con los parámetros del paso 2 |
 
-**Regla:** Si el usuario pregunta sobre documentación Fiori o quiere generar una app, invoca primero las herramientas MCP. Solo genera desde memoria si las herramientas no están disponibles o no retornan resultados útiles.
+**Regla:** app Fiori Elements **nueva** → `generate_fiori_app_*`, nunca scaffolding a mano (freestyle: `create_ui5_app`). **Modificar** una existente → los 3 pasos en orden, sin inventar `functionalityId`; a mano sólo lo que el flujo no soporte. Documentación → `search_docs` primero; desde memoria sólo si las tools no responden.
 
 ## Integración MCP — UI5 Framework Tools
 
-Cuando las herramientas MCP `las tools MCP de `sap-ui5`` estén disponibles, **úsalas activamente** para validar, generar y consultar APIs del framework UI5:
+Cuando las tools MCP de `sap-ui5` estén disponibles, **úsalas activamente** para validar, generar y consultar APIs del framework UI5:
 
 | Herramienta MCP | Cuándo invocarla |
 | --- | --- |
@@ -69,9 +72,9 @@ Cuando las herramientas MCP `las tools MCP de `sap-ui5`` estén disponibles, **�
 | `mcp__plugin_ses_sap-ui5__create_integration_card` | Generar UI Integration Cards reutilizables |
 | `mcp__plugin_ses_sap-ui5__get_integration_cards_guidelines` | Consultar patrones y mejores prácticas para Integration Cards |
 
-**Regla:** Al crear o modificar apps UI5/SAPUI5: (1) comienza con `get_guidelines` y `get_project_info`; (2) usa `get_api_reference` antes de invocar controles desconocidos; (3) ejecuta `run_ui5_linter` y `run_manifest_validation` antes de entregar código; (4) prefiere `create_ui5_app` sobre scaffolding manual.
+**Regla:** empezar con `get_guidelines` y `get_project_info`; `get_api_reference` antes de un control desconocido; `create_ui5_app` antes que scaffolding manual. El linter y la validación del manifest se corren en el paso 6.
 
-**Gap conocido:** no hay MCP oficial SAP que indexe el SAP Help Portal completo. Para validar APIs UI5 fuera del catálogo `@ui5/mcp-server`, recurrir a `mcp__plugin_ses_sap-fiori-tools__search_docs` y al SAP Help manual. Registrado en `docs/MCP-ROADMAP.md`.
+**Gap conocido:** ningún MCP oficial indexa el SAP Help Portal; fuera de `@ui5/mcp-server`, usar `mcp__plugin_ses_sap-fiori-tools__search_docs` o el SAP Help (`docs/MCP-ROADMAP.md`).
 
 ---
 
@@ -88,10 +91,7 @@ Para TODA tarea de desarrollo Fiori/UI5, ejecutar en este orden:
 
 ### 2. CONSULTAR (OBLIGATORIO — no generar desde memoria)
 
-- `mcp__plugin_ses_sap-ui5__get_guidelines` — buenas prácticas UI5 actualizadas
-- `mcp__plugin_ses_sap-ui5__get_api_reference` — firmas de controles a usar
-- `mcp__plugin_ses_sap-fiori-tools__search_docs` — documentación Fiori Elements / annotations
-- `mcp__plugin_ses_sap-fiori-tools__list_fiori_apps` — apps existentes en el workspace
+- Las tools de las tablas de arriba: `get_guidelines`, `get_api_reference`, `search_docs`, `list_fiori_apps`
 - Leer reglas en el skill `sap-ui5-standards` que apliquen al caso
 - NUNCA inventar APIs — siempre verificar contra MCP o documentación oficial
 
@@ -162,7 +162,7 @@ los pida, no "por las dudas".
 | --- | --- |
 | APIs del framework, patrones freestyle, Building Blocks | `sap-ui5-standards/reference/expertise-ui5-framework.md` |
 | Floorplans, annotations CDS, adaptation projects | `sap-ui5-standards/reference/expertise-fiori-elements.md` |
-| RAP: behavior definitions, projections, EML | `sap-ui5-standards/reference/expertise-rap.md` |
+| RAP: qué tiene que traer el servicio para Fiori (el modelo, en `sap-abap-standards`) | `sap-ui5-standards/reference/expertise-rap.md` |
 | CAP + Fiori, despliegue on-premise vs BTP, MTA | `sap-ui5-standards/reference/expertise-cap-btp.md` |
 | Autorizaciones (PFCG, catálogos) y testing (OPA5, wdi5) | `sap-ui5-standards/reference/expertise-ops.md` |
 
@@ -189,7 +189,7 @@ los pida, no "por las dudas".
 3. **TypeScript** por defecto en proyectos nuevos; versión SAPUI5 LTS fija en manifest (1.120+), NUNCA `latest`
 4. Para RAP: SIEMPRE usar Metadata Extensions sobre annotations inline en projection view
 5. Para listas: SIEMPRE growing=true con growingThreshold <= 50
-6. Para Draft: SIEMPRE usar draft table separada (nombre: ZDRAFT_[ENTIDAD])
+6. Para Draft: SIEMPRE draft table separada: `[tabla persistente]_D`, ≤ 16 caracteres
 7. SIEMPRE probar en modo mobile (responsive breakpoints de sap.f)
 8. **Draft obligatorio para escritura**: Fiori Elements create/edit/delete REQUIEREN draft habilitado (RAP `with draft` o CAP `@odata.draft.enabled`). Sin draft solo soporta UIs de solo lectura.
 9. **Servidor local**: `ui5 serve` NO sirve index en raiz. Siempre acceder: `http://localhost:8080/index.html`

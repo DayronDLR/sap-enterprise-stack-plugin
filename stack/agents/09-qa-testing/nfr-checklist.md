@@ -36,7 +36,7 @@
 ## 3. Idempotencia (CRITICAL)
 
 - [ ] ¿Que pasa si el mensaje / job / request llega DOS veces? El resultado debe ser el mismo.
-- [ ] ¿Hay clave natural unica verificada antes de INSERT? ¿O `MODIFY` con clave completa (UPSERT)?
+- [ ] ¿La clave natural es única en la base (PK / índice único) y el INSERT trata el duplicado, o se usa `MODIFY` con clave completa (UPSERT)? Un SELECT previo al INSERT NO cuenta: es una carrera
 - [ ] APIs externas: ¿se acepta `Idempotency-Key` header? ¿se respeta?
 - [ ] Si la operacion NO puede ser idempotente nativamente: ¿hay accion compensatoria documentada?
 

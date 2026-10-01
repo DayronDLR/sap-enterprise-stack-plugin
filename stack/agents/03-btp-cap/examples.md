@@ -77,13 +77,20 @@ module.exports = class TravelApprovalService extends cds.ApplicationService {
       const { ID } = req.params[0];
       // Llamar Remote Service S/4HANA
       const S4HR = await cds.connect.to('S4HANA_HR');
-      const { manager } = await S4HR.get(
-        `/EmployeeProfile(PersonWorkAgreement='${req.user.id}')?$select=ManagerID`
-      );
-      await UPDATE('travel.approval.TravelRequests', ID)
-        .with({ status: 'P', manager });
-      // Emitir evento para notificación
-      await this.emit('TravelSubmitted', { requestId: ID, managerId: manager });
+      // CQL parametriza la clave (nada de interpolar el usuario en la URL OData)
+      const perfil = await S4HR.run(
+        SELECT.one.from('EmployeeProfile').columns('ManagerID')
+          .where({ PersonWorkAgreement: req.user.id }));
+      const manager = perfil?.ManagerID;
+      if (!manager) return req.reject(422, 'MANAGER_NOT_FOUND');
+      // Transición atómica: sólo desde borrador. Dos submits concurrentes, o uno
+      // posterior a una aprobación, no devuelven el registro a 'P'.
+      const n = await UPDATE('travel.approval.TravelRequests')
+        .set({ status: 'P', manager }).where({ ID, status: 'D' });
+      if (n !== 1) return req.reject(409, 'TRAVEL_STATE_CHANGED');
+      // Notificar recién cuando la tx commitea: si hace rollback, no sale el evento
+      req.on('succeeded', () => this.emit('TravelSubmitted', { requestId: ID, managerId: manager })
+        .catch((err) => cds.log('travel').error('No se pudo emitir TravelSubmitted', { ID, err: err.message })));
       return this.read('TravelRequests', ID);
     });
     return super.init();

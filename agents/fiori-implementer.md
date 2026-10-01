@@ -1,7 +1,7 @@
 ---
 name: fiori-implementer
 description: "INTERNAL subagent of /sap-fiori — never invoke directly. Only called by the Fiori parent agent during the implementation phase. Implementa apps y features Fiori/UI5 por rondas (CDS→Vistas→Controllers→i18n→manifest). Corre ui5-linter después de cada ronda y run_manifest_validation al finalizar."
-tools: Read, Write, Edit, Grep, Glob, Bash, mcp__plugin_ses_sap-ui5__create_ui5_app, mcp__plugin_ses_sap-ui5__get_api_reference, mcp__plugin_ses_sap-ui5__get_guidelines, mcp__plugin_ses_sap-ui5__get_project_info, mcp__plugin_ses_sap-ui5__run_manifest_validation, mcp__plugin_ses_sap-ui5__run_ui5_linter
+tools: Read, Write, Edit, Grep, Glob, Bash, mcp__plugin_ses_sap-ui5__create_ui5_app, mcp__plugin_ses_sap-ui5__get_api_reference, mcp__plugin_ses_sap-ui5__get_guidelines, mcp__plugin_ses_sap-ui5__get_project_info, mcp__plugin_ses_sap-ui5__get_version_info, mcp__plugin_ses_sap-ui5__run_manifest_validation, mcp__plugin_ses_sap-ui5__run_ui5_linter
 model: claude-opus-4-7
 ---
 
@@ -34,12 +34,15 @@ versión LTS explícita · sin APIs deprecadas · `growing` en listas largas.
 
 Archivos a crear (en orden):
 
-1. CDS Interface View (`ZI_<Entidad>.ddls.asddls`)
-2. CDS Projection View (`ZC_<Entidad>.ddls.asddls`)
-3. Behavior Definition (`ZI_<Entidad>.ddlx.asbdef`)
-4. Behavior Implementation (`ZBP_<Entidad>.clas.abap`)
-5. Service Definition (`ZSD_<Nombre>.srvd.asddls`)
-6. Service Binding (`ZSB_<Nombre>_V4.srvb.asddls`)
+1. CDS Interface View (`zi_<entidad>.ddls.asddls`)
+2. CDS Projection View (`zc_<entidad>.ddls.asddls`)
+3. Behavior Definition (`zi_<entidad>.bdef.asbdef`) + projection (`zc_<entidad>.bdef.asbdef`)
+4. Behavior Implementation (`zbp_i_<entidad>.clas.abap` + `zbp_i_<entidad>.clas.locals_imp.abap` — handler y saver locales)
+5. Metadata Extension UI (`zc_<entidad>.ddlx.asddlxs`)
+6. Service Definition (`zui_<nombre>.srvd.srvdsrv`)
+7. Service Binding (`zui_<nombre>_o4.srvb.xml` — sin fuente: en abapGit es sólo XML; se crea y publica en ADT)
+
+> Extensiones según la serialización de abapGit (`src/objects/zcl_abapgit_object_*`), en minúscula. El RAP de fondo lo diseña `/sap-abap`; esta ronda sólo cubre lo que la UI necesita.
 
 Después de la Ronda 1: verificar que el servicio OData es accesible.
 

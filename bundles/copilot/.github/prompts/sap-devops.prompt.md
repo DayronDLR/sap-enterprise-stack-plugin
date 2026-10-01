@@ -27,6 +27,21 @@ del ciclo de vida del software SAP.
 - SAP BTP: MTA (Multi-Target Application), cf CLI, BTP CLI
 - SAP Cloud ALM: Requirements, Implementation, Operations
 
+## Integración MCP — ADT (lectura del sistema real, opcional)
+
+Si las tools MCP de `sap-adt` están configuradas (ver `docs/ENVIRONMENT.md`; paquete de la comunidad, no SAP oficial), dan contexto real del DEV antes de diseñar o diagnosticar un pipeline. **Sólo lectura**: `mcp-guard.sh` deniega crear, actualizar y activar; una orden se crea, libera o importa en `SE09`/`SE10`/`STMS`, nunca desde el agente.
+
+| Tool | Uso en DevOps |
+| --- | --- |
+| `mcp_sap_adt_ListTransports` | Órdenes abiertas o liberadas antes de planificar una release o un movimiento a QAS |
+| `mcp_sap_adt_GetTransport` | Objetos y tareas de una orden: que no lleve `$TMP`, estándar SAP ni objetos de otro paquete |
+| `mcp_sap_adt_GetPackage` / `mcp_sap_adt_GetPackageContents` | Paquete, capa de transporte y contenido real que el repo gCTS/abapGit debe reflejar |
+| `mcp_sap_adt_GetInactiveObjects` | Gate previo a liberar: ningún objeto inactivo |
+| `mcp_sap_adt_RunUnitTest` + `mcp_sap_adt_GetUnitTestResult` | ABAP Unit de una clase de la orden cuando no hay pipeline con Piper (ejecuta código: sólo DEV/QAS) |
+| `mcp_sap_adt_GetObjectInfo` / `mcp_sap_adt_GetWhereUsed` | Impacto de un objeto antes de un hotfix o del rollback de una orden |
+
+Si la conexión falla o no hay variables, seguir sin ADT y decirlo en la respuesta.
+
 ## ARQUITECTURA DE PIPELINES SAP
 
 ### Pipeline CI/CD para ABAP (gCTS + Jenkins)
@@ -101,18 +116,29 @@ jobs:
       - name: Deploy to BTP
 ```
 
-### 3. .apackage.json (abapGit)
+### 3. .abapgit.xml (abapGit)
 
-```json
-{
-  "name": "Z_[PACKAGE]",
-  "description": "[Descripción]",
-  "git": {
-    "url": "https://github.com/[org]/[repo]",
-    "branch": "main"
-  }
-}
+Metadatos del repositorio abapGit, en la raíz del repo. Lo genera abapGit al crear el repo online: se versiona, no se escribe a mano desde cero (docs.abapgit.org → Repository Settings).
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+ <asx:values>
+  <DATA>
+   <MASTER_LANGUAGE>S</MASTER_LANGUAGE>
+   <STARTING_FOLDER>/src/</STARTING_FOLDER>
+   <FOLDER_LOGIC>PREFIX</FOLDER_LOGIC>
+   <IGNORE>
+    <item>/.gitignore</item>
+    <item>/README.md</item>
+   </IGNORE>
+  </DATA>
+ </asx:values>
+</asx:abap>
 ```
+
+- `FOLDER_LOGIC`: `PREFIX` (el subpaquete lleva el nombre del padre como prefijo), `FULL` o `MIXED`. `MASTER_LANGUAGE` no se puede cambiar después.
+- Dependencias entre repos ABAP: **APACK** — una clase en el paquete raíz que implementa `ZIF_APACK_MANIFEST` (`IF_APACK_MANIFEST` en BTP ABAP Environment); abapGit serializa `.apack-manifest.xml` (no hay un manifiesto JSON de paquete).
 
 ### 4. ATC Check Profile
 
@@ -163,20 +189,38 @@ main ─────────────────────────
 ATC (ABAP Test Cockpit) debe correr **automaticamente** en CI y **bloquear** el merge si hay findings priority 1 o 2.
 
 ```yaml
-# Ejemplo: ATC en pipeline (Jenkins / Azure DevOps / GitHub Actions)
-- name: ATC Check
+# GitHub Actions — dos capas: abaplint offline + ATC/ABAP Unit remoto
+- name: abaplint (offline, sin sistema SAP)
+  run: npx @abaplint/cli abaplint.json          # exit != 0 si hay issues
+
+# ATC remoto on-prem: S/4HANA 2020+ con gCTS y SAP Note 3159798. Usa la API ADT
+# (/sap/bc/adt/atc/worklists + /runs) y deja ATCResults.xml (checkstyle; prioridad
+# 1 y 2 → severity="error"). abapEnvironmentRunATCCheck es SOLO para BTP ABAP Environment.
+- name: ATC + ABAP Unit (gCTS)
+  uses: SAP/project-piper-action@ab454f666891a05a3fee3c631e72e1412ba28105 # v1.27.1 (repo archivado)
+  with:
+    step-name: gctsExecuteABAPQualityChecks
+    piper-version: v1.529.0
+    flags: --scope remoteChangedObjects --commit ${{ github.sha }} --atcVariant ${{ vars.ATC_VARIANT }}
+  env:
+    PIPER_host: ${{ secrets.SAP_HOST }}
+    PIPER_client: ${{ secrets.SAP_CLIENT }}
+    PIPER_repository: ${{ vars.GCTS_REPOSITORY }}
+    PIPER_username: ${{ secrets.SAP_USER }}
+    PIPER_password: ${{ secrets.SAP_PASSWORD }}
+
+- name: Bloquear si hay findings de prioridad 1/2
   run: |
-    # Via abapci o abaplint para offline; ATC remoto via /AIE/CRM_ATC_QUERY o RFC
-    abaplint                  # local — falla si findings priority 1/2
-    # O remoto: invocar TR-based ATC en sistema DEV con check variant del proyecto
-  fail_on:
-    - priority: 1   # CRITICAL — siempre bloquea
-    - priority: 2   # HIGH — bloquea salvo justificacion en exemption file
+    if grep -q 'severity="error"' ATCResults.xml; then
+      echo "::error::ATC con findings de prioridad 1/2"; exit 1
+    fi
 ```
+
+Sin gCTS en DEV no hay step Piper on-prem para ATC: invocar la API ADT de ATC directamente (mismos endpoints) o correr el ATC del sistema (transacción `ATC`, variante central) como check de liberación de la orden (`SE09`/`SE10`). Template completo: `.github/workflows/optional/sap-atc-remote.yml`.
 
 **Reglas duras**:
 
-- Check variant del cliente cargada en sistema DEV — versionada en repo (`config/atc-variant.json`)
+- Check variant del cliente mantenida en el sistema de chequeo central (transacción `ATC` → Setup); en el repo se versiona su definición para revisión (`config/atc-variant.json`)
 - Exemptions documentadas en `atc-exemptions.json` con motivo + aprobador + fecha de revision
 - NUNCA mover a QAS un TR con findings priority 1 abiertos
 - Re-baseline de exemptions cada 3 meses
@@ -209,28 +253,28 @@ gCTS (Git-enabled Change and Transport System) reemplaza el flujo TR clasico cua
 
 1. Developer crea TR en DEV → gCTS lo serializa a Git commit en feature branch
 2. PR/MR a `release/QAS` → CI corre ATC + tests + abaplint
-3. Merge → gCTS aplica el commit en sistema QAS (import automatico)
-4. Tras UAT firmado: merge a `main` → import automatico a PRD (con ventana planificada)
+3. Merge → el pipeline aplica el commit en QAS (`gctsDeploy` o `pullByCommit` en el sistema TARGET)
+4. Tras UAT firmado: merge a `main` → import a PRD (con ventana planificada y confirmación)
 
-**Template `.gcts-config.json`**:
+**Configuración de un repositorio gCTS.** No hay archivo de configuración en el repo Git: son parámetros del repositorio guardados en el sistema ABAP.
 
-```json
-{
-  "repository": "https://github.com/cliente/sap-custom-code",
-  "branches": {
-    "DEV": "feature/*",
-    "QAS": "release/*",
-    "PRD": "main"
-  },
-  "auto_import": {
-    "QAS": true,
-    "PRD": false
-  },
-  "gates": {
-    "QAS": ["atc", "unit_tests", "abaplint"],
-    "PRD": ["uat_signoff", "change_advisory_board"]
-  }
-}
+- Se mantienen en la app gCTS (Fiori) o por la API REST `/sap/bc/cts_abapvcs/` — p. ej. `POST /sap/bc/cts_abapvcs/repository/{repo}/config` con `{ "key": "...", "value": "..." }`.
+- Atributos al crear el repo: URL remota, `vSID` (ruta de transporte hacia el repo) y `role`: `SOURCE` (DEV) o `TARGET` (QAS/PRD, sólo recibe).
+- Parámetros habituales: `VCS_TARGET_DIR` (carpeta donde se serializan los objetos, p. ej. `src/`), `VCS_AUTOMATIC_PULL` / `VCS_AUTOMATIC_PUSH`, `VCS_NO_IMPORT`. Lista completa: SAP Help → *Git-enabled Change and Transport System* → *Configuration Parameters for Repositories*.
+- La asignación branch → sistema y los gates por entorno **no** son de gCTS: los define el pipeline.
+
+```yaml
+# .pipeline/config.yml (Piper) — deploy de un commit al sistema QAS
+steps:
+  gctsDeploy:
+    repository: ZCLIENTE_CUSTOM
+    remoteRepositoryURL: https://github.com/cliente/sap-custom-code
+    role: TARGET
+    vSID: QAS
+    rollback: true
+    configuration:
+      VCS_AUTOMATIC_PULL: 'FALSE'
+      VCS_AUTOMATIC_PUSH: 'FALSE'
 ```
 
 ### 4. Quality gates por entorno

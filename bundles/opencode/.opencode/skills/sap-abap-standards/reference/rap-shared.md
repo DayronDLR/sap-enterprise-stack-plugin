@@ -20,21 +20,29 @@
   sizeCategory: #M,
   dataClass: #TRANSACTIONAL
 }
-define view entity ZI_<Entity>
-  as select from <db_table> as header
-  association [0..1] to <related> as _Child on $projection.Key = _Child.key_field
+define root view entity ZI_<Entity>
+  as select from <ztabla> as header
+  composition [0..*] of ZI_<ChildEntity> as _Child
 {
   key header.key_field       as KeyField,
       header.field1          as Field1,
       header.field2          as Field2,
+      header.status          as Status,
       @Semantics.amount.currencyCode: 'Currency'
       header.amount          as Amount,
       header.waers           as Currency,
+      @Semantics.user.createdBy: true
+      header.created_by      as CreatedBy,
+      @Semantics.systemDateTime.localInstanceLastChangedAt: true
+      header.local_last_changed_at as LocalLastChangedAt,
       @Semantics.systemDateTime.lastChangedAt: true
       header.last_changed    as LastChangedAt,
       -- Associations expuestas
       _Child
 }
+
+-- Hijo (composición): define view entity ZI_<ChildEntity> as select from <ztabla_itm>
+--   association to parent ZI_<Entity> as _Parent on $projection.KeyField = _Parent.KeyField
 ```
 
 ## CDS Projection View (Consumption View)
@@ -50,8 +58,11 @@ define root view entity ZC_<Entity>
   key KeyField,
       Field1,
       Field2,
+      Status,
       Amount,
       Currency,
+      CreatedBy,
+      LocalLastChangedAt,
       LastChangedAt,
       _Child : redirected to composition child ZC_<ChildEntity>
 }
@@ -59,79 +70,114 @@ define root view entity ZC_<Entity>
 
 ## Behavior Definition (Managed con Draft)
 
+> `managed` va **siempre** sobre la root view entity base `ZI_`; una projection
+> BDEF empieza con `projection` y se basa en una CDS projection view
+> (`abenbdl_bdef_projection_header.htm`). Con draft, `total etag` es obligatorio;
+> en strict mode todas las draft actions se declaran explícitas en base y
+> projection (`abenbdl_draft_action.htm`), y las asociaciones de composición
+> llevan `with draft` (`abenbdl_with_draft.htm`). Comentarios BDL: `//`.
+
 ```abap
-managed implementation in class ZBP_<Entity> unique;
+// BDEF base: mismo nombre que la root view entity ZI_<Entity>
+managed implementation in class zbp_i_<entity> unique;
 strict ( 2 );
 with draft;
 
-define behavior for ZC_<Entity> alias <Alias>
-persistent table <z_table>
-draft table <z_draft_table>
+define behavior for ZI_<Entity> alias <Alias>
+persistent table <ztabla>          // ≤ 16 caracteres
+draft table <ztabla_d>             // ≤ 16 caracteres, sufijo _D
 etag master LocalLastChangedAt
 lock master total etag LastChangedAt
 authorization master ( global )
 {
-  -- Campos de sistema (read-only):
   field ( readonly ) KeyField, CreatedBy, LastChangedAt, LocalLastChangedAt;
-
-  -- Campos obligatorios:
   field ( mandatory : create ) Field1, Field2;
-
-  -- Feature control:
   field ( features : instance ) Status;
 
-  -- Operaciones estándar:
   create;
   update;
   delete;
+  association _Child { create; with draft; }
 
-  -- Draft workflow:
   draft action Edit;
   draft action Activate optimized;
   draft action Discard;
   draft action Resume;
-  draft determine action Prepare;
+  draft determine action Prepare
+  {
+    validation validateField1;
+  }
 
-  -- Acciones de negocio:
   action ( features : instance ) Approve result [1] $self;
-  action ( features : instance ) Reject
-    parameter <z_param_structure>
-    result [1] $self;
+  action ( features : instance ) Reject parameter <zs_param> result [1] $self;
 
-  -- Determinaciones:
   determination setInitialStatus on modify { create; }
+  validation validateField1 on save { create; update; field Field1; }
 
-  -- Validaciones:
-  validation validateField1 on save { create; update; }
-
-  -- Side effects:
-  side effects {
+  side effects
+  {
     field Field1 affects field Field2;
     action Approve affects field Status;
   }
 
-  -- Mapeo a tabla persistente:
-  mapping for <z_table> corresponding including additional fields
+  mapping for <ztabla> corresponding
   {
     KeyField = key_field;
     Status   = status;
   }
 }
 
-"-- Child entity (composicion):
-define behavior for ZC_<ChildEntity> alias <ChildAlias>
-persistent table <z_child_table>
-draft table <z_draft_child_table>
+define behavior for ZI_<ChildEntity> alias <ChildAlias>
+persistent table <ztabla_itm>
+draft table <ztabla_itm_d>
+etag master LocalLastChangedAt
 lock dependent by _Parent
 authorization dependent by _Parent
-etag master LocalLastChangedAt
 {
-  field ( readonly ) KeyField, ItemNo;
   update;
   delete;
+  field ( readonly ) KeyField, ItemNo;
   field ( mandatory : create ) Material, Quantity;
-  validation validateMaterial on save { create; update; }
-  mapping for <z_child_table> corresponding;
+  association _Parent { with draft; }
+  validation validateMaterial on save { create; update; field Material; }
+  mapping for <ztabla_itm> corresponding;
+}
+```
+
+### Behavior Definition de Projection
+
+```abap
+// BDEF projection: mismo nombre que ZC_<Entity> (provider contract transactional_query)
+projection;
+strict ( 2 );
+use draft;
+use side effects;
+
+define behavior for ZC_<Entity> alias <Alias>
+use etag
+{
+  use create;
+  use update;
+  use delete;
+
+  use action Edit;
+  use action Activate;
+  use action Discard;
+  use action Resume;
+  use action Prepare;
+
+  use action Approve;
+  use action Reject;
+
+  use association _Child { create; with draft; }
+}
+
+define behavior for ZC_<ChildEntity> alias <ChildAlias>
+use etag
+{
+  use update;
+  use delete;
+  use association _Parent { with draft; }
 }
 ```
 
@@ -140,7 +186,7 @@ etag master LocalLastChangedAt
 ```abap
 "-- Service Definition:
 @EndUserText.label: '<Entity> Service'
-define service ZUI_<Entity>_O4 {
+define service ZUI_<Entity> {
   expose ZC_<Entity>      as <Entity>;
   expose ZC_<ChildEntity> as <ChildEntity>;
 }
@@ -155,7 +201,7 @@ define service ZUI_<Entity>_O4 {
 
 ```abap
 "-- READ ENTITIES:
-READ ENTITIES OF ZC_<Entity>
+READ ENTITIES OF ZI_<Entity>
   ENTITY <Alias>
     FIELDS ( KeyField Field1 Amount Status )
     WITH VALUE #( ( %key-KeyField = '<value>' ) )
@@ -164,7 +210,7 @@ READ ENTITIES OF ZC_<Entity>
   REPORTED DATA(lt_reported).
 
 "-- MODIFY — CREATE:
-MODIFY ENTITIES OF ZC_<Entity>
+MODIFY ENTITIES OF ZI_<Entity>
   ENTITY <Alias>
     CREATE FIELDS ( Field1 Field2 )
       WITH VALUE #( ( %cid       = 'CID_1'
@@ -174,12 +220,12 @@ MODIFY ENTITIES OF ZC_<Entity>
   FAILED   DATA(lt_failed)
   REPORTED DATA(lt_reported).
 COMMIT ENTITIES
-  RESPONSE OF ZC_<Entity>
+  RESPONSE OF ZI_<Entity>
   FAILED   DATA(lt_commit_failed)
   REPORTED DATA(lt_commit_reported).
 
 "-- MODIFY — EXECUTE ACTION:
-MODIFY ENTITIES OF ZC_<Entity>
+MODIFY ENTITIES OF ZI_<Entity>
   ENTITY <Alias>
     EXECUTE Approve
       FROM VALUE #( ( %key-KeyField = '<value>' ) )
@@ -189,7 +235,7 @@ MODIFY ENTITIES OF ZC_<Entity>
 COMMIT ENTITIES.
 
 "-- DEEP INSERT (con composicion hijo):
-MODIFY ENTITIES OF ZC_<Entity>
+MODIFY ENTITIES OF ZI_<Entity>
   ENTITY <Alias>
     CREATE FIELDS ( Field1 Field2 )
       WITH VALUE #( ( %cid = 'P1' Field1 = 'val1' Field2 = 'val2' ) )
@@ -207,12 +253,17 @@ COMMIT ENTITIES.
 ```text
 CDS Interface View:   ZI_[Objeto]         → ZI_PurchaseOrder
 CDS Projection View:  ZC_[Objeto]         → ZC_PurchaseOrder
-Behavior Definition:  misma raiz que CDS  → ZC_PurchaseOrder
-Behavior Impl Class:  ZBP_[CDS]           → ZBP_C_PurchaseOrder
-Service Definition:   ZUI_[Obj]_O4        → ZUI_PurchaseOrder_O4
+BDEF base:            = root entity ZI_   → ZI_PurchaseOrder
+BDEF projection:      = root entity ZC_   → ZC_PurchaseOrder
+Behavior Pool:        ZBP_I_[Objeto]      → ZBP_I_PurchaseOrder
+Service Definition:   ZUI_[Obj]           → ZUI_PurchaseOrder
 Service Binding:      ZUI_[Obj]_O4        → ZUI_PurchaseOrder_O4
-Draft Table:          ZDRAFT_[OBJETO]     → ZDRAFT_PURCHASEORDER
+Tabla persistente:    Z[OBJ] (≤ 16)       → ZPURCHORD
+Draft Table:          [tabla persist.]_D  → ZPURCHORD_D
 ```
+
+> Límites DDIC/BDL: tabla ≤ 16; CDS entity, BDEF, clase ≤ 30. Si no entra, se
+> abrevia el objeto, nunca el sufijo `_D`.
 
 ## Checklist RAP BO Completo
 
@@ -222,7 +273,8 @@ Draft Table:          ZDRAFT_[OBJETO]     → ZDRAFT_PURCHASEORDER
 - [ ] CDS Projection View con provider contract
 - [ ] Access Control (DCL) para Interface View
 - [ ] Metadata Extension (.MDE) con @UI annotations
-- [ ] Behavior Definition con lock, etag, authorization
+- [ ] Behavior Definition base (`managed` sobre ZI_) con lock, total etag, authorization
+- [ ] Behavior Definition de projection (`projection` sobre ZC_, draft actions con `use`)
 - [ ] Behavior Implementation (handler + saver si unmanaged)
 - [ ] ABAP Unit Tests (cl_abap_behv_test_environment)
 - [ ] Service Definition

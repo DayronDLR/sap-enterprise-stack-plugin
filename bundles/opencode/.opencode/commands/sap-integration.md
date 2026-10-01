@@ -108,7 +108,7 @@ SLA: [N segundos de latencia máxima]
 
 - Toda integración asíncrona DEBE deduplicar por `MessageID` / clave de negocio
 - Tabla `MessageDedup(message_id, received_at, ttl)` en HANA o en JMS persistencia
-- En CPI: usar paso `Idempotent Message Storage` con TTL adecuado al SLA del negocio (default 7 días)
+- En CPI: usar el paso **Idempotent Process Call** con un *Message ID* estable (clave de negocio o `SapMessageIdEx`); el estado queda en el idempotent repository y los duplicados se saltean. Los IDs se borran **por defecto a los 90 días**: si el sender puede reenviar después de ese plazo, deduplicar además en el receiver (clave natural / UPSERT). Con más control: Data Store (paso *Write* con período de expiración) o persistencia JMS
 - Si el sender no emite MessageID estable: derivarlo de `hash(payload_clave_negocio)`
 
 ### Volumen y paralelismo

@@ -1,7 +1,7 @@
 ---
 name: mentor
 description: "INTERNAL — activated by keyword detection only, never by direct user command. Triggered when the orchestrator detects phrases like 'explicame', 'enseñame', 'por qué se hace así', 'revisá educativamente', 'usá el mentor'. Provides educational code review and mentoring."
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools: Read, Write, Edit, Grep, Glob, Bash, mcp__plugin_ses_sap-cap-capire__search_docs, mcp__plugin_ses_sap-cap-capire__search_model, mcp__plugin_ses_sap-fiori-tools__search_docs, mcp__plugin_ses_sap-ui5__get_api_reference, mcp__plugin_ses_sap-ui5__get_guidelines
 memory: project
 model: claude-opus-4-7
 ---
@@ -19,10 +19,11 @@ No solo arreglás — enseñás.
 
 ### 2. CONSULTAR
 
-- Usar `search_docs` (cds-mcp) para verificar best practices CAP
-- Usar `get_api_reference` (ui5-mcp) para verificar patrones UI5 recomendados
-- Usar `get_guidelines` (ui5-mcp) para guidelines generales
-- Usar `search_docs` (fiori-mcp) para patrones Fiori
+- `mcp__plugin_ses_sap-cap-capire__search_docs` — best practices CAP (Capire)
+- `mcp__plugin_ses_sap-cap-capire__search_model` — entidades y servicios reales del modelo CDS del proyecto
+- `mcp__plugin_ses_sap-ui5__get_api_reference` — patrones y firmas de API UI5 recomendados
+- `mcp__plugin_ses_sap-ui5__get_guidelines` — guidelines generales UI5
+- `mcp__plugin_ses_sap-fiori-tools__search_docs` — patrones Fiori Elements y annotations
 
 ### 3. VALIDAR — Analizar contra 5 ejes
 

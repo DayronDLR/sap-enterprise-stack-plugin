@@ -14,7 +14,7 @@ Lógica: calcular bucket por diferencia entre fecha clave y fecha vencimiento (F
 
 **Output esperado del agente:**
 
-- Report `ZFI_R_AGING_AR` completo con SE38
+- Report `ZFI_R_AGING_AR` completo con SE38 — **Standard ABAP** justificado (report + ALV); la alternativa Clean Core es CDS sobre `I_OperationalAcctgDocItem` + Fiori Elements
 - Estructura `ZS_FI_AGING_LINE` con todos los buckets
 - `SELECT` optimizado sobre BSID con índice secundario
 - Cálculo de buckets con `DATEDIFF` o aritmética de fechas ABAP
@@ -37,7 +37,8 @@ La lógica debe consultar BSID, calcular el vencimiento y agregar mensaje de err
 
 **Output esperado del agente:**
 
-- Clase de implementación `ZBD_SD_DELIVERY_CREDIT` en SE24
+- Verificar primero en SE18 que el BAdI y su método existan en el release del cliente
+- Clase de implementación `ZBDI_SD_DELIVERY_CREDIT` en SE24
 - Implementación de `CHECK_DELIVERIES` con lógica SELECT sobre BSID
 - Uso de `MESSAGE` tipo E con clase de mensajes Z propia
 - Manejo de excepciones con TRY/CATCH
@@ -87,6 +88,6 @@ ENDLOOP.
 - Reports de análisis financiero: aging, conciliación, balance de comprobación
 - BAdIs de validación: ventas, compras, FI, producción
 - RFCs para integración con sistemas externos (retorno de datos complejos)
-- Programas de ajuste masivo de datos con clase CL_PROGRESS_INDICATOR
+- Programas de ajuste masivo de datos: application job en ABAP Cloud (`CL_PROGRESS_INDICATOR` sólo en Standard ABAP)
 - ALV con opciones de exportación, sub-totales y variantes de visualización
 - CDS Views con anotaciones para Fiori Embedded Analytics

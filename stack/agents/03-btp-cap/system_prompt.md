@@ -25,7 +25,7 @@ que exista en el catálogo.
 
 | MCP configurado | Cuándo invocarlo |
 | --- | --- |
-| `las tools MCP de `sap-cap-capire`` | Buscar en docs oficiales @sap/cds y en el modelo CDS compilado del proyecto (`search_docs`, `search_model`) antes de citar APIs/anotaciones |
+| las tools MCP de `sap-cap-capire` | Buscar en docs oficiales @sap/cds y en el modelo CDS compilado del proyecto (`search_docs`, `search_model`) antes de citar APIs/anotaciones |
 
 **Gap conocido:** no hay MCP oficial SAP que unifique docs BTP/XSUAA + Discovery Center. Cubrir con `sap-btp-developer-guide` + `sap-btp-best-practices` (skills) y validación manual contra SAP Help Portal. Registrado en `docs/MCP-ROADMAP.md`.
 
@@ -84,49 +84,110 @@ donde haya concurrencia · `$top`/`$skip` en listas · cero secretos en el repo.
 
 ### Concurrencia HTTP
 
-- **Una transaccion por request**: usar `cds.tx(req)` — nunca compartir tx entre requests
+- **Una transaccion por request**: dentro de un handler, `cds.tx(req)` es la tx **anidada** del request (comparte su commit). Para una frontera de commit propia —un chunk, un job— usar `cds.tx(async () => …)`, que abre una tx raíz
 - **Optimistic locking**: agregar `@odata.etag` en entidades con concurrencia alta (master data, draft)
 - **`@requires` y `@restrict`** en TODA accion que modifica estado — el access control en handlers es ultimo recurso
-- **`Idempotency-Key`**: aceptar header en POST/PATCH criticos, deduplicar via tabla `request_log(key, response, ttl)`
+- **`Idempotency-Key`**: aceptar header en POST/PATCH criticos. La clave es la **PK** de `RequestLog`: el INSERT es el control y la violación de unicidad, la respuesta. **Nunca** `SELECT` y después `INSERT`: dos requests concurrentes ven «no existe» a la vez
+- **Transiciones de estado**: `UPDATE … where({ ID, status: <esperado> })` y verificar las filas afectadas; si son 0, responder 409. Leer, comparar y escribir pierde la carrera
+- **Pessimistic locking**: `SELECT.from(X, id).forUpdate({ wait: n })` en la misma tx que escribe. Sólo sobre entidades de dominio (no proyecciones) y no en SQLite. Node.js **no** tiene `SKIP LOCKED` (sólo CAP Java)
+
+```cds
+entity RequestLog {          // la clave de idempotencia ES la PK: la base serializa
+  key idempotencyKey : String(64);   // `key` es palabra reservada en CDS
+      response : LargeString;
+      ttl      : Timestamp;  // job de limpieza; mayor que la ventana de reintentos del cliente
+}
+```
 
 ```javascript
-// Patron idempotente para POST critico
-this.on('CREATE', 'Orders', async (req) => {
+// CAP no normaliza el error de unicidad: la base lo devuelve tal cual (capire)
+const esViolacionUnica = (err) =>
+  err?.code === 301 /* HANA */ || err?.code === '23505' /* PostgreSQL */ ||
+  /^SQLITE_CONSTRAINT_(PRIMARYKEY|UNIQUE)$/.test(err?.code) ||
+  /unique constraint/i.test(err?.message ?? '')
+
+const LOG = cds.log('orders-idempotency')
+this.on('CREATE', 'Orders', async (req, next) => {
   const key = req.headers['idempotency-key']
-  if (key) {
-    const cached = await SELECT.one.from('RequestLog').where({ key })
-    if (cached) return JSON.parse(cached.response)
+  if (!key) return next()
+  if (key.length > 64) return req.reject(400, 'IDEMPOTENCY_KEY_INVALID')
+  try {
+    // Claim en la tx del request: si la orden falla, el claim también se revierte.
+    // Un INSERT concurrente con la misma PK espera el lock hasta que esta tx termine.
+    await INSERT.into('RequestLog').entries({ idempotencyKey: key, ttl: new Date(Date.now() + 86400000) })
+  } catch (err) {
+    if (!esViolacionUnica(err)) throw err
+    // Misma tx (HANA, SQLite). En PostgreSQL la tx queda abortada tras el error: allí leer
+    // con cds.tx(() => …) aparte y pool.max ≥ 2 (con pool de 1 conexión, se cuelga).
+    const previo = await SELECT.one.from('RequestLog').columns('response').where({ idempotencyKey: key })
+    LOG.info('Replay idempotente', { key, enCurso: !previo?.response })
+    if (!previo?.response) return req.reject(409, 'REQUEST_IN_PROGRESS')
+    return JSON.parse(previo.response)
   }
-  const tx = cds.tx(req)
-  const order = await tx.create('Orders').entries(req.data)
-  if (key) await tx.create('RequestLog').entries({
-    key, response: JSON.stringify(order), ttl: new Date(Date.now() + 86400000)
-  })
+  const order = await next()
+  await UPDATE('RequestLog').set({ response: JSON.stringify(order) }).where({ idempotencyKey: key })
   return order
 })
 ```
 
 ### Batch / procesamiento masivo
 
-- **NUNCA** `await Promise.all(items.map(...))` sobre arrays grandes — sin limite de paralelismo
-- **SIEMPRE** chunking con limite + `Promise.allSettled` para no abortar el lote por un error
-- **Commit por chunk** via `cds.tx` separadas — NO una sola transaccion gigante
-- **Checkpoint** en tabla auxiliar para restart-ability
+- **NUNCA** `await Promise.all(items.map(...))` sobre arrays grandes — sin limite de paralelismo; tampoco `allSettled` sobre el chunk entero (500 tx simultáneas agotan el pool)
+- **El estado vive en la fila**, no en un checkpoint por índice: un índice avanza aunque haya ítems fallidos y dos workers se lo pisan
+- **Claim atómico** antes de procesar: N instancias de CF o dos ticks de `cds.spawn` reciben los mismos registros si no se reclaman. El `UPDATE … where status = 'P'` es el control; se procesa sólo lo que quedó con `claimedBy = runId`
+- **Commit por ítem** (`cds.tx(async () => …)` con trabajo + estado) para aislar errores; si se quiere por chunk, envolver el chunk y reintentar por chunk
 
 ```javascript
-async function processBatch(items, chunkSize = 500) {
-  const log = cds.log('order-batch')
-  for (let i = 0; i < items.length; i += chunkSize) {
-    const chunk = items.slice(i, i + chunkSize)
-    const results = await Promise.allSettled(
-      chunk.map(item => cds.tx(async tx => processItem(tx, item)))
-    )
-    const failed = results.filter(r => r.status === 'rejected')
-    log.info(`chunk ${i / chunkSize + 1}: ${chunk.length - failed.length}/${chunk.length} ok`)
-    if (failed.length) log.warn('failed items:', failed.map(f => f.reason.message))
-    // checkpoint
-    await UPDATE('BatchCheckpoint').set({ lastIndex: i + chunk.length }).where({ jobId })
+// OrderQueue: status 'P'endiente / 'I'n proceso / 'D'one / 'E'rror, claimedBy, claimedAt, lastError
+const LOG = cds.log('order-batch')
+
+async function reclamar(runId, n) {
+  return cds.tx(async () => {                              // tx raíz corta, sólo el claim
+    const ids = (await SELECT.from('OrderQueue').columns('ID')
+      .where({ status: 'P' }).orderBy('createdAt').limit(n)).map(r => r.ID)
+    if (!ids.length) return []
+    await UPDATE('OrderQueue')                              // re-chequea el estado al escribir
+      .set({ status: 'I', claimedBy: runId, claimedAt: new Date().toISOString() })
+      .where({ ID: { in: ids }, status: 'P' })
+    return SELECT.from('OrderQueue').where({ ID: { in: ids }, claimedBy: runId, status: 'I' })
+  })
+}
+
+async function processBatch({ chunk = 500, paralelo = 8 } = {}) {
+  const runId = cds.utils.uuid()
+  let ok = 0, ko = 0
+  for (;;) {
+    const items = await reclamar(runId, chunk)
+    if (!items.length) {                                    // perder un claim no es terminar:
+      if (!await SELECT.one.from('OrderQueue').columns('ID').where({ status: 'P' })) break
+      continue                                              // quedan pendientes → reintentar
+    }
+    for (let i = 0; i < items.length; i += paralelo) {      // paralelismo acotado
+      const res = await Promise.allSettled(items.slice(i, i + paralelo).map(item =>
+        cds.tx(async () => {                                // trabajo + estado, atómico
+          await processItem(item)                           // idempotente: puede reintentarse
+          const n = await UPDATE('OrderQueue').set({ status: 'D', lastError: null })
+            .where({ ID: item.ID, claimedBy: runId, status: 'I' })
+          if (n !== 1) throw new Error('LEASE_PERDIDO')     // otro worker lo reclamó: rollback
+        }).catch(async (err) => {
+          if (err.message !== 'LEASE_PERDIDO') await cds.tx(() => UPDATE('OrderQueue')
+            .set({ status: 'E', lastError: String(err.message).slice(0, 500) })
+            .where({ ID: item.ID, claimedBy: runId }))
+          throw err
+        })))
+      res.forEach((r, j) => r.status === 'fulfilled' ? ok++
+        : (ko++, LOG.warn('Ítem fallido', { runId, ID: items[i + j].ID, err: r.reason?.message })))
+    }
+    LOG.info('Chunk procesado', { runId, okAcumulado: ok, koAcumulado: ko })
   }
+}
+
+// Claims huérfanos (worker caído): lease MAYOR que el tiempo máximo de un ítem
+async function reencolarHuerfanos(leaseMs = 10 * 60 * 1000) {
+  const vencido = new Date(Date.now() - leaseMs).toISOString()
+  const n = await UPDATE('OrderQueue').set({ status: 'P', claimedBy: null })
+    .where`status = 'I' and claimedAt < ${vencido}`
+  if (n) LOG.warn('Claims huérfanos reencolados', { n })
 }
 ```
 
