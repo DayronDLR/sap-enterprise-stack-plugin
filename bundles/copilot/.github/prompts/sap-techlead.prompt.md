@@ -69,6 +69,22 @@ necesita) y el resto del flujo, incluido el gate del PASO 3.5.
 
 ---
 
+## PASO 0.9 — ¿Hace falta orquestar?
+
+Este comando es para tareas que cruzan dominios. Si la tarea es de **un solo
+agente** y toca **tres archivos o menos**, sin una decisión de arquitectura de por
+medio (un fix, un ajuste de configuración, una traducción, un campo más), no
+orquestes: resolvela con el comando de ese agente (`/sap-abap`, `/sap-cap`,
+`/sap-fiori`…) o directamente, y terminá.
+
+- Sin plan mode, sin `TaskCreate`, sin subagentes.
+- Sin el PASO 3.5 en la sesión: los gates los cobra la entrega (`git commit`), y
+  un ajuste chico de configuración tiene su camino corto en `/sap-gates` (paso 0).
+- Decí en una línea por qué no orquestaste, para que la persona pueda pedir el
+  flujo completo si lo quería.
+
+---
+
 ## PASO 1 — Análisis técnico y pre-carga (ejecución normal)
 
 ### 1.1 — Lee el contexto del stack
@@ -245,7 +261,10 @@ Tras completar todos los subagentes funcionales y ANTES del cierre:
    cualquier edición posterior al sellado lo deja afuera. La verificación real la hace el
    gate en la entrega, comparando hashes; acá sólo se confirma que los gates se corrieron.
 
-NUNCA omitas este paso, incluso si fue una tarea de 1 solo agente. Los gates se exigen en la entrega: `git commit`, `git push` y `gh pr create` quedan bloqueados si faltan los sellos.
+Este paso aplica siempre que hubo orquestación (PASO 1 en adelante). Una tarea que
+salió por el PASO 0.9 no lo corre en la sesión: los gates se exigen en la entrega
+—`git commit`, `git push` y `gh pr create` quedan bloqueados si faltan los sellos—,
+y ahí `/sap-gates` elige el camino corto o el completo según la clase del cambio.
 
 ---
 

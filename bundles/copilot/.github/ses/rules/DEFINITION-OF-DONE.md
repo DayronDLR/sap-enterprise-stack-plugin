@@ -171,6 +171,7 @@ que el trailer **no** garantiza, [ADR-013](../docs/adr/013-la-dod-vive-en-git-no
 
 | Tipo de cambio | Gates que aplican |
 |---|---|
+| Ajuste chico de configuracion: cada clave cambiada esta en una lista de lo seguro (version, descripcion, metadatos, la version concreta de una dependencia que ya estaba, titulo de la app, textos de i18n); hasta 30 lineas, sin borrados, sin hallazgos del scan. `xs-app.json`, `xs-security.json` y `.cdsrc.json` nunca | Gate 1; Gate 2 en la sesion, sin subagente; Gate 3 no aplica (`sellar-gate.sh qa --config-trivial`, que recalcula la clase) |
 | Fix de 1 linea en codigo productivo | Los 3 (al entregar) |
 | Feature completa | Los 3 (al entregar) |
 | Hotfix en PRD | Los 3, con bloqueo aun mas estricto |
@@ -215,7 +216,9 @@ los 3 gates.
 
 ## Gate 1 — Quality Gate Tecnico
 
-Ejecutado por `hooks/scripts/quality-gate.sh`. Bloquea si:
+Ejecutado por `hooks/scripts/quality-gate.sh`. Recuerda sus aprobaciones por
+contenido (HEAD, indice, working tree, sus propios scripts): si nada cambio desde
+la ultima vez que aprobo, no se repite. Bloquea si:
 
 - CDS lint falla (`.cds` modificados)
 - UI5 linter falla (`webapp/**/*.{js,xml}` modificados)

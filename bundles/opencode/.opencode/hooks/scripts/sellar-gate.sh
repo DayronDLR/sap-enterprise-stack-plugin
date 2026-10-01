@@ -1,8 +1,14 @@
 #!/bin/bash
 # sellar-gate.sh — sella un gate de la DoD sobre el contenido que se entrega.
 #
-# Uso:  bash hooks/scripts/sellar-gate.sh review   # Gate 2
-#       bash hooks/scripts/sellar-gate.sh qa       # Gate 3
+# Uso:  bash hooks/scripts/sellar-gate.sh review                 # Gate 2
+#       bash hooks/scripts/sellar-gate.sh qa                     # Gate 3
+#       bash hooks/scripts/sellar-gate.sh qa --config-trivial    # Gate 3 no aplica
+#
+# `--config-trivial`: un ajuste chico de configuración (`lib/clase-cambio.mjs`)
+# no tiene concurrencia, volumen ni locking que revisar, y el Gate 3 no aplica.
+# El script VUELVE A CALCULAR la clase sobre lo que se entrega y se niega a sellar
+# si no se cumple: la clase no se declara, se comprueba.
 #
 # POR QUE EXISTE. La receta de sellado vivia como PROSA en seis archivos
 # markdown distintos —`commands/sap-gates.md`, `agents/reviewer.md`,
@@ -51,8 +57,39 @@ fi
 case "${1:-}" in
     review) FLAG="${PROJECT_DIR}/tmp/.review-done"; ETIQUETA="Gate 2 (Code Review)" ;;
     qa)     FLAG="${PROJECT_DIR}/tmp/.qa-nfr-done"; ETIQUETA="Gate 3 (QA + NFR)" ;;
-    *)      echo "uso: sellar-gate.sh <review|qa>" >&2; exit 1 ;;
+    *)      echo "uso: sellar-gate.sh <review|qa> [--config-trivial]" >&2; exit 1 ;;
 esac
+
+if [[ "${2:-}" = "--config-trivial" ]]; then
+    if [[ "${1:-}" != "qa" ]]; then
+        echo "[sellar-gate] --config-trivial sólo aplica al Gate 3: el review (Gate 2) se hace igual." >&2
+        exit 1
+    fi
+    if ! command -v node >/dev/null 2>&1; then
+        echo "[sellar-gate] sin node no se puede comprobar la clase del cambio — NO se selló. Corré el Gate 3 completo." >&2
+        exit 1
+    fi
+    CLASE=$(cd "$PROJECT_DIR" && node "${SCRIPT_DIR}/lib/clase-cambio.mjs" 2>/dev/null)
+    # El motivo se lee con un parser de JSON: con `sed` se cortaba en la primera
+    # comilla escapada y el dev se quedaba sin saber por qué.
+    MOTIVO=$(printf '%s' "$CLASE" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).motivo||""))}catch{process.stdout.write("no se pudo leer la clase")}})' 2>/dev/null)
+    if printf '%s' "$CLASE" | grep -qF '"clase":"config-trivial"'; then
+        ETIQUETA="Gate 3 (no aplica: ajuste chico de configuración)"
+        # Queda registro de cada entrega por el camino corto: el Gate 2 de ese
+        # camino lo hace la sesión, sin subagente, y un auditor tiene que poder
+        # encontrarlas y muestrearlas.
+        mkdir -p "${PROJECT_DIR}/logs" 2>/dev/null && printf '%s\t%s\t%s\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(git -C "$PROJECT_DIR" write-tree 2>/dev/null || echo sin-arbol)" "$MOTIVO" \
+            >> "${PROJECT_DIR}/logs/gate-config-trivial.log"
+    else
+        echo "[sellar-gate] el cambio NO es un ajuste chico de configuración — NO se selló." >&2
+        printf '  %s\n  Corré el Gate 3 completo.\n' "$MOTIVO" >&2
+        exit 1
+    fi
+elif [[ -n "${2:-}" ]]; then
+    echo "uso: sellar-gate.sh <review|qa> [--config-trivial]" >&2
+    exit 1
+fi
 
 RC=0
 for tipo in commit commit-a; do

@@ -21,9 +21,13 @@
  *       o una entrada nueva sin `integrity`;
  *     - `mta.yaml`, `package.json` (cualquier script): un comando nuevo que baja y
  *       ejecuta (`curl … | sh`, `wget … | bash`, `bash -c "$(curl …)"`).
- *   WARN (se muestra, no bloquea):
+ *   WARN (se muestra, no bloquea; saca el cambio de la clase `config-trivial`):
  *     - `publishConfig.registry`, `bin` cambiados;
- *     - `xs-app.json`: una ruta nueva con `authenticationType: none`.
+ *     - autenticación o autorización tocadas: claves de `cds` con auth en
+ *       `package.json`, roles y scopes de xsuaa en `mta.yaml`, `scope` o
+ *       `authenticationType` en `xs-app.json`;
+ *     - código que corre en el build o en el navegador: `customTasks` y
+ *       `customMiddleware` en `ui5*.yaml`, URIs y recursos en `manifest.json`.
  *
  * Un cambio legítimo de esa lista (agregar `"prepare": "husky"`) no se hace pasar:
  * se muestra, y la persona lo aprueba exportando `SES_CONFIG_RISK=allow` en SU
@@ -105,7 +109,7 @@ const sinBom = (t) => String(t).replace(/^\uFEFF/, '');
 const json = (t) => { try { return JSON.parse(sinBom(t)); } catch { return null; } };
 
 /** Una especificación de dependencia que no sale del registro. */
-function fueraDelRegistro(spec) {
+export function fueraDelRegistro(spec) {
   if (typeof spec !== 'string') return false;
   const s = spec.replace(/^npm:[^@]*@?/, '');
   if (/^(git\+|git:|github:|gitlab:|bitbucket:|gist:|https?:|file:|link:|portal:)/i.test(s)) return true;
@@ -148,6 +152,14 @@ function scanPackageJson(ruta, base, nuevo, hallazgos) {
   scanScripts(ruta, antes, ahora, hallazgos);
   for (const sec of SECCIONES_DEP) scanDependencias(ruta, sec, antes[sec], ahora[sec], hallazgos);
   scanDependencias(ruta, 'pnpm.overrides', antes.pnpm?.overrides, ahora.pnpm?.overrides, hallazgos);
+  // Autenticación de CAP: `cds.requires.auth` de `xsuaa` a `dummy` apaga el login.
+  const authCds = (o) => new Map(aplanar(o?.cds).filter(([k]) => /auth|roles?\b|restrict|xsuaa|\bias\b|cors|security/i.test(k)));
+  const [a0, a1] = [authCds(antes), authCds(ahora)];
+  for (const k of new Set([...a0.keys(), ...a1.keys()])) {
+    if (a0.get(k) !== a1.get(k)) {
+      hallazgos.push(['WARN', `${ruta}: cambia la autenticación o autorización de CAP (cds > ${k}): ${JSON.stringify(a0.get(k))} → ${JSON.stringify(a1.get(k))}`]);
+    }
+  }
   if (JSON.stringify(antes.publishConfig?.registry) !== JSON.stringify(ahora.publishConfig?.registry)) {
     hallazgos.push(['WARN', `${ruta}: publishConfig.registry cambió a ${JSON.stringify(ahora.publishConfig?.registry)}`]);
   }
@@ -236,17 +248,39 @@ function scanTextoLock(ruta, base, nuevo, hallazgos) {
   }
 }
 
+/** Líneas agregadas o quitadas que cumplen `re`: un WARN por la primera. */
+function tocaLineas(ruta, base, nuevo, re, que, hallazgos) {
+  const cambiadas = [...agregadas(base, nuevo), ...agregadas(nuevo, base)].filter((l) => re.test(l));
+  if (cambiadas.length) hallazgos.push(['WARN', `${ruta}: ${que}: ${cambiadas[0].trim()}`]);
+}
+
+const MTA_SEGURIDAD = /role-templates|role-collections|scope|xsappname|oauth2-configuration|redirect-uris|tenant-mode|authorities|xs-security|service-plan/i;
+
 function scanMta(ruta, base, nuevo, hallazgos) {
   for (const l of agregadas(base, nuevo)) {
     if (bajaYEjecuta(l)) hallazgos.push(['CRITICAL', `${ruta}: comando de build que baja y ejecuta código: ${l.trim()}`]);
   }
+  tocaLineas(ruta, base, nuevo, MTA_SEGURIDAD, 'cambia la configuración de seguridad (xsuaa, roles o scopes)', hallazgos);
 }
 
 function scanXsApp(ruta, base, nuevo, hallazgos) {
   const cuenta = (t) => (t.match(/"authenticationType"\s*:\s*"none"/g) || []).length;
   if (cuenta(nuevo) > cuenta(base)) {
     hallazgos.push(['WARN', `${ruta}: una ruta nueva con authenticationType "none" — confirmá que es un recurso público`]);
+    return;
   }
+  tocaLineas(ruta, base, nuevo, /"(scope|authenticationType|authenticationMethod|csrfProtection|identityProvider)"/,
+    'cambia la autenticación o autorización de una ruta', hallazgos);
+}
+
+function scanUi5Yaml(ruta, base, nuevo, hallazgos) {
+  tocaLineas(ruta, base, nuevo, /customTasks|customMiddleware|beforeTask|afterTask|beforeMiddleware|afterMiddleware/,
+    'cambia código que corre en el build o en el servidor de desarrollo', hallazgos);
+}
+
+function scanManifest(ruta, base, nuevo, hallazgos) {
+  tocaLineas(ruta, base, nuevo, /"(uri|url|js|css|libs|resources|componentUsages|resourceRoots|destinations?)"\s*:/,
+    'cambia una URI o un recurso que carga la app', hallazgos);
 }
 
 function noParsea(ruta, texto, hallazgos) {
@@ -262,10 +296,12 @@ export function scanArchivo(ruta, base, nuevo) {
   else if (nombre === 'pnpm-lock.yaml' || nombre === 'yarn.lock') scanTextoLock(ruta, base, nuevo, hallazgos);
   else if (/^mta(-.*)?\.ya?ml$|\.mtaext$/.test(nombre)) scanMta(ruta, base, nuevo, hallazgos);
   else if (nombre === 'xs-app.json') scanXsApp(ruta, base, nuevo, hallazgos);
+  else if (/^ui5[^/]*\.ya?ml$/.test(nombre)) scanUi5Yaml(ruta, base, nuevo, hallazgos);
+  else if (nombre === 'manifest.json') scanManifest(ruta, base, nuevo, hallazgos);
   return hallazgos;
 }
 
-export const ES_CONFIG_RIESGO = /(^|\/)(package\.json|package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|mta(-[^/]*)?\.ya?ml|[^/]*\.mtaext|xs-app\.json)$/;
+export const ES_CONFIG_RIESGO = /(^|\/)(package\.json|package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|mta(-[^/]*)?\.ya?ml|[^/]*\.mtaext|xs-app\.json|ui5[^/]*\.ya?ml|manifest\.json)$/;
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const hallazgos = [];

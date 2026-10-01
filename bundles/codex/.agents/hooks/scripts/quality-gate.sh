@@ -81,6 +81,66 @@ Ver docs/adr/005-two-person-hotfix-approval.md"
     fi
 fi
 
+# ── Cache por contenido ─────────────────────────────────────────────────────
+#
+# En una entrega el Gate 1 corria cuatro veces sobre el mismo contenido: el
+# nivel 1 al pedir el commit, `/sap-gates`, el nivel 1 otra vez y el husky. Si
+# nada cambio desde la ultima vez que APROBO, no hay nada nuevo que verificar.
+#
+# La clave es el contenido que el gate mira y lo que decide su resultado: HEAD,
+# el indice, el working tree entero (con lo sin trackear y su contenido), los
+# scripts del propio gate y las variables que cambian su veredicto. Solo se
+# guardan aprobaciones, nunca bajo HOTFIX-OVERRIDE (que degrada hallazgos).
+# Cualquier duda al armar la clave —un conflicto, un archivo que git no puede
+# agregar— y el gate corre completo.
+GATE1_CACHE="${PROJECT_DIR}/tmp/.gate1-ok"
+# Se pisa antes de leerse: una clave plantada desde el entorno no puede
+# terminar escrita en la cache.
+CLAVE_G1=""
+gate1_clave() {
+    local d head indice todo scripts idx_tmp idx_real
+    d="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || return 1
+    head=$(git rev-parse -q --verify HEAD 2>/dev/null || echo sin-head)
+    indice=$(git write-tree 2>/dev/null) || return 1
+    # El working tree ENTERO como un arbol, armado en un indice temporal. Una
+    # version anterior hasheaba los sin trackear con `hash-object --stdin-paths`,
+    # que se detenia en el primero que no podia leer (un repo anidado, un archivo
+    # sin permiso) y dejaba afuera de la clave todo lo que venia despues: la cache
+    # aprobaba un `.js` editado. Con `git add -A`, cualquier archivo que no se
+    # puede agregar hace fallar la clave, y el gate corre completo.
+    # `tmp/` y `logs/` son el estado del propio gate (esta cache, los sellos, el
+    # log de eventos): contarlos haria que cada corrida cambie su propia clave.
+    # Los blobs de ese indice van a un directorio de objetos TEMPORAL: si no,
+    # cada edicion de un archivo grande sin trackear dejaba su copia en
+    # `.git/objects` (medido: 288 KB → 213 MB con un archivo de 200 MB).
+    local obj_tmp obj_real
+    idx_real=$(git rev-parse --git-path index 2>/dev/null) || return 1
+    obj_real=$(cd "$(git rev-parse --git-path objects 2>/dev/null)" 2>/dev/null && pwd) || return 1
+    idx_tmp=$(mktemp "${TMPDIR:-/tmp}/ses-g1idx.XXXXXX" 2>/dev/null || mktemp /tmp/ses-g1idx.XXXXXX) || return 1
+    obj_tmp=$(mktemp -d "${TMPDIR:-/tmp}/ses-g1obj.XXXXXX" 2>/dev/null || mktemp -d /tmp/ses-g1obj.XXXXXX) \
+        || { rm -f "$idx_tmp"; return 1; }
+    cp "$idx_real" "$idx_tmp" 2>/dev/null || : > "$idx_tmp"
+    # Sin compresion: esos blobs se tiran al terminar, y comprimirlos hacia que un
+    # acierto de cache costara casi lo mismo que la primera corrida.
+    if ! GIT_INDEX_FILE="$idx_tmp" GIT_OBJECT_DIRECTORY="$obj_tmp" GIT_ALTERNATE_OBJECT_DIRECTORIES="$obj_real" \
+            git -c core.looseCompression=0 add -A -- . ':!tmp/' ':!logs/' >/dev/null 2>&1 \
+       || ! todo=$(GIT_INDEX_FILE="$idx_tmp" GIT_OBJECT_DIRECTORY="$obj_tmp" GIT_ALTERNATE_OBJECT_DIRECTORIES="$obj_real" \
+            git write-tree 2>/dev/null); then
+        rm -rf "$idx_tmp" "$obj_tmp"; return 1
+    fi
+    rm -rf "$idx_tmp" "$obj_tmp"
+    # Ordenados: el orden del glob depende del sistema de archivos, y la misma
+    # version de los scripts tiene que dar la misma clave en cualquier maquina.
+    scripts=$(find "$d" "$d/lib" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.mjs' \) 2>/dev/null \
+        | LC_ALL=C sort | while IFS= read -r f; do cat "$f"; done | git hash-object --stdin) || return 1
+    printf '%s\n' "$head" "$indice" "$todo" "$scripts" "risk=${SES_CONFIG_RISK:-}" \
+        "registries=${SES_NPM_REGISTRIES:-}" "smoke=${ABAP_SCAN_INCLUDE_SMOKETEST:-0}" | git hash-object --stdin
+}
+if [[ "$HOTFIX_ACTIVE" != "1" ]] && CLAVE_G1=$(gate1_clave) && [[ -n "$CLAVE_G1" ]] \
+   && grep -qxF "$CLAVE_G1" "$GATE1_CACHE" 2>/dev/null; then
+    gate_pass "Gate 1: sin cambios desde la ultima verificacion aprobada (${CLAVE_G1:0:12}) — no se repite."
+fi
+
 # `core.quotePath` (default: on) hace que git CITE y escape cualquier path no
 # ASCII: `srv/articulo.js` sale como `"srv/art\303\255culo.js"`. Con las
 # comillas el path deja de matchear los filtros por extension y el archivo se
@@ -254,7 +314,7 @@ fi
 #
 # Un cambio legitimo de esa clase lo aprueba la persona, no el agente: exporta
 # `SES_CONFIG_RISK=allow` en su shell para esa entrega, y queda registrado.
-CONFIG_CHANGED=$(echo "$CHANGED_FILES" | grep -E '(^|/)(package\.json|package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|mta(-[^/]*)?\.ya?ml|[^/]*\.mtaext|xs-app\.json)$' || true)
+CONFIG_CHANGED=$(echo "$CHANGED_FILES" | grep -E '(^|/)(package\.json|package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|mta(-[^/]*)?\.ya?ml|[^/]*\.mtaext|xs-app\.json|ui5[^/]*\.ya?ml|manifest\.json)$' || true)
 if [[ -n "$CONFIG_CHANGED" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     if ! command -v node >/dev/null 2>&1; then
@@ -390,4 +450,9 @@ if [[ -n "$ERRORS" ]]; then
     gate_fail "$(printf "Gate 1 (Quality) fallo:%b\n\n%b" "$ERRORS" "$(reportar_alcance)")"
 fi
 
+# Se recuerda la aprobacion, sin duplicados y acotada a las ultimas 50.
+if [[ "$HOTFIX_ACTIVE" != "1" && -n "${CLAVE_G1:-}" ]] && mkdir -p "${PROJECT_DIR}/tmp" 2>/dev/null; then
+    { grep -vxF "$CLAVE_G1" "$GATE1_CACHE" 2>/dev/null | tail -n 49; printf '%s\n' "$CLAVE_G1"; } > "${GATE1_CACHE}.tmp.$$" \
+        && mv -f "${GATE1_CACHE}.tmp.$$" "$GATE1_CACHE"
+fi
 gate_pass "$(reportar_alcance)"
