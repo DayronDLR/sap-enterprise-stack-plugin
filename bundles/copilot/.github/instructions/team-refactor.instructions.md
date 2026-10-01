@@ -14,7 +14,7 @@ Orquestar un equipo de teammates para refactors que tocan múltiples capas simul
 Agent Teams debe estar habilitado. Si no lo está, indicar al usuario:
 
 ```bash
-# Agregar a .github/settings.json o como variable de entorno
+# Agregar al settings.json del proyecto o como variable de entorno
 # "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" }
 ```
 

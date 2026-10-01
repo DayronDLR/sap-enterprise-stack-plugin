@@ -243,7 +243,7 @@ Marca cada tarea como `completed` con `TaskUpdate` al recibir el resultado del s
 ## PASO 3.5 — Gate obligatorio: Review + QA NFR (BLOQUEANTE)
 
 > Aplica si CUALQUIER subagente produjo codigo productivo (AGENT_02, 03, 04, 05, 06, 08, 10).
-> Referencia: `orchestrator/routing_rules.json` → `mandatory_post_task_review`.
+> Referencia: `.github/orchestrator/routing_rules.json` → `mandatory_post_task_review`.
 
 Tras completar todos los subagentes funcionales y ANTES del cierre:
 
@@ -253,7 +253,7 @@ Tras completar todos los subagentes funcionales y ANTES del cierre:
    - Si CRITICAL/HIGH → volver a delegar al agente correspondiente para corregir, repetir review
 
 2. **Invocar AGENT_09 (QA & Testing)** con `Agent` tool
-   - Tarea: "Ejecutar `agents/09-qa-testing/nfr-checklist.md` contra el diff de la sesion. Devolver hallazgos inline con evidencia o NO CUBIERTO. Tras completar sin CRITICAL/HIGH, ejecutar `bash hooks/scripts/sellar-gate.sh qa`."
+   - Tarea: "Ejecutar `.github/agents/09-qa-testing/nfr-checklist.md` contra el diff de la sesion. Devolver hallazgos inline con evidencia o NO CUBIERTO. Tras completar sin CRITICAL/HIGH, ejecutar `bash ".github/hooks/scripts/sellar-gate.sh" qa`."
    - Si bloquea por NFR no cubierto → corregir antes de cerrar
 
 3. **Verificar los sellos**: que los dos subagentes hayan reportado `sellar-gate.sh` en verde.

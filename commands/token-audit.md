@@ -8,7 +8,7 @@ model: claude-haiku-4-5-20251001
 Corré el auditor sobre los transcripts de este proyecto:
 
 ```bash
-node scripts/token-audit.mjs --top 12
+node "${CLAUDE_PLUGIN_ROOT}/stack/scripts/token-audit.mjs" --top 12
 ```
 
 Argumentos del usuario: `$ARGUMENTS`
@@ -32,9 +32,9 @@ enumeres todo lo que se podría hacer.
 ## Guardar un baseline para comparar
 
 ```bash
-node scripts/token-audit.mjs --baseline
+node "${CLAUDE_PLUGIN_ROOT}/stack/scripts/token-audit.mjs" --baseline
 ```
 
-Escribe `docs/token-baseline.json`. Volvé a correrlo después de un cambio de
+Escribe `docs/token-baseline.json` en el proyecto (crea `docs/` si no existe). Volvé a correrlo después de un cambio de
 configuración o de prompts para medir si sirvió — mismo criterio que el baseline
 de performance de la NFR §8: sin medición previa no hay comparación posible.

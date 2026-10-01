@@ -11,7 +11,7 @@ $ARGUMENTS
 
 ## Pasos
 
-1. Lee `shared/non-functional-requirements.md` y `agents/09-qa-testing/nfr-checklist.md`
+1. Lee `${CLAUDE_PLUGIN_ROOT}/stack/shared/non-functional-requirements.md` y `${CLAUDE_PLUGIN_ROOT}/stack/agents/09-qa-testing/nfr-checklist.md`
 2. Si no hay scope explicito, ejecuta `git diff HEAD` para obtener los cambios de la sesion
 3. Recorre el checklist NFR (9 secciones) item por item contra el codigo del scope
 4. Para cada item responde:
@@ -19,7 +19,7 @@ $ARGUMENTS
    - `N/A + justificacion` (ej: "no aplica: codigo de solo lectura sin estado")
    - `NO CUBIERTO` → bloqueante (CRITICAL o HIGH segun el item)
 5. Devuelve hallazgos **inline en la conversacion** — NO generar archivos
-6. Si no hay CRITICAL ni HIGH: ejecutar `bash hooks/scripts/sellar-gate.sh qa` para sellar el Gate 3
+6. Si no hay CRITICAL ni HIGH: ejecutar `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" qa` para sellar el Gate 3
 
 ## Salida esperada
 

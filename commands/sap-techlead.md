@@ -44,7 +44,7 @@ cat .planning/HANDOFF.json 2>/dev/null
 Si el pedido nombra un proyecto SDD («implementá el SDD aging-ar-mx», o un
 paquete `.zip` del SDD), el plan ya está hecho y aprobado: **no lo rehagas**.
 
-1. Resolvé el motor SDD con el bloque de `skills/sap-sdd/SKILL.md`
+1. Resolvé el motor SDD con el bloque de `${CLAUDE_PLUGIN_ROOT}/skills/sap-sdd/SKILL.md`
    (`SDD=...`, cortando si no aparece).
 2. Si te pasaron un `.zip`, importalo primero, fuera del repo de código:
    `node "$SDD" importar <paquete.zip>`.
@@ -89,8 +89,8 @@ orquestes: resolvela con el comando de ese agente (`/sap-abap`, `/sap-cap`,
 
 Lee el routing para entender dependencias y luego los principios compartidos:
 
-- `orchestrator/routing_rules.json` — reglas de enrutamiento, dependencias y desambiguación
-- `shared/core-dev-principles.md` — principios de desarrollo que aplican a todos los agentes
+- `${CLAUDE_PLUGIN_ROOT}/stack/orchestrator/routing_rules.json` — reglas de enrutamiento, dependencias y desambiguación
+- `${CLAUDE_PLUGIN_ROOT}/stack/shared/core-dev-principles.md` — principios de desarrollo que aplican a todos los agentes
 
 Identifica:
 
@@ -106,7 +106,7 @@ Si hay ambigüedades críticas que bloqueen el diseño, usa `AskUserQuestion` co
 Usa Read tool en **paralelo** para cargar UNICAMENTE los system_prompt.md de los agentes que identificaste en 1.1:
 
 ```text
-agents/{NN-nombre}/system_prompt.md   ← SOLO los agentes que aplican a esta tarea
+${CLAUDE_PLUGIN_ROOT}/stack/agents/{NN-nombre}/system_prompt.md   ← SOLO los agentes que aplican a esta tarea
 ```
 
 **NO cargues TODOS los agentes** — solo los que participarán. Esto reduce el contexto significativamente.
@@ -122,7 +122,7 @@ Una vez completada la lectura, llama **`EnterPlanMode`**.
 Verificar si existe `.planning/CONTEXT.md`:
 
 - **Si existe**: leerlo y agregar las decisiones de esta sesión al final (no borrar decisiones previas).
-- **Si no existe**: crearlo con la estructura de `shared/context-tracking.md`.
+- **Si no existe**: crearlo con la estructura de `${CLAUDE_PLUGIN_ROOT}/stack/shared/context-tracking.md`.
 
 El CONTEXT.md se actualiza **progresivamente** durante la sesión: al recibir el output de cada subagente, agregar sus decisiones técnicas con el ID `D-NN` correspondiente.
 
@@ -241,7 +241,7 @@ Marca cada tarea como `completed` con `TaskUpdate` al recibir el resultado del s
 ## PASO 3.5 — Gate obligatorio: Review + QA NFR (BLOQUEANTE)
 
 > Aplica si CUALQUIER subagente produjo codigo productivo (AGENT_02, 03, 04, 05, 06, 08, 10).
-> Referencia: `orchestrator/routing_rules.json` → `mandatory_post_task_review`.
+> Referencia: `${CLAUDE_PLUGIN_ROOT}/stack/orchestrator/routing_rules.json` → `mandatory_post_task_review`.
 
 Tras completar todos los subagentes funcionales y ANTES del cierre:
 
@@ -251,7 +251,7 @@ Tras completar todos los subagentes funcionales y ANTES del cierre:
    - Si CRITICAL/HIGH → volver a delegar al agente correspondiente para corregir, repetir review
 
 2. **Invocar AGENT_09 (QA & Testing)** con `Agent` tool
-   - Tarea: "Ejecutar `agents/09-qa-testing/nfr-checklist.md` contra el diff de la sesion. Devolver hallazgos inline con evidencia o NO CUBIERTO. Tras completar sin CRITICAL/HIGH, ejecutar `bash hooks/scripts/sellar-gate.sh qa`."
+   - Tarea: "Ejecutar `${CLAUDE_PLUGIN_ROOT}/stack/agents/09-qa-testing/nfr-checklist.md` contra el diff de la sesion. Devolver hallazgos inline con evidencia o NO CUBIERTO. Tras completar sin CRITICAL/HIGH, ejecutar `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" qa`."
    - Si bloquea por NFR no cubierto → corregir antes de cerrar
 
 3. **Verificar los sellos**: que los dos subagentes hayan reportado `sellar-gate.sh` en verde.

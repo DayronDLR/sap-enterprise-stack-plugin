@@ -17,7 +17,7 @@ con el agente que corresponde, sin crear un proyecto.
 
 ## 1. Cargar el skill y el motor
 
-Leé `skills/sap-sdd/SKILL.md`: tiene el protocolo de cierre de fase,
+Leé `${CLAUDE_PLUGIN_ROOT}/skills/sap-sdd/SKILL.md`: tiene el protocolo de cierre de fase,
 el contrato de artefactos y cómo resolver el CLI. Resolvelo una vez
 (`SDD=...`, con el corte si no aparece) y usalo para todo lo que sigue. **No
 escribas `estado.json` ni `decisiones.md` a mano**: los escribe `sdd aprobar`.
@@ -38,10 +38,10 @@ El argumento es `<proyecto> [C1|C2|C3|C4|estado]`.
 
 | Fase | Guía (leela entera antes de producir nada) |
 |---|---|
-| C1 Captura | `skills/sap-sdd/reference/C1-captura.md` |
-| C2 Escenarios | `skills/sap-sdd/reference/C2-escenarios.md` |
-| C3 Diseño | `skills/sap-sdd/reference/C3-diseno.md` |
-| C4 Plan y estimación | `skills/sap-sdd/reference/C4-plan.md` |
+| C1 Captura | `${CLAUDE_PLUGIN_ROOT}/skills/sap-sdd/reference/C1-captura.md` |
+| C2 Escenarios | `${CLAUDE_PLUGIN_ROOT}/skills/sap-sdd/reference/C2-escenarios.md` |
+| C3 Diseño | `${CLAUDE_PLUGIN_ROOT}/skills/sap-sdd/reference/C3-diseno.md` |
+| C4 Plan y estimación | `${CLAUDE_PLUGIN_ROOT}/skills/sap-sdd/reference/C4-plan.md` |
 
 Cada guía dice qué leer, qué producir, con qué forma y qué no hacer. En C4, la
 estimación tiene que ser **justa**: seguí las reglas de «Estimar lo justo» al pie

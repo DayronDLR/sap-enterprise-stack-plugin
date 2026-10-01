@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "rm -f \"${CLAUDE_PROJECT_DIR:-.}/tmp/.active-sap-agent\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.review-done\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.qa-nfr-done\" \"${CLAUDE_PROJECT_DIR:-.}\"/tmp/.agent-turn-count-* 2>/dev/null; rm -f \"${CLAUDE_PROJECT_DIR:-.}\"/tmp/.close-note-* 2>/dev/null; echo '# Contexto SAP Stack\\nSistema: SAP S/4HANA 2023 On-Premise + SAP BTP\\nLandscape: DEV > QAS > PRD | Principio: Clean Core\\nGates DoD: corren al commitear/pushear, o con /sap-gates. No en cada turno.\\nRouting: orchestrator/routing_rules.json'"
+            "command": "rm -f \"${CLAUDE_PROJECT_DIR:-.}/tmp/.active-sap-agent\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.review-done\" \"${CLAUDE_PROJECT_DIR:-.}/tmp/.qa-nfr-done\" \"${CLAUDE_PROJECT_DIR:-.}\"/tmp/.agent-turn-count-* 2>/dev/null; rm -f \"${CLAUDE_PROJECT_DIR:-.}\"/tmp/.close-note-* 2>/dev/null; echo '# Contexto SAP Stack\\nSistema: SAP S/4HANA 2023 On-Premise + SAP BTP\\nLandscape: DEV > QAS > PRD | Principio: Clean Core\\nGates DoD: corren al commitear/pushear, o con /sap-gates. No en cada turno.\\nRouting: '\"${CLAUDE_PLUGIN_ROOT}\"'/stack/orchestrator/routing_rules.json'"
           }
         ],
         "matcher": "startup|clear"
@@ -75,7 +75,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '# Re-inyeccion post-compactacion\\nStack SAP activo. Releer CLAUDE.md, shared/core-dev-principles.md, shared/non-functional-requirements.md y rules/DEFINITION-OF-DONE.md si necesitas contexto.\\nRouting: orchestrator/routing_rules.json'"
+            "command": "echo '# Re-inyeccion post-compactacion\\nStack SAP activo. Releer CLAUDE.md, '\"${CLAUDE_PLUGIN_ROOT}\"'/stack/shared/core-dev-principles.md, '\"${CLAUDE_PLUGIN_ROOT}\"'/stack/shared/non-functional-requirements.md y '\"${CLAUDE_PLUGIN_ROOT}\"'/stack/rules/DEFINITION-OF-DONE.md si necesitas contexto.\\nRouting: '\"${CLAUDE_PLUGIN_ROOT}\"'/stack/orchestrator/routing_rules.json'"
           }
         ]
       }

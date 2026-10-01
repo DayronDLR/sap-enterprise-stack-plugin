@@ -1,0 +1,184 @@
+{
+  "version": "2.0.0",
+  "description": "Reglas de enrutamiento del Orquestador SAP hacia sub-agentes. v2: keywords reducidos, aliases separados, contradicciones resueltas.",
+  "routing_rules": [
+    {
+      "agent_id": "AGENT_01",
+      "name": "Requirements Analyst",
+      "trigger_keywords": [
+        "requerimiento", "requirement", "blueprint", "functional spec",
+        "gap analysis", "AS-IS", "TO-BE", "user story", "scope", "alcance"
+      ],
+      "aliases": ["FS", "brecha", "workshop", "stakeholder", "caso de uso", "épica", "diseño funcional", "proceso de negocio"],
+      "output_formats": ["Functional Spec", "Blueprint Document", "Gap Analysis", "Process Flow"],
+      "dependencies": [],
+      "typical_duration_hours": "4-16"
+    },
+    {
+      "agent_id": "AGENT_02",
+      "name": "Integration Architect",
+      "trigger_keywords": [
+        "integración", "iFlow", "CPI", "IDoc", "middleware",
+        "SAP Integration Suite", "Event Mesh", "interface spec"
+      ],
+      "aliases": ["PI", "PO", "SOAP", "webhook", "connector", "mapping XML", "Groovy script", "Salesforce", "external system"],
+      "output_formats": ["iFlow Design", "Interface Spec", "API Contract", "Mapping Spec"],
+      "dependencies": ["AGENT_01"],
+      "typical_duration_hours": "4-24",
+      "notes": "Para APIs REST/OData genéricas, preferir AGENT_03 (CAP) o AGENT_06 (ABAP). Este agente es para integraciones entre sistemas."
+    },
+    {
+      "agent_id": "AGENT_03",
+      "name": "SAP BTP & CAP Developer",
+      "trigger_keywords": [
+        "CAP", "BTP", "Cloud Foundry", "Kyma", "MTA", "mta.yaml",
+        "XSUAA", "approuter", "cds watch", "side-by-side", "multi-tenant"
+      ],
+      "aliases": ["Cloud Application Programming", "Node.js SAP", "Java CAP", "xs-security", "HDI container", "cf push", "mbt build", "SAP Build", "SaaS BTP", "cds deploy", "BTP cockpit", "extensión cloud"],
+      "output_formats": ["CAP Service", "CDS Schema", "MTA Descriptor", "BTP Architecture", "xs-security.json"],
+      "dependencies": [],
+      "typical_duration_hours": "8-60",
+      "notes": "Para CDS ABAP on-premise, preferir AGENT_06. Para UI sobre CAP, preferir AGENT_04."
+    },
+    {
+      "agent_id": "AGENT_04",
+      "name": "Fiori / UI5 Developer",
+      "trigger_keywords": [
+        "Fiori", "UI5", "SAPUI5", "Fiori Elements", "launchpad",
+        "ListReport", "ObjectPage", "freestyle UI5", "Workzone"
+      ],
+      "aliases": ["tile", "frontend SAP", "UX SAP", "worklist", "BAS", "annotation UI", "Building Blocks"],
+      "output_formats": ["UI5 App", "Fiori App", "UI Annotation", "OPA5 Tests"],
+      "dependencies": [],
+      "typical_duration_hours": "8-40",
+      "notes": "Para RAP backend sin UI, preferir AGENT_06. Para CAP backend, preferir AGENT_03."
+    },
+    {
+      "agent_id": "AGENT_05",
+      "name": "SAP HANA Cloud Specialist",
+      "trigger_keywords": [
+        "HANA Cloud", "Calculation View", "SQLScript", "HDI",
+        "analytical privilege", "Smart Data Access", "SDA", "SDI",
+        "SAP Datasphere", "BW/4HANA"
+      ],
+      "aliases": ["HANA modeling", "column store", "row store", "EXPLAIN PLAN", "M_SQL_PLAN_CACHE", "SAC live", "HANA procedure", "HANA synonym", "HANA Data Lake", "particionamiento HANA"],
+      "output_formats": ["Calculation View Design", "SQLScript Procedure", "HDI Artifacts", "HANA Performance Analysis"],
+      "dependencies": [],
+      "typical_duration_hours": "4-40"
+    },
+    {
+      "agent_id": "AGENT_06",
+      "name": "ABAP Developer",
+      "trigger_keywords": [
+        "ABAP", "RAP", "BAdI", "enhancement", "CDS View ABAP",
+        "EML", "report ABAP", "BAPI", "RFC", "ABAP Unit"
+      ],
+      "aliases": ["SE38", "SE80", "user exit", "función module", "debugging ABAP", "ALV", "DDIC", "tabla custom", "Z-table", "código ABAP"],
+      "output_formats": ["ABAP Code", "Technical Spec", "Code Review", "Unit Test"],
+      "dependencies": [],
+      "typical_duration_hours": "2-40",
+      "notes": "Para CDS con anotaciones UI Fiori, preferir AGENT_04. Para SQLScript/AMDP, preferir AGENT_05."
+    },
+    {
+      "agent_id": "AGENT_07",
+      "name": "Basis & Security Advisor",
+      "trigger_keywords": [
+        "transport", "STMS", "rol", "autorización", "PFCG",
+        "SoD", "landscape", "BASIS", "cloud connector"
+      ],
+      "aliases": ["perfil", "mandante", "kernel", "patch", "refresh", "copia de sistema", "segregation of duties"],
+      "output_formats": ["Role Design", "Transport Strategy", "Security Concept", "Landscape Diagram"],
+      "dependencies": [],
+      "typical_duration_hours": "2-8"
+    },
+    {
+      "agent_id": "AGENT_08",
+      "name": "Data Migration Lead",
+      "trigger_keywords": [
+        "migración", "migration", "LTMC", "LSMW", "mapeo de campos",
+        "carga de datos", "dato maestro", "master data", "reconciliation"
+      ],
+      "aliases": ["legacy data", "transformación datos", "BODS", "MDG", "data quality", "extracción"],
+      "output_formats": ["Migration Plan", "Field Mapping", "Migration Object", "Reconciliation Report"],
+      "dependencies": ["AGENT_01"],
+      "typical_duration_hours": "8-60"
+    },
+    {
+      "agent_id": "AGENT_09",
+      "name": "QA & Testing Specialist",
+      "trigger_keywords": [
+        "test", "prueba", "UAT", "caso de prueba", "go-live checklist",
+        "defecto", "regresión", "sign-off"
+      ],
+      "aliases": ["testing", "bug", "eCATT", "TAO", "script de prueba", "evidencia", "aceptación"],
+      "output_formats": ["Test Cases", "Test Script", "Defect Report", "UAT Plan", "Go-Live Checklist"],
+      "dependencies": ["AGENT_01"],
+      "typical_duration_hours": "4-16"
+    },
+    {
+      "agent_id": "AGENT_10",
+      "name": "SAP DevOps Engineer",
+      "trigger_keywords": [
+        "CI/CD", "pipeline", "gCTS", "abapGit", "ATC",
+        "Jenkins", "GitHub Actions", "deployment automation"
+      ],
+      "aliases": ["Azure DevOps", "versionado", "code check", "CTS+", "release", "Focused Run", "monitoreo continuo"],
+      "output_formats": ["Pipeline Config", "gCTS Setup", "ATC Rules", "Automation Script"],
+      "dependencies": [],
+      "typical_duration_hours": "4-20",
+      "notes": "Para seguridad en PRs y security scanning, consultar docs/SECURITY-SCANNING.md"
+    },
+    {
+      "agent_id": "AGENT_11",
+      "name": "SAP Documentation Architect",
+      "trigger_keywords": [
+        "documentación", "documento técnico", "docx", "pandoc",
+        "handover", "entregable", "technical writing", "ADR", "documentar"
+      ],
+      "aliases": ["word", "template cliente", "architecture document", "deliverable", "spec documento", "generar documento"],
+      "output_formats": ["Technical Document (.docx)", "Architecture Document", "API Spec", "Handover Package"],
+      "dependencies": [],
+      "typical_duration_hours": "2-8"
+    }
+  ],
+  "disambiguation": {
+    "description": "Cuando un keyword podría activar múltiples agentes, usar estas reglas de desambiguación",
+    "rules": [
+      { "keyword": "API", "context_clue": "integración entre sistemas / iFlow", "route_to": "AGENT_02" },
+      { "keyword": "API", "context_clue": "servicio OData para Fiori / CAP", "route_to": "AGENT_03" },
+      { "keyword": "API", "context_clue": "documentar API / OpenAPI spec", "route_to": "AGENT_11" },
+      { "keyword": "OData", "context_clue": "servicio para app Fiori", "route_to": "AGENT_04" },
+      { "keyword": "OData", "context_clue": "consumir desde CAP remoto", "route_to": "AGENT_03" },
+      { "keyword": "CDS", "context_clue": "CDS ABAP on-premise / RAP", "route_to": "AGENT_06" },
+      { "keyword": "CDS", "context_clue": "CDS CAP Node.js / schema.cds", "route_to": "AGENT_03" },
+      { "keyword": "CDS", "context_clue": "CDS con anotaciones @UI para Fiori Elements", "route_to": "AGENT_04" },
+      { "keyword": "RAP", "context_clue": "backend ABAP sin UI", "route_to": "AGENT_06" },
+      { "keyword": "RAP", "context_clue": "backend para app Fiori Elements", "route_to": "AGENT_04" },
+      { "keyword": "deploy", "context_clue": "deploy BTP / cf / mta", "route_to": "AGENT_03" },
+      { "keyword": "deploy", "context_clue": "CI/CD pipeline / automatización", "route_to": "AGENT_10" },
+      { "keyword": "deploy", "context_clue": "transporte ABAP / STMS", "route_to": "AGENT_07" }
+    ]
+  },
+  "escalation_rules": {
+    "multiple_agents_threshold": 2,
+    "always_notify_architect": ["go-live", "landscape change", "security change", "scope change"],
+    "parallel_execution_allowed": ["AGENT_02", "AGENT_04", "AGENT_05", "AGENT_06"],
+    "sequential_when_dependent": {
+      "AGENT_09": { "requires": ["AGENT_01"], "reason": "QA necesita requerimientos definidos" },
+      "AGENT_08": { "requires": ["AGENT_01"], "reason": "Migración necesita mapeo de campos del FS" },
+      "AGENT_11": { "requires": ["AGENT_01"], "reason": "Documentación necesita contexto del requerimiento" }
+    }
+  },
+  "mandatory_post_task_review": {
+    "description": "Gate de cierre obligatorio: tras cualquier agente que produzca codigo productivo, SIEMPRE invocar reviewer + AGENT_09 (NFR checklist) antes de dar la tarea por cerrada. El Stop hook (mandatory-review.sh) bloquea hasta que ambos corran.",
+    "applies_to": ["AGENT_02", "AGENT_03", "AGENT_04", "AGENT_05", "AGENT_06", "AGENT_08", "AGENT_10"],
+    "post_agents": ["reviewer", "AGENT_09"],
+    "exempt": ["AGENT_01", "AGENT_07", "AGENT_11"],
+    "exempt_reason": "Estos agentes producen documentos/configuracion sin codigo ejecutable productivo. El reviewer aplica si el entregable incluye scripts o roles tecnicos.",
+    "blocking": true,
+    "flag_files": {
+      "reviewer": "tmp/.review-done",
+      "AGENT_09": "tmp/.qa-nfr-done"
+    }
+  }
+}

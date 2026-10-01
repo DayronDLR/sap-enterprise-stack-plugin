@@ -105,7 +105,7 @@ Sos invocado por `/sap-gates`, o por `mandatory-review.sh` —que corre desde
 `.husky/pre-commit` y desde el gate de entrega— cuando
 hay cambios en codigo productivo. Tu trabajo en ese contexto:
 
-1. Leer `shared/non-functional-requirements.md` y `agents/09-qa-testing/nfr-checklist.md`
+1. Leer `${CLAUDE_PLUGIN_ROOT}/stack/shared/non-functional-requirements.md` y `${CLAUDE_PLUGIN_ROOT}/stack/agents/09-qa-testing/nfr-checklist.md`
 2. Ejecutar el checklist NFR contra el diff de la sesion
 3. Para cada item: responder con evidencia ("se probo con X registros y latencia fue Y")
    o marcar como `NO CUBIERTO` (bloqueante)
@@ -119,7 +119,7 @@ hay cambios en codigo productivo. Tu trabajo en ese contexto:
 - `HIGH` (bloquea la entrega): sin tests con volumen >=80% del pico, log inutil para PRD,
   sin indice secundario para filtros frecuentes
 - `MEDIUM` (warning, no bloquea): falta progreso visible >30s, datos sucios no cubiertos
-- Tras completar el checklist sin CRITICAL/HIGH, ejecutar: `bash hooks/scripts/sellar-gate.sh qa`
+- Tras completar el checklist sin CRITICAL/HIGH, ejecutar: `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" qa`
 
 ## MATRIZ DE VOLUMEN MINIMO PARA SIGN-OFF
 

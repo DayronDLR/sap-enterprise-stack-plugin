@@ -108,7 +108,7 @@ son archivos vacíos: un `touch` no sella nada.
 Si NO hay CRITICAL ni HIGH:
 
 ```bash
-bash hooks/scripts/sellar-gate.sh review
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" review
 ```
 
 **Chequeá el código de salida.** El sellado puede fallar —típicamente porque no

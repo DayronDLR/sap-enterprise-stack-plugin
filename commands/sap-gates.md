@@ -17,7 +17,7 @@ Argumentos opcionales: `$ARGUMENTS`
 ## Paso 0 — ¿Es un ajuste chico de configuración?
 
 ```bash
-node hooks/scripts/lib/clase-cambio.mjs
+node "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib/clase-cambio.mjs"
 ```
 
 Si responde `"clase":"config-trivial"`, el camino es corto. La clase exige que
@@ -36,8 +36,8 @@ va por el camino completo.
   URLs de un entorno productivo; no cambia quién puede entrar ni qué puede hacer
   (login, roles, scopes, rutas públicas); el JSON/YAML es válido; las rutas y los
   nombres existen; y nada más cambió. Si todo está bien:
-  `bash hooks/scripts/sellar-gate.sh review`.
-- **Gate 3 no aplica**: `bash hooks/scripts/sellar-gate.sh qa --config-trivial`.
+  `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" review`.
+- **Gate 3 no aplica**: `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" qa --config-trivial`.
   El script vuelve a calcular la clase y se niega a sellar si no se cumple.
 
 Cualquier otra respuesta: los tres gates completos, pasos 1 a 3.
@@ -45,7 +45,7 @@ Cualquier otra respuesta: los tres gates completos, pasos 1 a 3.
 ## Paso 1 — Gate 1: Quality
 
 ```bash
-bash hooks/scripts/quality-gate.sh --mode=cli
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/quality-gate.sh" --mode=cli
 ```
 
 Si sale distinto de 0, **corregí los hallazgos antes de seguir**. No tiene sentido
@@ -62,19 +62,19 @@ Bloquea si reporta CRITICAL o HIGH. Si el resultado es aceptable, **anotá el
 hash del árbol revisado** — no un `touch` pelado:
 
 ```bash
-bash hooks/scripts/sellar-gate.sh review
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" review
 ```
 
 ## Paso 3 — Gate 3: QA + NFR
 
-Invocá el agente `sap-qa` con el checklist de `agents/09-qa-testing/nfr-checklist.md`
+Invocá el agente `sap-qa` con el checklist de `${CLAUDE_PLUGIN_ROOT}/stack/agents/09-qa-testing/nfr-checklist.md`
 —sólo las secciones de las tecnologías que toca el diff—. Tiene que responder **con evidencia**, no con supuestos: concurrencia,
 volumen, idempotencia, restart-ability, observabilidad y locking.
 
 Si pasa:
 
 ```bash
-bash hooks/scripts/sellar-gate.sh qa
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" qa
 ```
 
 ## Cierre
