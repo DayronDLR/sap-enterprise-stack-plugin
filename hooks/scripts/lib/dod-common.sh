@@ -1722,7 +1722,7 @@ dod_trailer_cubre_su_arbol() {
     #
     # Una version de este arreglo hizo que MAS DE UN trailer denegara, con el
     # argumento de que un commit sellado dos veces es ambiguo. Estaba mal por dos
-    # motivos. Rompe el squash, que `rules/DEFINITION-OF-DONE.md` promete que
+    # motivos. Rompe el squash, que `docs/DOD-ENTREGA.md` promete que
     # sobrevive. Y no compra nada: el trailer se ata al ARBOL, no a que los gates
     # hayan corrido, asi que quien edite el mensaje a mano escribe el trailer
     # correcto de una sola vez y ningun conteo lo frena.
@@ -1850,7 +1850,7 @@ dod_delivery_tree_logged() {
 # `DOD_HOOK_TRAILER=NOTAS.md` convierte el deny de un backdoor sin sellar en
 # allow, en el hook y en `.husky/pre-push`.
 #
-# Eso falsificaba literalmente lo que promete `rules/DEFINITION-OF-DONE.md`: "la
+# Eso falsificaba literalmente lo que promete `docs/DOD-ENTREGA.md`: "la
 # frontera es el commit que introdujo el hook de sellado, que es un hecho de la
 # historia y no se mueve al clonar". Se movia con un `export`. Y `bin/ses.mjs` ya
 # lo tenia hardcodeado, asi que las dos implementaciones divergian — justo la

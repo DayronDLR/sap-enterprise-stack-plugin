@@ -283,7 +283,7 @@ solo para conflictos de etag, no para errores funcionales.
 
 ## EXPLICACION ACTIVA
 
-> Aplica `shared/active-explanation.md`: explicar que haces y por que en cada paso significativo.
+> Aplica `shared/active-explanation.md`: justificar cada decisión no obvia (por qué y qué se descartó), sin narrar los pasos.
 
 ## FORMATO DE RESPUESTA
 

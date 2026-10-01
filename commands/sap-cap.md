@@ -68,7 +68,7 @@ Model (CAP), SAP BTP servicios, y arquitecturas de extensión limpia (Clean Core
 
 ## EXPLICACION ACTIVA
 
-> Aplica `shared/active-explanation.md`: explicar que haces y por que en cada paso significativo.
+> Aplica `shared/active-explanation.md`: justificar cada decisión no obvia (por qué y qué se descartó), sin narrar los pasos.
 
 ## Referencia técnica — bajo demanda
 
@@ -278,39 +278,35 @@ la simplificacion pensando que fue olvido. NO se usa para saltarse NFR §1-§3,
 
 ### shared/active-explanation.md
 
-# Explicacion Activa — Agentes de Desarrollo
+# Decisiones explicadas — Agentes de Desarrollo
 
-> Aplica a TODOS los agentes que generan codigo o artefactos tecnicos.
+> Aplica a TODOS los agentes que generan código o artefactos técnicos. Es
+> compatible con `shared/output-brevity.md`: se explica el **porqué de una
+> decisión**, nunca se narra el **paso**.
 
 ## Regla
 
-Al ejecutar cualquier tarea, **explica lo que haces en cada paso ANTES de hacerlo**. El usuario debe entender el razonamiento detras de cada decision tecnica sin tener que preguntar.
+Cada decisión técnica **no obvia** lleva su justificación en el mismo lugar donde
+aparece, en una o dos líneas:
 
-## Formato
-
-Para cada paso significativo de tu respuesta, incluir:
-
-1. **Que voy a hacer** — descripcion breve de la accion
-2. **Por que** — justificacion tecnica (patron SAP, best practice, restriccion del sistema)
-3. **Alternativas descartadas** — si hay una decision no obvia, mencionar que otra opcion existia y por que no se eligio (1 linea)
+1. **Por qué** — el patrón SAP, la best practice o la restricción del sistema.
+2. **Descartado** — si había otra opción razonable, cuál y por qué no (1 línea).
 
 ## Ejemplo
 
 ```text
-Creo la CDS Interface View con @AccessControl.authorizationCheck: #CHECK
-porque en S/4HANA Clean Core toda entidad expuesta requiere control de acceso
-a nivel de CDS. Sin esto, cualquier usuario con acceso al servicio OData veria
-todos los registros sin filtro de autorizacion.
-Descartado: #NOT_REQUIRED — solo aplica para vistas auxiliares sin exposicion directa.
+@AccessControl.authorizationCheck: #CHECK — en Clean Core toda entidad expuesta
+por OData necesita DCL; sin esto el servicio devuelve todos los registros.
+Descartado: #NOT_REQUIRED — sólo para vistas auxiliares sin exposición.
 ```
 
-## Cuando NO explicar
+## Qué NO escribir
 
-- Pasos triviales (crear archivo, importar libreria estandar)
-- Codigo boilerplate que sigue un template ya establecido
-- Repeticiones de un patron ya explicado en la misma respuesta
+- «Voy a crear…», «Ahora hago…»: la narración de lo que se ve en el diff.
+- La justificación de pasos triviales, boilerplate o un patrón ya explicado.
 
-El objetivo es transferencia de conocimiento, no verbosidad.
+Explicar el razonamiento paso a paso **es** el entregable sólo en el agente
+Mentor.
 
 ### shared/non-functional-requirements.md
 
@@ -380,7 +376,7 @@ línea por línea · repetir el requerimiento antes de responderlo · resúmenes
 cierre que enumeran lo que se acaba de mostrar · "próximos pasos" especulativos
 que nadie pidió · disclaimers defensivos genéricos.
 
-**Sí escribir:** el entregable completo y correcto · las transacciones SAP
+**Sí escribir:** el entregable completo y correcto · el porqué de cada decisión no obvia, en una línea (`shared/active-explanation.md`) · las transacciones SAP
 relevantes · los supuestos tomados si el requerimiento era ambiguo · los riesgos
 reales con su severidad · qué quedó fuera de alcance y por qué.
 

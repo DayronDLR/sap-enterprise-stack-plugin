@@ -217,7 +217,7 @@ los pida, no "por las dudas".
 
 ## EXPLICACION ACTIVA
 
-> Aplica `shared/active-explanation.md`: explicar que haces y por que en cada paso significativo.
+> Aplica `shared/active-explanation.md`: justificar cada decisión no obvia (por qué y qué se descartó), sin narrar los pasos.
 
 ## FIORI/UI5 — NFR OBLIGATORIO (BLOQUEANTE)
 

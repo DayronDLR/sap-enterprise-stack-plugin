@@ -64,7 +64,7 @@ paquete `.zip` del SDD), el plan ya está hecho y aprobado: **no lo rehagas**.
      `/sap-sdd`.
 5. `entradas/` no se lee. La fuente es el SDD.
 
-Después seguí con el PASO 1.2 (pre-carga de los agentes que el inventario
+Después seguí con el PASO 1.2 (ubicar la persona de los agentes que el inventario
 necesita) y el resto del flujo, incluido el gate del PASO 3.5.
 
 ---
@@ -85,7 +85,7 @@ orquestes: resolvela con el comando de ese agente (`/sap-abap`, `/sap-cap`,
 
 ---
 
-## PASO 1 — Análisis técnico y pre-carga (ejecución normal)
+## PASO 1 — Análisis técnico (ejecución normal)
 
 ### 1.1 — Lee el contexto del stack
 
@@ -103,19 +103,20 @@ Identifica:
 
 Si hay ambigüedades críticas que bloqueen el diseño, usa `AskUserQuestion` con máximo 2 preguntas antes de continuar.
 
-### 1.2 — Pre-carga de system prompts (SOLO los necesarios)
+### 1.2 — Ubicá la persona de cada agente (no la leas)
 
-Usa Read tool en **paralelo** para cargar UNICAMENTE los system_prompt.md de los agentes que identificaste en 1.1:
+Anotá la ruta del system prompt de cada agente que identificaste en 1.1:
 
 ```text
-.agents/agents/{NN-nombre}/system_prompt.md   ← SOLO los agentes que aplican a esta tarea
+.agents/agents/{NN-nombre}/system_prompt.md
 ```
 
-**NO cargues TODOS los agentes** — solo los que participarán. Esto reduce el contexto significativamente.
+**No lo leas ni lo copies.** Cada subagente lee el suyo (PASO 3.2). Antes el
+orquestador cargaba todas las personas en su contexto y después las reescribía
+enteras en cada prompt: hasta ~4k tokens de salida por subagente, pagados dos
+veces, para un texto que el subagente puede leer solo.
 
-Guarda el contenido de cada system_prompt en tu contexto — lo embederás completo en el prompt de cada subagente.
-
-Una vez completada la lectura, llama **`EnterPlanMode`**.
+Llamá **`EnterPlanMode`**.
 
 ### 1.3 — CONTEXT.md (solo en sesiones complejas)
 
@@ -164,7 +165,7 @@ Establece dependencias entre tareas con `TaskUpdate` → `addBlockedBy` según l
 
 ### 3.2 — Lanzamiento de subagentes especializados
 
-Con los system_prompts ya cargados en tu contexto (PASO 1.2), lanza los subagentes usando el `Agent` tool.
+Lanzá los subagentes con el `Agent` tool. Cada uno recibe la **ruta** de su persona (PASO 1.2), no su contenido.
 
 **Reglas de ejecución:**
 
@@ -173,12 +174,14 @@ Con los system_prompts ya cargados en tu contexto (PASO 1.2), lanza los subagent
 
 Marca cada tarea como `in_progress` con `TaskUpdate` **antes** de lanzar el subagente.
 
-**Estructura del prompt para cada subagente** (el system_prompt va embebido, no como instrucción de lectura):
+**Estructura del prompt para cada subagente:**
 
 ```text
 # Tu Rol y Expertise
 
-[PEGA AQUÍ EL CONTENIDO COMPLETO DEL SYSTEM_PROMPT DEL AGENTE — sin omitir nada]
+Antes de cualquier otra cosa, leé tu system prompt y adoptalo como rol:
+`[RUTA DEL PASO 1.2, ya resuelta — ej. .agents/agents/06-abap-developer/system_prompt.md]`
+Las reglas `shared/…` que nombre están en `.agents/shared/`.
 
 ---
 

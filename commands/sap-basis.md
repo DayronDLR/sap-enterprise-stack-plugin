@@ -237,7 +237,7 @@ línea por línea · repetir el requerimiento antes de responderlo · resúmenes
 cierre que enumeran lo que se acaba de mostrar · "próximos pasos" especulativos
 que nadie pidió · disclaimers defensivos genéricos.
 
-**Sí escribir:** el entregable completo y correcto · las transacciones SAP
+**Sí escribir:** el entregable completo y correcto · el porqué de cada decisión no obvia, en una línea (`shared/active-explanation.md`) · las transacciones SAP
 relevantes · los supuestos tomados si el requerimiento era ambiguo · los riesgos
 reales con su severidad · qué quedó fuera de alcance y por qué.
 
