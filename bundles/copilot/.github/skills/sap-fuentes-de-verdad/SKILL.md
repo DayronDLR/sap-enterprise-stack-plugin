@@ -1,6 +1,6 @@
 ---
 applyTo: **
-description: Catálogo de fuentes de verdad por stack SAP — qué documentación oficial es autoritativa para ABAP/RAP, CAP/BTP, Fiori/UI5, HANA Cloud e Integration Suite, qué NO sirve para citar en cada una, y qué archivo del proyecto manda para cada dato (manifest.json, mta.yaml, srv/*.cds, .bdef, exports de iFlow). Úsalo antes de citar una API, una anotación, un release o un valor de configuración, en código o en documentación.
+description: Catálogo de fuentes de verdad por stack SAP — qué documentación oficial es autoritativa para ABAP/RAP, CAP/BTP, Fiori/UI5, HANA Cloud, Integration Suite, requerimientos, Basis/seguridad, migración, QA y DevOps, qué NO sirve para citar en cada una, y qué archivo del proyecto manda para cada dato (manifest.json, mta.yaml, srv/*.cds, .bdef, exports de iFlow). Úsalo antes de citar una API, una anotación, un release o un valor de configuración, en código o en documentación.
 ---
 
 <!-- prompt-meta: last_reviewed=2026-09-25; sap_baseline=2025/2026; review_cycle_days=180 -->
@@ -11,7 +11,7 @@ Una fuente de verdad es **de un stack, no del stack entero**. El agente ABAP no
 cita capire y el agente CAP no cita la ABAP Keyword Documentation: citar la
 fuente equivocada es citar mal, aunque el dato suene plausible.
 
-**No leas los cinco archivos**: leé el de tu stack.
+**No leas los diez archivos**: leé el de tu stack.
 
 | Tu stack | Leé |
 | --- | --- |
@@ -20,6 +20,11 @@ fuente equivocada es citar mal, aunque el dato suene plausible.
 | Fiori, SAPUI5, Fiori Elements, Launchpad | `sap-fuentes-de-verdad/reference/fiori-ui5.md` |
 | HANA Cloud, SQLScript, Calculation Views | `sap-fuentes-de-verdad/reference/hana.md` |
 | Integration Suite, CPI, IDoc, APIs externas | `sap-fuentes-de-verdad/reference/integration.md` |
+| Requirements, fit-to-standard, blueprint, gap analysis | `sap-fuentes-de-verdad/reference/requirements.md` |
+| Basis, autorizaciones (PFCG/SU24), transportes, IAS/IPS, GRC | `sap-fuentes-de-verdad/reference/basis-security.md` |
+| Migración de datos, Migration Cockpit, LTMOM | `sap-fuentes-de-verdad/reference/migration.md` |
+| QA: ABAP Unit, ATC, CDS Test Double, QUnit/OPA5, Cloud ALM Test | `sap-fuentes-de-verdad/reference/qa-testing.md` |
+| DevOps: Piper, gCTS, abapGit, CI/CD, Cloud TMS, MTA | `sap-fuentes-de-verdad/reference/devops.md` |
 
 Cada archivo tiene lo mismo, en este orden:
 
@@ -52,7 +57,7 @@ Dentro del corchete, el ID va primero y lo que sigue es detalle: una SAP Note
 se cita `[fuente:sap.notes 3456789]`, una sección `[fuente:abap.rap §draft]`.
 Varias fuentes van separadas por coma: `[fuente:abap.rap, abap.cloud]`.
 
-## Reglas de cita (aplican a los cinco stacks)
+## Reglas de cita (aplican a todos los stacks)
 
 - **Un dato del proyecto se lee del proyecto.** IDs, versiones, entity sets,
   scopes, paths y nombres de servicio salen del archivo que los define, nunca de

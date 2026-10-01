@@ -66,7 +66,7 @@ if [[ "$TOOL_NAME" =~ ^mcp__.*sap[-_]adt__([A-Za-z0-9_]+)$ ]]; then
     ADT_LECTURA_RE='^(Get|Search|List|Read|Describe|Check|Validate|ResolveTransport|RunUnitTest|RunClassUnitTestsLow|RuntimeAnalyze|RuntimeGet|RuntimeList)'
     if [[ ! "$TOOL_ADT" =~ $ADT_LECTURA_RE ]]; then
         if [[ "${SES_ADT_WRITE:-}" = "ask" ]]; then
-            printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"[mcp-guard] %s modifica o ejecuta en el sistema SAP de SAP_ADT_URL. Confirmá que es DEV y que corresponde."}}\n' "$TOOL_ADT"
+            printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"[mcp-guard] %s modifica o ejecuta en el sistema SAP del archivo de SAP_ADT_ENV_PATH. Confirmá que es DEV y que corresponde."}}\n' "$TOOL_ADT"
             exit 0
         fi
         printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[mcp-guard] %s modifica o ejecuta en el sistema SAP, y el stack usa sap-adt en solo lectura. Entregá el código para activarlo en ADT, o, si la persona lo decide, exportá SES_ADT_WRITE=ask para confirmar cada llamada."}}\n' "$TOOL_ADT"

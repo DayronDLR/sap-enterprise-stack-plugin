@@ -175,7 +175,7 @@ DoD hooks. The table maps the few capabilities that need one extra thing:
 | 11 agents · orchestrator · subagents · 17 SAP skills | ✅ | — |
 | DoD quality gates + auto-lint | ✅ | **Windows:** Git Bash or WSL (hooks are bash). Auto-lint uses **only** your project's own `cds` / `ui5lint` / `eslint` (`node_modules/.bin`) and skips if not installed — no download, no global tool, no imposed package manager |
 | 3 MCP servers (CAP, UI5, Fiori Tools) | ✅ | first use downloads the package via `npx` (network, needs only Node) |
-| MCP `sap-adt` — read ABAP from a **live** system | ⚠️ creds | export `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
+| MCP `sap-adt` — read ABAP from a **live** system | ⚠️ creds | a connection `.env` outside the repo + `export SAP_ADT_ENV_PATH=<path>` |
 | `/ses:sap-doc` — document **content** | ✅ | — |
 | `/ses:sap-doc` — **Word/PPTX** output | ➕ add-on | `pandoc` 3.x + `python3` + `pip install python-pptx lxml` |
 | `/ses:sap-doc` — **branded** build (theme + draw.io) | ➕ add-on | the [`sap-doc-toolkit`](https://github.com/DayronDLR/sap-doc-toolkit) companion (MIT) + your own SAP BTP icon set |
@@ -236,9 +236,17 @@ this variable.)
 1. **MCP `sap-adt`** (reads ABAP from the live system) needs credentials:
 
    ```bash
-   export SAP_ADT_URL="https://your-system:44300"
-   export SAP_ADT_USER="..." SAP_ADT_PASSWORD="..." SAP_ADT_CLIENT="100"
+   # ~/.config/sap-adt/dev.env — outside any repo, chmod 600
+   # SAP_URL=https://your-system:44300
+   # SAP_CLIENT=100
+   # SAP_AUTH_TYPE=basic
+   # SAP_USERNAME=...
+   # SAP_PASSWORD=...
+   export SAP_ADT_ENV_PATH="$HOME/.config/sap-adt/dev.env"
    ```
+
+   Over stdio the server reads its connection **only** from that file; without
+   `SAP_ADT_ENV_PATH` it lists its tools and connects to nothing.
 
    The other 3 MCP (CAP, UI5, Fiori Tools) start with no secrets.
 
@@ -493,7 +501,7 @@ de DoD. Los extras solo habilitan capacidades puntuales:
 | Agentes · orquestador · subagentes · 17 skills | ✅ | — |
 | Gates de DoD + auto-lint | ✅ | **Windows:** Git Bash/WSL; el auto-lint usa **solo** el `cds` / `ui5lint` / `eslint` de **tu** proyecto (`node_modules/.bin`) y se omite si no está instalado — no descarga nada, no corre herramienta global, ni impone gestor |
 | 3 MCP (CAP, UI5, Fiori Tools) | ✅ | 1er uso baja el paquete (red) |
-| MCP `sap-adt` (ABAP del sistema **real**) | ⚠️ creds | `SAP_ADT_URL` / `SAP_ADT_USER` / `SAP_ADT_PASSWORD` / `SAP_ADT_CLIENT` |
+| MCP `sap-adt` (ABAP del sistema **real**) | ⚠️ creds | un `.env` de conexión fuera del repo + `SAP_ADT_ENV_PATH` |
 | `/ses:sap-doc` — **contenido** | ✅ | — |
 | `/ses:sap-doc` — salida **Word/PPTX** | ➕ | `pandoc` + `python3` + `pip install python-pptx lxml` |
 | `/ses:sap-doc` — build **branded** | ➕ | companion [`sap-doc-toolkit`](https://github.com/DayronDLR/sap-doc-toolkit) + tus iconos SAP |
@@ -501,7 +509,7 @@ de DoD. Los extras solo habilitan capacidades puntuales:
 
 ## Configuración que requiere acción
 
-1. **MCP `sap-adt`** necesita credenciales (`SAP_ADT_URL/USER/PASSWORD/CLIENT`);
+1. **MCP `sap-adt`** necesita un `.env` de conexión fuera del repo y `SAP_ADT_ENV_PATH` apuntándolo;
    los otros 3 MCP arrancan sin secrets.
 2. **Env de optimización de contexto (opcional)** — se ponen a mano en tu
    `settings.json` (un plugin no puede shippear `env`).

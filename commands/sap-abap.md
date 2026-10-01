@@ -25,12 +25,12 @@ que exista en el catálogo.
 
 ## Integración MCP — ADT (lectura sistema real, opcional)
 
-Si las variables `SAP_ADT_URL`/`SAP_ADT_USER`/`SAP_ADT_PASSWORD`/`SAP_ADT_CLIENT` están configuradas (ver `docs/ENVIRONMENT.md`), las tools MCP de `sap-adt` (paquete comunidad `@mcp-abap-adt/core`, no SAP oficial) permiten leer objetos ABAP del SAP del cliente sin que el usuario pegue código.
+Si `SAP_ADT_ENV_PATH` apunta al archivo de conexión (ver `docs/ENVIRONMENT.md`), las tools MCP de `sap-adt` (paquete comunidad `@mcp-abap-adt/core`, no SAP oficial) permiten leer objetos ABAP del SAP del cliente sin que el usuario pegue código.
 
 **Reglas duras**:
 
 - **Sólo lectura**. Nunca usar este MCP para modificar objetos en el SAP — los cambios se proponen vía diff para que el desarrollador los aplique en ADT/Eclipse o BAS.
-- Antes de proponer un refactor o cambio sobre un objeto Z*, leer su fuente actual con la tool del tipo de objeto: `mcp__plugin_ses_sap-adt__GetClass`, `mcp__plugin_ses_sap-adt__GetInterface`, `mcp__plugin_ses_sap-adt__GetFunctionModule`, `mcp__plugin_ses_sap-adt__GetInclude`, `mcp__plugin_ses_sap-adt__GetTable`, `mcp__plugin_ses_sap-adt__GetView` (CDS), `mcp__plugin_ses_sap-adt__GetBehaviorDefinition`, `mcp__plugin_ses_sap-adt__GetBehaviorImplementation`, `mcp__plugin_ses_sap-adt__GetServiceDefinition`. Para ubicarlo y medir impacto: `mcp__plugin_ses_sap-adt__SearchObject`, `mcp__plugin_ses_sap-adt__GetWhereUsed`. No usar `GetTableContents`/`GetSqlQuery` para esto: leen datos del cliente.
+- Antes de proponer un refactor o cambio sobre un objeto Z*, leer su fuente actual con la tool del tipo de objeto: `mcp__plugin_ses_sap-adt__ReadClass`, `mcp__plugin_ses_sap-adt__ReadInterface`, `mcp__plugin_ses_sap-adt__ReadFunctionModule`, `mcp__plugin_ses_sap-adt__GetInclude`, `mcp__plugin_ses_sap-adt__ReadTable`, `mcp__plugin_ses_sap-adt__ReadView` (CDS), `mcp__plugin_ses_sap-adt__ReadBehaviorDefinition`, `mcp__plugin_ses_sap-adt__ReadBehaviorImplementation`, `mcp__plugin_ses_sap-adt__ReadServiceDefinition`. Para ubicarlo y medir impacto: `mcp__plugin_ses_sap-adt__SearchObject`, `mcp__plugin_ses_sap-adt__GetWhereUsed`. No usar `GetTableContents`/`GetSqlQuery` para esto: leen datos del cliente.
 - Si la conexión falla o las variables no están configuradas, continuar trabajando sin ADT y avisar al usuario.
 
 **Gap conocido:** no hay MCP oficial SAP para validar release-state / Clean Core level de objetos ABAP (CL_*, TABL, DDLS, BDEF) ni para consultar ABAP feature matrix por release. Hoy se cubre con los skills `sap-abap` + `sap-abap-cds` y validación manual contra SAP Help Portal + ATC en el sistema del cliente. Registrado en `docs/MCP-ROADMAP.md`.

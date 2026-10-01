@@ -22,12 +22,12 @@ que exista en el catálogo.
 
 ## Integración MCP — ADT (lectura sistema real, opcional)
 
-Si las variables `SAP_ADT_URL`/`SAP_ADT_USER`/`SAP_ADT_PASSWORD`/`SAP_ADT_CLIENT` están configuradas (ver `docs/ENVIRONMENT.md`), las tools MCP de `sap-adt` (paquete comunidad `@mcp-abap-adt/core`, no SAP oficial) permiten leer objetos ABAP del SAP del cliente sin que el usuario pegue código.
+Si `SAP_ADT_ENV_PATH` apunta al archivo de conexión (ver `docs/ENVIRONMENT.md`), las tools MCP de `sap-adt` (paquete comunidad `@mcp-abap-adt/core`, no SAP oficial) permiten leer objetos ABAP del SAP del cliente sin que el usuario pegue código.
 
 **Reglas duras**:
 
 - **Sólo lectura**. Nunca usar este MCP para modificar objetos en el SAP — los cambios se proponen vía diff para que el desarrollador los aplique en ADT/Eclipse o BAS.
-- Antes de proponer un refactor o cambio sobre un objeto Z*, leer su fuente actual con la tool del tipo de objeto: `mcp.sap-adt.GetClass`, `mcp.sap-adt.GetInterface`, `mcp.sap-adt.GetFunctionModule`, `mcp.sap-adt.GetInclude`, `mcp.sap-adt.GetTable`, `mcp.sap-adt.GetView` (CDS), `mcp.sap-adt.GetBehaviorDefinition`, `mcp.sap-adt.GetBehaviorImplementation`, `mcp.sap-adt.GetServiceDefinition`. Para ubicarlo y medir impacto: `mcp.sap-adt.SearchObject`, `mcp.sap-adt.GetWhereUsed`. No usar `GetTableContents`/`GetSqlQuery` para esto: leen datos del cliente.
+- Antes de proponer un refactor o cambio sobre un objeto Z*, leer su fuente actual con la tool del tipo de objeto: `mcp.sap-adt.ReadClass`, `mcp.sap-adt.ReadInterface`, `mcp.sap-adt.ReadFunctionModule`, `mcp.sap-adt.GetInclude`, `mcp.sap-adt.ReadTable`, `mcp.sap-adt.ReadView` (CDS), `mcp.sap-adt.ReadBehaviorDefinition`, `mcp.sap-adt.ReadBehaviorImplementation`, `mcp.sap-adt.ReadServiceDefinition`. Para ubicarlo y medir impacto: `mcp.sap-adt.SearchObject`, `mcp.sap-adt.GetWhereUsed`. No usar `GetTableContents`/`GetSqlQuery` para esto: leen datos del cliente.
 - Si la conexión falla o las variables no están configuradas, continuar trabajando sin ADT y avisar al usuario.
 
 **Gap conocido:** no hay MCP oficial SAP para validar release-state / Clean Core level de objetos ABAP (CL_*, TABL, DDLS, BDEF) ni para consultar ABAP feature matrix por release. Hoy se cubre con los skills `sap-abap` + `sap-abap-cds` y validación manual contra SAP Help Portal + ATC en el sistema del cliente. Registrado en `docs/MCP-ROADMAP.md`.

@@ -8,23 +8,23 @@
 
 [mcp_servers.sap-cap-capire]
 command = "npx"
-args = ["-y", "@cap-js/mcp-server@0.0.5"]
+args = ["-y", "@cap-js/mcp-server@0.0.6"]
 startup_timeout_sec = 30
 
 [mcp_servers.sap-ui5]
 command = "npx"
-args = ["-y", "@ui5/mcp-server@0.2.14"]
+args = ["-y", "@ui5/mcp-server@0.3.1"]
 startup_timeout_sec = 30
 
 [mcp_servers.sap-fiori-tools]
 command = "npx"
-args = ["-y", "@sap-ux/fiori-mcp-server@1.7.1", "fiori-mcp"]
+args = ["-y", "@sap-ux/fiori-mcp-server@1.15.0", "fiori-mcp"]
 startup_timeout_sec = 30
 
 [mcp_servers.sap-adt]
 command = "npx"
-args = ["-y", "@mcp-abap-adt/core@7.2.1"]
-env = { "SAP_ADT_URL" = "${SAP_ADT_URL}", "SAP_ADT_USER" = "${SAP_ADT_USER}", "SAP_ADT_PASSWORD" = "${SAP_ADT_PASSWORD}", "SAP_ADT_CLIENT" = "${SAP_ADT_CLIENT}", "SAP_ADT_LANG" = "${SAP_ADT_LANG:-EN}" }
+args = ["-y", "@mcp-abap-adt/core@7.2.1", "--exposition=readonly"]
+env = { "MCP_ENV_PATH" = "${SAP_ADT_ENV_PATH:-/dev/null}", "SAP_SYSTEM_TYPE" = "${SAP_ADT_SYSTEM_TYPE:-onprem}" }
 # Requiere secrets del usuario: sin ellos el server no arranca,
 # pero el resto de la configuracion sigue siendo valida.
 startup_timeout_sec = 30

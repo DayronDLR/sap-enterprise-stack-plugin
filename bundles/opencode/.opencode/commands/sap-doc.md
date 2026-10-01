@@ -81,9 +81,14 @@ proyecto manda para cada dato.
 | ABAP / RAP / S/4HANA | `sap-fuentes-de-verdad/reference/abap.md` |
 | HANA Cloud / SQLScript | `sap-fuentes-de-verdad/reference/hana.md` |
 | Integration Suite / CPI | `sap-fuentes-de-verdad/reference/integration.md` |
+| Requerimientos / blueprint / fit-gap | `sap-fuentes-de-verdad/reference/requirements.md` |
+| Roles, autorizaciones, transportes | `sap-fuentes-de-verdad/reference/basis-security.md` |
+| Migración de datos | `sap-fuentes-de-verdad/reference/migration.md` |
+| Plan de pruebas / QA | `sap-fuentes-de-verdad/reference/qa-testing.md` |
+| Pipeline / CI-CD / gCTS | `sap-fuentes-de-verdad/reference/devops.md` |
 | Cualquiera (README, CHANGELOG, mta.yaml, CI/CD) | `sap-fuentes-de-verdad/SKILL.md` |
 
-Un documento full-stack lee **un archivo por stack presente**, no los cinco.
+Un documento full-stack lee **un archivo por stack presente**, no todos.
 
 ### 4. NUNCA hardcodear en el generador de documentación
 
@@ -323,7 +328,7 @@ Solo la sección de arquitectura, para usar en presentaciones o ADRs.
 | --- | --- |
 | SE80 / ADT | Explorar objetos ABAP a documentar |
 | SE18/SE19 | Verificar BAdIs y Enhancement Spots |
-| Migrate Your Data / LTMOM | Documentar proyectos y objetos de migración (LTMC deprecada desde S/4HANA 2020) |
+| Migrate Your Data / LTMOM | Documentar proyectos y objetos de migración (LTMC deprecada desde S/4HANA 2021) |
 | STMS | Documentar estrategia de transportes |
 | SU21/PFCG | Documentar modelo de autorización |
 | /n/IWFND/MAINT_SERVICE | Documentar servicios OData activos |

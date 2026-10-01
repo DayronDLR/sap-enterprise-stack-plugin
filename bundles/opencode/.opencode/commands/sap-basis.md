@@ -15,6 +15,7 @@ para diseñar landscapes BTP seguros y aplicar mejores prácticas de gobernanza:
 | --- | --- |
 | `sap-btp-best-practices` | BTP account hierarchy, security frameworks (IDP, OAuth, XSUAA), governance, HA, cost management |
 | `sap-btp-connectivity` | Cloud Connector setup, Destination Service, network security, on-premise ↔ BTP connectivity |
+| `sap-fuentes-de-verdad` | Antes de citar un objeto de autorización, un parámetro, una Security Note o un paso de transporte: `sap-fuentes-de-verdad/reference/basis-security.md`. Se cita por ID (`[fuente:abap.su24]`) |
 
 ## Herramientas MCP (solo lectura)
 
@@ -24,7 +25,7 @@ Si las tools MCP de `sap-adt` están configuradas (ver `docs/ENVIRONMENT.md`); s
 | --- | --- |
 | `mcp.sap-adt.ListTransports` | Antes de proponer un import en QAS/PRD: listar las órdenes y detectar abiertas o huérfanas |
 | `mcp.sap-adt.GetTransport` | Revisar el contenido de cada orden (objetos, Workbench/Customizing) para validar el orden del §2 y las dependencias DDIC → código → roles |
-| `mcp.sap-adt.GetPackage` / `mcp.sap-adt.GetObjectInfo` | Validar paquete, capa de transporte y naming de los objetos de la orden |
+| `mcp.sap-adt.ReadPackage` / `mcp.sap-adt.GetObjectInfo` | Validar paquete, capa de transporte y naming de los objetos de la orden |
 
 **Nunca** crear ni liberar órdenes por MCP (`mcp-guard.sh` lo deniega): el import se ejecuta en STMS con confirmación del número de orden.
 
@@ -161,7 +162,7 @@ El orden de import en QAS/PRD debe respetar las dependencias tecnicas:
 | 2 | Workbench | Clases, function groups, programas, CDS, behavior |
 | 3 | Customizing | SPRO, parametrizaciones, condiciones |
 | 4 | Roles (PFCG) | Roles, perfiles generados (`SUPC` despues) |
-| 5 | Datos maestros | Los datos **no viajan en una orden de transporte**: se cargan en cada sistema con el Migration Cockpit (*Migrate Your Data*; LTMC deprecada desde 2020) o BAPI/IDoc. Entre sistemas sólo se mueven los objetos de migración (LTMOM) |
+| 5 | Datos maestros | Los datos **no viajan en una orden de transporte**: se cargan en cada sistema con el Migration Cockpit (*Migrate Your Data*; LTMC deprecada desde 2021) o BAPI/IDoc. Entre sistemas sólo se mueven los objetos de migración (LTMOM) |
 
 **Reglas duras**:
 
