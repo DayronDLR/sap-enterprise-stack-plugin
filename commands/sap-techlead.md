@@ -246,15 +246,17 @@ Marca cada tarea como `completed` con `TaskUpdate` al recibir el resultado del s
 > Aplica si CUALQUIER subagente produjo codigo productivo (AGENT_02, 03, 04, 05, 06, 08, 10).
 > Referencia: `${CLAUDE_PLUGIN_ROOT}/stack/orchestrator/routing_rules.json` → `mandatory_post_task_review`.
 
-Tras completar todos los subagentes funcionales y ANTES del cierre:
+Tras completar todos los subagentes funcionales y ANTES del cierre, seguí el
+flujo de `/ses:sap-gates` (Pasos 0 a 3): el nivel de revisión lo calcula
+`nivel-revision.mjs` y decide el modelo y el alcance de cada gate.
 
-1. **Invocar reviewer** con `Agent` tool (subagent: `reviewer`)
-   - Scope: `git diff HEAD` (cambios de la sesion)
-   - Esperar reporte completo de hallazgos
-   - Si CRITICAL/HIGH → volver a delegar al agente correspondiente para corregir, repetir review
+1. **Invocar reviewer** con `Agent` tool (subagent: `reviewer`, `model` según el nivel)
+   - Scope: el diff de la sesión, o sólo el delta si `ronda-revision.mjs delta review` devuelve una ronda anterior
+   - Ronda: `iniciar` antes de lanzarlo y `cerrar` con el veredicto al terminar (`ronda-revision.mjs`)
+   - Si CRITICAL/HIGH → volver a delegar al agente correspondiente para corregir y repetir con `delta --con-hallazgos`: sólo lo que cambió y los archivos con hallazgos abiertos
 
-2. **Invocar AGENT_09 (QA & Testing)** con `Agent` tool
-   - Tarea: "Ejecutar `${CLAUDE_PLUGIN_ROOT}/stack/agents/09-qa-testing/nfr-checklist.md` contra el diff de la sesion. Devolver hallazgos inline con evidencia o NO CUBIERTO. Tras completar sin CRITICAL/HIGH, ejecutar `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" qa`."
+2. **Invocar AGENT_09 (QA & Testing)** con `Agent` tool, salvo que el nivel sea `config-trivial` o `liviana` (ahí el Gate 3 no aplica)
+   - Tarea: "Ejecutar `${CLAUDE_PLUGIN_ROOT}/stack/agents/09-qa-testing/nfr-checklist.md` —sólo las secciones de las tecnologías del diff— contra el diff de la sesion. Devolver hallazgos inline con evidencia o NO CUBIERTO. Tras completar sin CRITICAL/HIGH, ejecutar `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" qa --nivel=<nivel>`."
    - Si bloquea por NFR no cubierto → corregir antes de cerrar
 
 3. **Verificar los sellos**: que los dos subagentes hayan reportado `sellar-gate.sh` en verde.
@@ -265,7 +267,7 @@ Tras completar todos los subagentes funcionales y ANTES del cierre:
 Este paso aplica siempre que hubo orquestación (PASO 1 en adelante). Una tarea que
 salió por el PASO 0.9 no lo corre en la sesión: los gates se exigen en la entrega
 —`git commit`, `git push` y `gh pr create` quedan bloqueados si faltan los sellos—,
-y ahí `/sap-gates` elige el camino corto o el completo según la clase del cambio.
+y ahí `/sap-gates` elige la profundidad según el nivel del cambio.
 
 ---
 

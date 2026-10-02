@@ -35,9 +35,29 @@ nadie lo hubiera leído.
 Si los tres están vacíos, no hay nada que revisar y **no se sella**: un sello
 sobre un diff vacío no certifica nada.
 
+## Nivel de revisión
+
+Quien te invoca te dice el nivel (`hooks/scripts/lib/nivel-revision.mjs`). Si no
+te lo dice, es `completa`.
+
+| Nivel | Dimensiones | Verificación |
+| --- | --- | --- |
+| `liviana` | 1, 2, 3 y 8 | Leyendo. Sin ejecutar nada |
+| `estandar` | Las ocho | Ejecutá sólo lo barato y que decide un hallazgo (un test puntual, un `node -e`) |
+| `completa` | Las ocho | Reproducí todo lo que se pueda: tests, mutantes, el caso de falla |
+
+Si te pasan una **ronda anterior**, revisá sólo los archivos que te nombran
+(`cambiados` y `fueraDelDiff` de `ronda-revision.mjs delta`): confirmá que cada hallazgo
+de la ronda anterior se cerró y revisá lo nuevo. Lo que no cambió ya se revisó.
+Si un cambio en esos archivos afecta a otro que no te nombraron, abrilo igual.
+
+Si al revisar ves que el nivel quedó corto —un markdown que en realidad cambia un
+comportamiento, una vista que toca seguridad—, decilo como hallazgo: el nivel lo
+calcula un script por rutas y no puede ver todo.
+
 ## Las ocho dimensiones
 
-Recorré las ocho. No pases a la siguiente sin haber terminado la anterior.
+Recorré las que tu nivel pide. No pases a la siguiente sin haber terminado la anterior.
 
 | # | Dimensión | Qué buscás |
 | --- | --- | --- |
@@ -106,11 +126,14 @@ muy distinto — y si no lo pudiste verificar, **decilo**.
 Los flags de la Definition of Done guardan el **hash del árbol revisado**, no
 son archivos vacíos: un `touch` no sella nada.
 
-Si NO hay CRITICAL ni HIGH:
+Si NO hay CRITICAL ni HIGH, sellá con el nivel con que revisaste:
 
 ```bash
-bash ".opencode/hooks/scripts/sellar-gate.sh" review
+bash ".opencode/hooks/scripts/sellar-gate.sh" review --nivel=<config-trivial|liviana|estandar|completa>
 ```
+
+El script vuelve a calcular el nivel que exige el cambio y se niega si el tuyo
+es más liviano.
 
 **Chequeá el código de salida.** El sellado puede fallar —típicamente porque no
 consigue el lock del flag— y en ese caso no se escribe nada. Dar el sello por

@@ -50,6 +50,13 @@ reporta `CRITICAL` o `HIGH`, la entrega se **bloquea**.
 
 Los hallazgos salen **inline en la sesión**; no se generan reportes en archivos.
 
+**La profundidad es proporcional al riesgo** (`lib/nivel-revision.mjs`):
+`config-trivial` y `liviana` (contenido que no se ejecuta, sin código) no corren
+el Gate 3; `estandar` revisa con un modelo mediano; `completa` (seguridad,
+configuración que despliega, hooks/CI, backend, ABAP, datos, borrados) con el
+grande y evidencia ejecutada. `sellar-gate.sh --nivel` recalcula el nivel y no
+sella una revisión más liviana. Una ronda que repite revisa sólo el delta.
+
 ## Cuándo corren
 
 | Momento | Qué pasa |

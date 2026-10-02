@@ -870,10 +870,10 @@ sellado su propio arbol. Volve a correr /sap-gates y entrega sin tocar nada mas.
 
   arbol a entregar: ${DELIVERY_TREE}"
     else
-        EXPLICACION="Corre /sap-gates para ejecutarlos sobre el diff actual: si es un ajuste chico
-de configuracion (package.json, manifest.json, mta.yaml… hasta 30 lineas), el camino
-es corto y sin subagentes. O pedile al dev que confirme si quiere entregar sin ellos
-(SES_GATES=off)."
+        EXPLICACION="Corre /sap-gates para ejecutarlos sobre el diff actual: la profundidad la
+calcula nivel-revision.mjs segun el riesgo (un ajuste chico de configuracion o un texto
+sin codigo no corren el Gate 3; el backend y la seguridad, la revision completa). O
+pedile al dev que confirme si quiere entregar sin ellos (SES_GATES=off)."
     fi
     if [[ "$ES_PUSH" = "true" && -n "${SIN_GATE:-}" ]]; then
         # Se muestran solo los que exigen gates, PERO unicamente si esa lista

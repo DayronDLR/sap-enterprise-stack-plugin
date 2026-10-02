@@ -4,6 +4,12 @@
 # Uso:  bash hooks/scripts/sellar-gate.sh review                 # Gate 2
 #       bash hooks/scripts/sellar-gate.sh qa                     # Gate 3
 #       bash hooks/scripts/sellar-gate.sh qa --config-trivial    # Gate 3 no aplica
+#       bash hooks/scripts/sellar-gate.sh <review|qa> --nivel=<liviana|estandar|completa>
+#
+# `--nivel`: la profundidad con que se revisó (`lib/nivel-revision.mjs`). El script
+# VUELVE A CALCULAR el nivel que exige lo que se entrega y se niega a sellar una
+# revisión más liviana. `qa --nivel=liviana` es «Gate 3 no aplica»: sólo vale para
+# contenido que no se ejecuta. Sin `--nivel`, se asume la revisión completa.
 #
 # `--config-trivial`: un ajuste chico de configuración (`lib/clase-cambio.mjs`)
 # no tiene concurrencia, volumen ni locking que revisar, y el Gate 3 no aplica.
@@ -35,6 +41,9 @@
 # Sellar uno solo deja el otro camino sin cubrir.
 
 set -u
+# Estado propio: nada de esto se toma del entorno. Un EXIGIDO exportado falsearía
+# el registro de auditoría.
+unset PEDIDO EXIGIDO MOTIVOS
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 # El fallback es el TOPLEVEL del repo, no el CWD. `delivery-gate.sh` usa `.` y
@@ -54,11 +63,40 @@ fi
 # shellcheck disable=SC1091
 . "${SCRIPT_DIR}/lib/dod-common.sh"
 
+# Un tercer argumento no se ignora: `--nivel=completa --nivel=liviana` tiene que
+# fallar, no sellar con el primero.
+if [[ $# -gt 2 ]]; then
+    echo "uso: sellar-gate.sh <review|qa> [--config-trivial | --nivel=<nivel>] — sobran argumentos." >&2
+    exit 1
+fi
+
 case "${1:-}" in
     review) FLAG="${PROJECT_DIR}/tmp/.review-done"; ETIQUETA="Gate 2 (Code Review)" ;;
     qa)     FLAG="${PROJECT_DIR}/tmp/.qa-nfr-done"; ETIQUETA="Gate 3 (QA + NFR)" ;;
-    *)      echo "uso: sellar-gate.sh <review|qa> [--config-trivial]" >&2; exit 1 ;;
+    *)      echo "uso: sellar-gate.sh <review|qa> [--config-trivial | --nivel=<liviana|estandar|completa>]" >&2; exit 1 ;;
 esac
+
+# Profundidad de un nivel: un sello sólo vale si la revisión fue al menos tan
+# profunda como la que el cambio exige.
+rango_nivel() {
+    case "$1" in
+        config-trivial) echo 0 ;; liviana) echo 1 ;; estandar) echo 2 ;; completa) echo 3 ;;
+        *) echo -1 ;;
+    esac
+}
+
+# Deja en EXIGIDO el nivel que exige lo que se entrega (vacío si no se puede
+# calcular) y en MOTIVOS los primeros motivos. No decide nada: lo usan el
+# rechazo de `--nivel` y el registro de auditoría.
+calcular_nivel() {
+    EXIGIDO=""; MOTIVOS=""
+    command -v node >/dev/null 2>&1 || return 0
+    [[ -f "${SCRIPT_DIR}/lib/nivel-revision.mjs" ]] || return 0
+    local json
+    json=$(cd "$PROJECT_DIR" && node "${SCRIPT_DIR}/lib/nivel-revision.mjs" 2>/dev/null) || return 0
+    EXIGIDO=$(printf '%s' "$json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).nivel||""))}catch{}})' 2>/dev/null)
+    MOTIVOS=$(printf '%s' "$json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write((JSON.parse(s).motivos||[]).slice(0,5).join("\n  "))}catch{}})' 2>/dev/null)
+}
 
 if [[ "${2:-}" = "--config-trivial" ]]; then
     if [[ "${1:-}" != "qa" ]]; then
@@ -75,6 +113,7 @@ if [[ "${2:-}" = "--config-trivial" ]]; then
     MOTIVO=$(printf '%s' "$CLASE" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).motivo||""))}catch{process.stdout.write("no se pudo leer la clase")}})' 2>/dev/null)
     if printf '%s' "$CLASE" | grep -qF '"clase":"config-trivial"'; then
         ETIQUETA="Gate 3 (no aplica: ajuste chico de configuración)"
+        PEDIDO="config-trivial"
         # Queda registro de cada entrega por el camino corto: el Gate 2 de ese
         # camino lo hace la sesión, sin subagente, y un auditor tiene que poder
         # encontrarlas y muestrearlas.
@@ -86,8 +125,33 @@ if [[ "${2:-}" = "--config-trivial" ]]; then
         printf '  %s\n  Corré el Gate 3 completo.\n' "$MOTIVO" >&2
         exit 1
     fi
+elif [[ "${2:-}" == --nivel=* ]]; then
+    PEDIDO="${2#--nivel=}"
+    case "$PEDIDO" in
+        config-trivial|liviana|estandar|completa) ;;
+        *) echo "[sellar-gate] nivel desconocido '${PEDIDO}': config-trivial, liviana, estandar o completa." >&2; exit 1 ;;
+    esac
+    if [[ "$PEDIDO" != "completa" ]]; then
+        calcular_nivel
+        if [[ -z "$EXIGIDO" ]]; then
+            echo "[sellar-gate] no se pudo calcular el nivel que exige el cambio (sin node o sin nivel-revision.mjs) — NO se selló. Revisá con el nivel completo." >&2
+            exit 1
+        fi
+        if [[ $(rango_nivel "$PEDIDO") -lt $(rango_nivel "$EXIGIDO") ]]; then
+            echo "[sellar-gate] el cambio exige una revisión '${EXIGIDO}' y se pidió sellar una '${PEDIDO}' — NO se selló." >&2
+            printf '  %s\n  Revisá con el nivel %s.\n' "$MOTIVOS" "$EXIGIDO" >&2
+            exit 1
+        fi
+        if [[ "${1:-}" = "qa" && "$PEDIDO" = "liviana" ]]; then
+            ETIQUETA="Gate 3 (no aplica: contenido que no se ejecuta)"
+        elif [[ "${1:-}" = "qa" && "$PEDIDO" = "config-trivial" ]]; then
+            ETIQUETA="Gate 3 (no aplica: ajuste chico de configuración)"
+        else
+            ETIQUETA="${ETIQUETA} (revisión ${PEDIDO})"
+        fi
+    fi
 elif [[ -n "${2:-}" ]]; then
-    echo "uso: sellar-gate.sh <review|qa> [--config-trivial]" >&2
+    echo "uso: sellar-gate.sh <review|qa> [--config-trivial | --nivel=<liviana|estandar|completa>]" >&2
     exit 1
 fi
 
@@ -109,4 +173,13 @@ if [[ $RC -ne 0 ]]; then
     echo "[sellar-gate] ${ETIQUETA}: el sello quedo INCOMPLETO. La entrega va a seguir bloqueada." >&2
     exit 1
 fi
+# Cada sello queda registrado con el nivel con que se revisó y el que exigía el
+# cambio. Sin `--nivel` se sella como antes —el recálculo protege contra el error
+# honesto, no contra quien sella sin declararlo—, pero queda a la vista: un
+# auditor busca las líneas donde lo exigido no coincide con lo declarado.
+[[ -z "${EXIGIDO+x}" ]] && calcular_nivel
+mkdir -p "${PROJECT_DIR}/logs" 2>/dev/null && printf '%s\t%s\t%s\t%s\t%s\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${1}" "${PEDIDO:-sin-nivel}" "${EXIGIDO:-desconocido}" \
+    "$(dod_delivery_tree commit-a 2>/dev/null || echo sin-arbol)" \
+    >> "${PROJECT_DIR}/logs/gate-niveles.log"
 echo "[sellar-gate] ${ETIQUETA} sellado sobre el contenido actual."
