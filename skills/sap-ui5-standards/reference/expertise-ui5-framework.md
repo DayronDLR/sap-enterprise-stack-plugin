@@ -227,14 +227,32 @@ Los Building Blocks son macros XML que permiten componer páginas Custom Page co
 - **OData V2**: El servidor infiere las agregaciones automáticamente al recibir el request.
 - **OData V4**: El **cliente DEBE** pasar explícitamente dimensiones/medidas en el request. El backend necesita soporte de `@Aggregation.ApplySupported` en las annotations.
 
+En RAP no se escribe `Aggregation.ApplySupported`: el framework lo deriva al
+exponer la vista con medidas anotadas. Lo que se anota en ABAP CDS es cada medida:
+
+<!-- ses:fragmento: elementos de la lista de la projection, sin el define -->
 ```abap
-"-- Annotation requerida en CDS para Charts con OData V4:
-@Aggregation.applySupported: {
-  transformations:          [ #AGGREGATE, #TOP_LEVEL_HIERARCHY ],
-  rollUpSpecification:      [ #SIMPLE ],
-  groupByProperties:        [ 'Status', 'OrderType' ],
-  aggreGatableProperties:   [{ property.name: 'NetAmount' }]
-}
+@Aggregation.default: #SUM
+@Semantics.amount.currencyCode: 'Currency'
+NetAmount,
+Currency,
+Status,
+OrderType,
+```
+
+En CAP sí se declara, con el vocabulario de OData:
+
+```cds
+annotate CatalogService.SalesOrders with @(
+  Aggregation.ApplySupported: {
+    Transformations       : [ 'aggregate', 'topcount', 'bottomcount', 'identity',
+                              'concat', 'groupby', 'filter', 'search' ],
+    GroupableProperties   : [ status, orderType ],
+    AggregatableProperties: [ { Property: netAmount } ]
+  }
+) {
+  netAmount @Analytics.Measure: true @Aggregation.default: #SUM;
+};
 ```
 
 **Semantic Date Operators en FilterBar:**
@@ -248,7 +266,7 @@ El filter bar soporta operadores de fecha semánticos (TODAY, TOMORROW, LASTWEEK
 **LongRunners Group Pattern — Optimización de Carga:**
 Para mejorar UX cuando algunos requests OData V4 son lentos, diferirlos a un grupo separado que no bloquea el render inicial:
 
-```javascript
+```jsonc
 // En manifest.json — definir grupo de carga diferida
 "models": {
   "": {
@@ -259,7 +277,9 @@ Para mejorar UX cuando algunos requests OData V4 son lentos, diferirlos a un gru
     }
   }
 }
+```
 
+```javascript
 // En controller — cambiar parámetros del binding para requests lentos
 const oBinding = this.byId("slowTable").getBinding("items");
 oBinding.changeParameters({

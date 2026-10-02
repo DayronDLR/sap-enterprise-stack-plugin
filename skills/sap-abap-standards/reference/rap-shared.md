@@ -184,17 +184,17 @@ use etag
 ## Service Definition + Service Binding
 
 ```abap
-"-- Service Definition:
+// Service Definition:
 @EndUserText.label: '<Entity> Service'
 define service ZUI_<Entity> {
   expose ZC_<Entity>      as <Entity>;
   expose ZC_<ChildEntity> as <ChildEntity>;
 }
 
-"-- Service Binding:
-"-- Tipo: OData V4 - UI (para Fiori Elements con Draft)
-"-- Tipo: OData V4 - Web API (para APIs REST consumidas por BTP/CAP)
-"-- Publicar → genera URL: /sap/opu/odata4/...
+// Service Binding:
+// Tipo: OData V4 - UI (para Fiori Elements con Draft)
+// Tipo: OData V4 - Web API (para APIs REST consumidas por BTP/CAP)
+// Publicar → genera URL: /sap/opu/odata4/...
 ```
 
 ## EML (Entity Manipulation Language) — Ejemplos Basicos

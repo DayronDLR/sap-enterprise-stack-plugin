@@ -15,7 +15,7 @@
 ### CDS para RAP — Capas Completas
 
 ```abap
-"-- Tabla persistente del BO (nombre ≤ 16):
+// Tabla persistente del BO (nombre ≤ 16):
 @EndUserText.label: 'Z Purchase Order Extension'
 define table zpurchord {
   key client      : abap.clnt not null;
@@ -27,7 +27,7 @@ define table zpurchord {
   created_at      : abp_creation_tstmpl;
 }
 
-"-- Draft table: generarla con el quick fix del BDEF en ADT. Campos = elementos CDS. Nombre ≤ 16.
+// Draft table: generarla con el quick fix del BDEF en ADT. Campos = elementos CDS. Nombre ≤ 16.
 @EndUserText.label : 'Draft - Z Purchase Order Extension'
 @AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
 @AbapCatalog.tableCategory : #TRANSPARENT
@@ -430,15 +430,15 @@ ENDCLASS.
 ## Service Definition y Binding
 
 ```abap
-"-- Service Definition:
+// Service Definition:
 @EndUserText.label: 'Purchase Order Service'
 define service ZUI_PurchaseOrder {
   expose ZC_PurchaseOrder     as PurchaseOrder;
   expose ZC_PurchaseOrderItem as PurchaseOrderItem;
 }
 
-"-- Service Binding:
-"-- Tipo: OData V4 - UI (para Fiori Elements con Draft)
-"-- Tipo: OData V4 - Web API (para APIs REST consumidas por BTP/CAP)
-"-- Publicar → genera URL: /sap/opu/odata4/...
+// Service Binding:
+// Tipo: OData V4 - UI (para Fiori Elements con Draft)
+// Tipo: OData V4 - Web API (para APIs REST consumidas por BTP/CAP)
+// Publicar → genera URL: /sap/opu/odata4/...
 ```

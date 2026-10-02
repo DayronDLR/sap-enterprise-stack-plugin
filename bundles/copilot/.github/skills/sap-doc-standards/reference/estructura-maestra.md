@@ -260,7 +260,7 @@ Error handling: Retry 3x con backoff exponencial
 
 ### 6.1 Modelo BTP / XSUAA _(si aplica)_
 
-```json
+```jsonc
 // xs-security.json — scopes y roles definidos
 {
   "xsappname": "proyecto-app",

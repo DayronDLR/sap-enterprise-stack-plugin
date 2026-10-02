@@ -154,6 +154,7 @@ de orden (aca `STATUS, ORDER_ID`).
 
 ### Anti-patrones que NUNCA debes generar
 
+<!-- ses:fragmento: anti-ejemplos con elisiones (...), no es código para activar -->
 ```abap
 "-- ❌ MAL: SELECT INTO TABLE sin PACKAGE SIZE (OOM en QAS/PRD)
 SELECT * FROM ekko INTO TABLE @DATA(lt_all).

@@ -26,19 +26,18 @@ Sistema: S/4HANA On-Premise con BAS.
 @UI.headerInfo: { typeName: 'Purchase Requisition', title: { value: 'PurchaseRequisition' } }
 
 define root view entity ZC_MM_PR_APPROVAL
+  provider contract transactional_query
   as projection on ZI_MM_PR_APPROVAL
 {
-  @UI.lineItem: [{ position: 10, importance: #HIGH }]
+  // La acción no es un elemento: su botón se declara en el @UI.lineItem de un campo
+  @UI.lineItem: [{ position: 10, importance: #HIGH },
+                 { type: #FOR_ACTION, dataAction: 'approve', label: 'Approve' }]
   @UI.selectionField: [{ position: 10 }]
   key PurchaseRequisition,
   @UI.lineItem: [{ position: 20 }]
   Supplier,
   @UI.lineItem: [{ position: 30 }]
-  Material,
-  ...
-  @UI.lineItem: [{ position: 90, label: 'Actions',
-    dataAction: 'approve', type: #FOR_ACTION }]
-  _approve;
+  Material
 }
 ```
 
@@ -142,27 +141,55 @@ Sistema: S/4HANA 2023 with BAS.
 **Output esperado del agente:**
 
 - Extension Field via ABAP ADT: `ZZ1_MOTIVO_URGENCIA_SDH` en tabla VBAK
-- CDS View Extension `ZI_SD_SORDER_EXT` con `extend view entity I_SalesOrder`
+- Extensión del BO transaccional: el campo tiene que llegar a `I_SalesOrderTP`
+  (su extension include), no sólo a la vista de lectura `I_SalesOrder`
 - Behavior Extension con validación en método `validateUrgencyDate`:
 
+<!-- ses:fragmento: método del handler de la behavior extension, sin la clase lhc_ -->
 ```abap
 METHOD validateUrgencyDate.
-  READ ENTITIES OF I_SalesOrder FIELDS ( ZZ1_MOTIVO_URGENCIA_SDH RequestedDeliveryDate )
-    INTO DATA(lt_orders).
+  "-- EML: ENTITY + campos + claves (WITH) + RESULT; I_SalesOrderTP es la interfaz released del BO
+  READ ENTITIES OF I_SalesOrderTP
+    ENTITY SalesOrder
+      FIELDS ( ZZ1_MOTIVO_URGENCIA_SDH RequestedDeliveryDate )
+      WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_orders).
 
-  LOOP AT lt_orders INTO DATA(ls_order).
-    IF ls_order-%data-ZZ1_MOTIVO_URGENCIA_SDH IS NOT INITIAL.
-      DATA(lv_max_date) = cl_scal_api=>add_business_days(
-        iv_date = sy-datum, iv_days = 3 ).
-      IF ls_order-%data-RequestedDeliveryDate > lv_max_date.
-        APPEND VALUE #(
-          %tky = ls_order-%tky
-          %msg = new_message_with_text(
-            severity = if_abap_behv_message=>severity-error
-            text = 'Con urgencia, fecha entrega max 3 días hábiles' )
-        ) TO reported-salesorder.
-      ENDIF.
-    ENDIF.
+  "-- Sólo los pedidos con urgencia: un problema con el calendario no puede
+  "-- bloquear el guardado de los demás.
+  DELETE lt_orders WHERE ZZ1_MOTIVO_URGENCIA_SDH IS INITIAL.
+  IF lt_orders IS INITIAL.
+    RETURN.
+  ENDIF.
+
+  "-- Días hábiles con la API released de calendario de fábrica (no CL_SCAL_API:
+  "-- no es released). El ID del calendario es parametrización, no un literal.
+  TRY.
+      DATA(lo_calendar) = cl_fhc_calendar_runtime=>create_factorycalendar_runtime(
+                            iv_factorycalendar_id = zcl_sd_urgency_config=>get_factory_calendar( ) ).
+      DATA(lv_max_date) = lo_calendar->add_workingdays_to_date(
+                            iv_start                 = cl_abap_context_info=>get_system_date( )
+                            iv_number_of_workingdays = 3 ).
+    CATCH cx_fhc_runtime INTO DATA(lx_calendar).
+      LOOP AT lt_orders INTO DATA(ls_failed).
+        APPEND VALUE #( %tky = ls_failed-%tky ) TO failed-salesorder.
+        APPEND VALUE #( %tky = ls_failed-%tky
+                        %msg = new_message_with_text(
+                                 severity = if_abap_behv_message=>severity-error
+                                 text     = lx_calendar->get_text( ) ) ) TO reported-salesorder.
+      ENDLOOP.
+      RETURN.
+  ENDTRY.
+
+  LOOP AT lt_orders INTO DATA(ls_order) WHERE RequestedDeliveryDate > lv_max_date.
+    APPEND VALUE #( %tky = ls_order-%tky ) TO failed-salesorder.
+    APPEND VALUE #(
+      %tky = ls_order-%tky
+      %element-RequestedDeliveryDate = if_abap_behv=>mk-on
+      %msg = new_message_with_text(
+               severity = if_abap_behv_message=>severity-error
+               text     = 'Con urgencia, fecha entrega max 3 días hábiles' )
+    ) TO reported-salesorder.
   ENDLOOP.
 ENDMETHOD.
 ```

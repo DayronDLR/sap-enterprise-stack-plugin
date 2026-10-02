@@ -48,15 +48,24 @@ sap.ui.define(["sap/base/security/encodeHTML"], function(encodeHTML) {
 ### Validación de Entrada
 
 ```javascript
-sap.ui.define(["sap/base/security/sanitizeHTML"], function(sanitizeHTML) {
-    onInputChange: function(oEvent) {
-        const sValue = oEvent.getParameter("value");
-        if (!/^[a-zA-Z0-9\s]+$/.test(sValue)) {
-            this.showError("Formato inválido");
-            return;
+sap.ui.define([
+    "sap/ui/core/mvc/Controller",
+    "sap/base/security/sanitizeHTML"
+], function (Controller, sanitizeHTML) {
+    "use strict";
+    return Controller.extend("com.empresa.app.controller.Main", {
+        onInputChange: function (oEvent) {
+            const oInput = oEvent.getSource();
+            const sValue = oEvent.getParameter("value");
+            if (!/^[a-zA-Z0-9\s]+$/.test(sValue)) {
+                oInput.setValueState("Error");
+                oInput.setValueStateText(this.getView().getModel("i18n").getResourceBundle().getText("formatoInvalido"));
+                return;
+            }
+            oInput.setValueState("None");
+            this.getView().getModel().setProperty("/userInput", sanitizeHTML(sValue));
         }
-        this.getModel().setProperty("/userInput", sanitizeHTML(sValue));
-    }
+    });
 });
 ```
 

@@ -75,7 +75,7 @@ terminar, haya pasado o no:
 ```bash
 node ".agents/hooks/scripts/lib/ronda-revision.mjs" iniciar review --nivel=<nivel>
 # … el reviewer, con el nivel y su modelo (Paso 0); hallazgos inline, sin archivos …
-node ".agents/hooks/scripts/lib/ronda-revision.mjs" cerrar review --veredicto=<aprueba|bloquea> --abiertos=<archivos con hallazgos>
+node ".agents/hooks/scripts/lib/ronda-revision.mjs" cerrar review --veredicto=<aprueba|bloquea> --abiertos=<archivo1,archivo2>
 ```
 
 Bloquea si reporta CRITICAL o HIGH. Si el resultado es aceptable, sellá con el

@@ -220,9 +220,11 @@ await Promise.all(thousands.map(x => db.run(INSERT.into('Foo').entries(x))))
 const tx = cds.tx(req)
 for (const item of huge) await tx.create('Foo').entries(item)
 await tx.commit()
+```
 
-// ❌ MAL: action que modifica estado sin @requires
-service Orders { action approve(id: UUID); }  // cualquiera la llama
+```cds
+// ❌ MAL: action que modifica estado sin @requires — cualquiera la llama
+service Orders { action approve(id: UUID); }
 ```
 
 ## FORMATO DE RESPUESTA

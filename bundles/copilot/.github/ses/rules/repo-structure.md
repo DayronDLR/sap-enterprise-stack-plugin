@@ -51,7 +51,8 @@
 │   ├── validate-json.js
 │   ├── validate-yaml.js
 │   ├── validate-cds.js
-│   └── validate-diagrams.js     ← Gate showcase sobre todos los .sapdiag.json
+│   ├── validate-diagrams.js     ← Gate showcase sobre todos los .sapdiag.json
+│   └── validate-code-blocks.mjs ← Los ejemplos de código de los prompts parsean
 └── flows/
     └── e2e_pipeline.md
 ```

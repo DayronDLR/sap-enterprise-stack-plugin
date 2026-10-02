@@ -45,10 +45,9 @@ data-sap-ui-theme="sap_fiori_3"
 ## 3. Controles Prohibidos
 
 ```javascript
-// ❌ NUNCA usar controles deprecated
-- sap.ui.commons.*   // Biblioteca obsoleta
-- sap.ui.ux3.*      // Biblioteca obsoleta
-- sap.ca.*          // Biblioteca obsoleta
+// ❌ NUNCA usar controles de bibliotecas obsoletas:
+//    sap.ui.commons.*, sap.ui.ux3.*, sap.ca.*
+sap.ui.define(["sap/ui/commons/Button"], function (Button) { /* ❌ */ });
 
 // ❌ NUNCA crear elementos HTML nativos directamente
 document.createElement("div");    // ❌
@@ -184,10 +183,13 @@ document.createElement("input");  // ❌
 ### Namespace requerido
 
 ```xml
-<!-- Agregar al tag raíz de la View -->
+<!-- Agregar al tag raíz de la View, junto a los namespaces que ya tenga -->
 <mvc:View
-    xmlns:form="sap.ui.layout.form"
-    ...>
+    controllerName="com.empresa.app.controller.Main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form">
+</mvc:View>
 ```
 
 ### Columnas por defecto (oficiales SAP)

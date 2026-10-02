@@ -5,7 +5,7 @@
 ## CDS Views (Core Data Services)
 
 ```abap
-"-- CDS Base View (Interface View):
+// CDS Base View (Interface View):
 @AbapCatalog.viewEnhancementCategory: [#NONE]
 @AccessControl.authorizationCheck: #CHECK
 @Metadata.ignorePropagatedAnnotations: true
@@ -16,7 +16,7 @@
 }
 define view entity ZI_PurchaseOrder
   as select from ekko as header
-  association [0..1] to ekpo as _item on $projection.PurchaseOrder = _item.ebeln
+  association [0..*] to ekpo as _item on $projection.PurchaseOrder = _item.ebeln
   association [0..1] to lfa1 as _Vendor  on $projection.Vendor = _Vendor.lifnr
 {
   key header.ebeln          as PurchaseOrder,
@@ -34,12 +34,14 @@ define view entity ZI_PurchaseOrder
       _Vendor
 }
 
-"-- CDS Projection View (Consumption View para RAP/OData):
+// CDS Projection View de lectura (Consumption View para OData). Para un BO
+// transaccional la base es `define root view entity` con BDEF, y la proyección
+// `define root view entity … provider contract transactional_query` (ver rap.md).
 @EndUserText.label: 'Purchase Order'
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @Metadata.allowExtensions: true
-define root view entity ZC_PurchaseOrder
-  provider contract transactional_query
+// Otro nombre que la ZC_PurchaseOrder transaccional de rap.md: son vistas distintas.
+define view entity ZC_PurchaseOrderList
   as projection on ZI_PurchaseOrder
 {
   key PurchaseOrder,
@@ -50,11 +52,13 @@ define root view entity ZC_PurchaseOrder
       NetAmount,
       CreatedBy,
       LastChangedDate,
-      _item : redirected to composition child ZC_PurchaseOrderItem,
+      // Una asociación se expone tal cual; `redirected to composition child` exige
+      // una composición en la vista base (ver rap.md).
+      _item,
       _Vendor
 }
 
-"-- CDS con @Analytics para HANA / embedded analytics:
+// CDS con @Analytics para HANA / embedded analytics:
 @Analytics.dataCategory: #FACT
 @Analytics.dataExtraction.enabled: true
 define view entity ZA_PurchaseOrderFact
@@ -106,7 +110,7 @@ ENDCLASS.
 ## Access Control (CDS DCL)
 
 ```abap
-"-- Access Control para CDS View:
+// Access Control para CDS View:
 @EndUserText.label: 'PO Access Control'
 @MappingRole: true
 define role ZI_PurchaseOrder {

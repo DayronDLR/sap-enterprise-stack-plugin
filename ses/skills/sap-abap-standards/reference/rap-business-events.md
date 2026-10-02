@@ -35,7 +35,7 @@ entity**.
 > sobre la vista que corresponda y la clase `ZBP_…`.
 
 ```abap
-"-- Payloads del evento (CDS abstract entities):
+// Payloads del evento (CDS abstract entities):
 @EndUserText.label: 'Payload evento SalesOrder Approved'
 define abstract entity ZA_SalesOrderApproved
 {
@@ -54,7 +54,7 @@ define abstract entity ZA_SalesOrderCancelled
 ```
 
 ```abap
-"-- Behavior definition:
+// Behavior definition:
 managed with additional save with full data
   implementation in class zbp_r_salesordertp unique;
 strict ( 2 );
@@ -69,10 +69,10 @@ etag master LocalLastChangedAt
   update;
   delete;
 
-  "-- Evento sin payload extra: viaja solo la clave de la instancia
+  // Evento sin payload extra: viaja solo la clave de la instancia
   event Created;
 
-  "-- Evento con payload: la abstract entity define los campos adicionales
+  // Evento con payload: la abstract entity define los campos adicionales
   event Approved  parameter ZA_SalesOrderApproved;
   event Cancelled parameter ZA_SalesOrderCancelled;
 

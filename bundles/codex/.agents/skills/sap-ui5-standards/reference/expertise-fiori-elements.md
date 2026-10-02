@@ -14,11 +14,21 @@
 
 ## Annotations CDS para Fiori Elements
 
-### @UI Annotations esenciales
+### @UI Annotations esenciales (ABAP CDS — Metadata Extension)
 
 ```abap
-"-- En CDS Projection View o Metadata Extension:
-annotate view ZC_SalesOrder with {
+// Metadata Extension (preferida sobre anotar la projection inline).
+// La projection necesita @Metadata.allowExtensions: true.
+@Metadata.layer: #CUSTOMER
+@UI.headerInfo: {
+  typeName: 'Sales Order',
+  typeNamePlural: 'Sales Orders',
+  title: { value: 'SalesOrder', type: #STANDARD },
+  description: { value: 'SoldToParty', type: #STANDARD }
+}
+// Variante de selección: va en la cabecera, no con la sintaxis @( … ) de CAP
+@UI.selectionVariant: [{ qualifier: 'sv_approved', text: 'Approved Orders', filter: 'Status EQ "A"' }]
+annotate entity ZC_SalesOrder with {
 
   @UI.facet: [
     { id: 'GeneralData', type: #COLLECTION, label: 'General', position: 10 },
@@ -27,17 +37,8 @@ annotate view ZC_SalesOrder with {
     { id: 'Items',       type: #LINEITEM_REFERENCE, targetElement: '_Items',
       label: 'Items', position: 20 }
   ]
-
-  @UI.headerInfo: {
-    typeName: 'Sales Order',
-    typeNamePlural: 'Sales Orders',
-    title: { value: 'SalesOrder', type: #STANDARD },
-    description: { value: 'SoldToParty', type: #STANDARD }
-  }
-
   @UI.lineItem: [
     { position: 10, label: 'Order No.' },
-    { position: 20 },
     { type: #FOR_ACTION, dataAction: 'Approve', label: 'Approve', position: 30 }
   ]
   @UI.selectionField: [{ position: 10 }]
@@ -47,6 +48,9 @@ annotate view ZC_SalesOrder with {
   @UI.lineItem:      [{ position: 20 }]
   @UI.selectionField:[{ position: 20 }]
   @UI.identification:[{ position: 20 }]
+  // Necesita @ObjectModel.text.element: ['SoldToPartyName'] en la projection:
+  // sin un elemento de texto, textArrangement no tiene qué mostrar.
+  @UI.textArrangement: #TEXT_ONLY
   SoldToParty;
 
   @UI.lineItem:      [{ position: 30 }]
@@ -56,69 +60,71 @@ annotate view ZC_SalesOrder with {
   @UI.hidden: true
   Currency;
 }
-
-"-- Metadata Extensions (preferido sobre anotaciones inline):
-@Metadata.layer: #CUSTOMER
-annotate view ZC_SalesOrder with @(
-  UI.selectionVariant #sv_approved: {
-    Text: 'Approved Orders',
-    SelectOptions: [{ PropertyName: Status, Ranges: [{ Sign: #I, Option: #EQ, Low: 'A' }] }]
-  }
-);
 ```
 
-### @Search, @Semantics, @ObjectModel
+### @Search, @Semantics, @ObjectModel (en la projection o la interface view)
 
+<!-- ses:fragmento: elementos sueltos de la lista de una view entity, sin el define -->
 ```abap
-  @Search.searchable: true
   @Search.defaultSearchElement: true
-  SalesOrder;
+  SalesOrder,
 
   @Semantics.amount.currencyCode: 'Currency'
-  NetAmount;
+  NetAmount,
 
-  @Semantics.currencyCode: true
-  Currency;
+  Currency,
 
-  @ObjectModel.text.association: '_SoldToPartyText'
-  SoldToParty;
+  @ObjectModel.text.element: [ 'SoldToPartyName' ]
+  SoldToParty,
 ```
 
-### @Common, @Core.SideEffects — Annotations Críticas
+`@Search.searchable: true` va en la cabecera de la vista, no en un elemento.
+
+### Texto, value help y side effects — ABAP CDS y CAP no se anotan igual
+
+| Necesidad | ABAP CDS (RAP) | CAP (`.cds`) |
+| --- | --- | --- |
+| Texto de un código | `@ObjectModel.text.element: ['…Name']` + `@UI.textArrangement` | `@Common.Text: …` + `@Common.TextArrangement` |
+| Value help | `@Consumption.valueHelpDefinition` | `@Common.ValueList` |
+| Dropdown de valores fijos | `@ObjectModel.resultSet.sizeCategory: #XS` en la vista del value help | `@Common.ValueListWithFixedValues` |
+| Side effects | En el BDEF: `side effects { … }` | `@Common.SideEffects` |
+
+> **Regla crítica del texto**: apunta a un elemento **separado** con la descripción
+> legible (`SoldToPartyName`, `_Customer.Name`), nunca a la propia key. Si apunta a
+> sí mismo, Fiori Elements muestra el código como texto o entra en bucle.
+
+<!-- ses:fragmento: un elemento de la lista de la projection, sin el define -->
+```abap
+// ABAP CDS — value help sobre la projection
+@Consumption.valueHelpDefinition: [{ entity: { name: 'ZI_StatusVH', element: 'Status' } }]
+@ObjectModel.text.element: [ 'StatusText' ]
+@UI.textArrangement: #TEXT_ONLY
+Status,
+```
 
 ```abap
-"-- @Common.Text: DEBE apuntar a propiedad SEPARADA de descripción, NUNCA a la key property
-  @Common.Text: { $value: '_SoldToPartyText.BusinessPartnerFullName', textArrangement: #TEXT_ONLY }
-  @Common.Label: 'Sold To Party'
-  SoldToParty;   "-- ✅ key apunta a propiedad separada de texto
+// BDEF de la projection o de la base — side effects (RAP, OData V4)
+side effects
+{
+  field SoldToParty affects field NetAmount, field Currency;
+  field Status affects entity _Items;
+}
+```
 
-"-- ❌ INCORRECTO: @Common.Text apuntando a sí mismo (la misma key property)
-"-- @Common.Text: { $value: 'SalesOrder' }  ← NUNCA así
+```cds
+// CAP — el mismo comportamiento con el vocabulario Common
+annotate CatalogService.SalesOrders with {
+  soldToParty @Common.Text: soldToPartyName  @Common.TextArrangement: #TextOnly;
+  status      @Common.ValueListWithFixedValues;
+};
 
-"-- @Common.ValueHelpWithFixedValues: validación estricta — solo valores del value help permitidos
-  @Common.ValueHelpWithFixedValues: true
-  @Consumption.valueHelpDefinition: [{ entity: { name: 'ZI_StatusVH', element: 'Status' } }]
-  Status;
-
-"-- @Common.ValueListForValidation: valida el campo incluso sin ValueHelpWithFixedValues
-  @Common.ValueListForValidation: ''
-  @Consumption.valueHelpDefinition: [{ entity: { name: 'ZI_OrderTypeVH', element: 'OrderType' } }]
-  OrderType;
-
-"-- @Core.SideEffects: declara qué propiedades se refrescan cuando otras cambian
-annotate entity ZC_SalesOrder with @(
-  Core.SideEffects #SoldToPartyChanged: {
-    SourceProperties: [ SoldToParty ],
-    TargetProperties: [ 'NetAmount', 'Currency' ]
-  },
-  Core.SideEffects #StatusChanged: {
-    SourceProperties: [ Status ],
-    TargetElements:   [ '_Items' ]
+annotate CatalogService.SalesOrders with @(
+  Common.SideEffects #SoldToPartyChanged: {
+    SourceProperties: [ soldToParty ],
+    TargetProperties: [ 'netAmount', 'currency' ]
   }
 );
 ```
-
-> **Regla crítica `@Common.Text`**: Esta anotación DEBE referenciar una **propiedad separada** que contiene la descripción legible. Si apunta a la misma key property, Fiori Elements entra en bucle o muestra datos incorrectos.
 
 ## Adaptation Projects — Extensión de Apps Estándar
 

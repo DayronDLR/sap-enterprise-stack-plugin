@@ -151,13 +151,13 @@ Solo para lógica de presentación única que no puede modelarse con tipos:
 
 ```javascript
 // ❌ NUNCA: lógica de negocio en formatters
-calculateDiscount: function(nPrice, nQuantity) { /* lógica de negocio */ }
+calculateDiscount: function (nPrice, nQuantity) { /* lógica de negocio */ },
 
 // ❌ NUNCA: side effects
-formatAndCount: function(sValue) { this.counter++; return sValue; }
+formatAndCount: function (sValue) { this.counter++; return sValue; },
 
-// ❌ NUNCA: llamadas asíncronas
-formatWithAPI: function(sId) { fetch(`/api/${sId}`).then(...); return "..."; }
+// ❌ NUNCA: llamadas asíncronas — el formatter devuelve antes de que llegue la respuesta
+formatWithAPI: function (sId) { fetch(`/api/${sId}`).then((oRes) => oRes.json()); return ""; }
 ```
 
 ## Checklist

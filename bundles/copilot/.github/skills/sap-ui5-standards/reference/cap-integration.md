@@ -45,7 +45,7 @@ cd my-cap-project/        # ← Root CAP
 npm install --save-dev cds-plugin-ui5
 ```
 
-```json
+```jsonc
 // package.json del ROOT CAP — devDependencies
 {
   "devDependencies": {

@@ -18,6 +18,8 @@ TYPES: BEGIN OF ty_result,
 DATA: lt_result TYPE STANDARD TABLE OF ty_result,
       lo_alv    TYPE REF TO cl_salv_table.
 
+PARAMETERS p_bukrs TYPE bukrs OBLIGATORY.
+
 START-OF-SELECTION.
   PERFORM get_data.
   PERFORM display_alv.
@@ -27,7 +29,7 @@ FORM get_data.
   SELECT bsid~kunnr, kna1~name1, bsid~dmbtr AS netwr, bsid~bldat
     FROM bsid
     INNER JOIN kna1 ON kna1~kunnr = bsid~kunnr
-    WHERE bsid~bukrs = @s_bukrs
+    WHERE bsid~bukrs = @p_bukrs
       AND bsid~augdt = '00000000'
     INTO TABLE @DATA(lt_open_items).
 
@@ -37,11 +39,11 @@ FORM get_data.
       kunnr  = ls_item-kunnr
       name1  = ls_item-name1
       netwr  = ls_item-netwr
-      bucket = SWITCH #( lv_days
-        WHEN 0 TO 30 THEN '0-30'
-        WHEN 31 TO 60 THEN '31-60'
-        WHEN 61 TO 90 THEN '61-90'
-        ELSE '+90' )
+      "-- SWITCH sólo compara valores exactos: los rangos van con COND
+      bucket = COND #( WHEN lv_days <= 30 THEN '0-30'
+                       WHEN lv_days <= 60 THEN '31-60'
+                       WHEN lv_days <= 90 THEN '61-90'
+                       ELSE '+90' )
     ) TO lt_result.
   ENDLOOP.
 ENDFORM.

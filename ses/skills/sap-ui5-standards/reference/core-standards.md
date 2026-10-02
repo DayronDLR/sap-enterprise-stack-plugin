@@ -195,7 +195,7 @@ this.getView().getModel().setProperty("/buttonEnabled", false);
 
 ```javascript
 // ❌ DEPRECADO: sap.ui.getCore() está deprecado en UI5 >= 1.118
-sap.ui.getCore().attachInit(function() { ... });
+sap.ui.getCore().attachInit(function () { /* … */ });
 sap.ui.getCore().byId("myControl");
 sap.ui.getCore().getModel("myModel");
 ```

@@ -89,16 +89,22 @@ Después de cada fix:
 
 ### Error: "Controller not found" / Módulo no cargado
 
-```javascript
+```jsonc
 // manifest.json — verificar resourceRoots
 "sap.ui5": {
     "resourceRoots": {
-        "com.empresa.app": "./"   // ← debe coincidir con namespace en Component.js
+        "com.empresa.app": "./"
     }
 }
-// Component.js — verificar namespace
-sap.ui.define(["sap/ui/core/UIComponent"], function(UIComponent) {
-    return UIComponent.extend("com.empresa.app.Component", { ... });
+```
+
+```javascript
+// Component.js — el namespace tiene que coincidir con la clave de resourceRoots
+sap.ui.define(["sap/ui/core/UIComponent"], function (UIComponent) {
+    "use strict";
+    return UIComponent.extend("com.empresa.app.Component", {
+        metadata: { manifest: "json" }
+    });
 });
 ```
 

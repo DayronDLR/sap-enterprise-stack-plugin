@@ -129,7 +129,7 @@ LaunchpadError: sap.ui5/routing/targets/viewPath is deprecated and not supported
 with manifest version 2. Use the option 'path' instead.
 ```
 
-```json
+```jsonc
 // ❌ MAL — genera LaunchpadError en FLP
 "routing": {
   "config": {
@@ -137,7 +137,9 @@ with manifest version 2. Use the option 'path' instead.
     "viewPath": "com.myapp.view"   // ← ELIMINAR SIEMPRE
   }
 }
+```
 
+```jsonc
 // ✅ CORRECTO — solo "path"
 "routing": {
   "config": {
