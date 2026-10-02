@@ -248,14 +248,20 @@ pandoc PROYECTO-doc.md \
 
 4. **Nombres reales** — usa los nombres reales del proyecto (entidades, roles, servicios).
 
-5. **El entregable no va dentro de un bloque de código.** Si igual lo envolvés (para
+5. **Functional Spec**: además de la estructura del template, siempre **AS-IS** (proceso
+   actual) y **TO-BE** (proceso en SAP) como secciones explícitas, y el sistema por
+   defecto del proyecto (S/4HANA 2023 on-premise) si el pedido no dice otro. Un modelo
+   de **autorizaciones** en S/4HANA incluye, por rol, los **catálogos/espacios Fiori** y
+   sus apps, además de PFCG y los objetos de autorización.
+
+6. **El entregable no va dentro de un bloque de código.** Si igual lo envolvés (para
    mostrar el `.md` crudo), la cerca exterior lleva MÁS backticks que cualquiera
    interior (cuatro afuera, tres adentro): con la misma cantidad, el primer bloque
    interior cierra el exterior y el documento se rompe al renderizar. El comando
    `pandoc` va fuera del entregable, en su propio bloque `bash`.
    Si no se tienen, usa placeholders explícitos: `[NOMBRE_ENTIDAD]`.
 
-6. **Arquitectura y secuencia: motor `sap-diagrams`, nunca a mano** — todo diagrama de
+7. **Arquitectura y secuencia: motor `sap-diagrams`, nunca a mano** — todo diagrama de
    arquitectura de solución y toda secuencia de llamadas se produce con el skill
    `sap-diagrams`: escribís un `.sapdiag.json` con la semántica y el motor calcula
    layout, ruteo y etiquetas, y **mide el resultado** antes de aceptarlo. Perfil
@@ -263,14 +269,14 @@ pandoc PROYECTO-doc.md \
    coordenadas, waypoints o XML de draw.io a mano: es la causa raíz de los diagramas
    con cajas solapadas y flechas cruzadas.
 
-7. **Mermaid solo donde aporta** — queda para lo que el motor no cubre: modelos de
+8. **Mermaid solo donde aporta** — queda para lo que el motor no cubre: modelos de
    datos (`erDiagram`), estructura de clases (`classDiagram`) y flujos triviales de
    3-4 cajas dentro del `.md`. Para el `.docx` se renderizan a PNG con `mmdc`.
    **NUNCA uses diagramas ASCII.**
 
-8. **Tabla de objetos en Apéndice A** — siempre presente si hay desarrollo custom.
+9. **Tabla de objetos en Apéndice A** — siempre presente si hay desarrollo custom.
 
-9. **Modo cliente** — si se provee template, respeta EXACTAMENTE la numeración y
+10. **Modo cliente** — si se provee template, respeta EXACTAMENTE la numeración y
    estructura de secciones del cliente. No agregues secciones que no existan en el template.
 
 ---

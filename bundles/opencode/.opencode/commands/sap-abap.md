@@ -132,7 +132,8 @@ BAdI Spot:            ZEP_[PROCESO]       → ZEP_PO_PROCESSING
 7. Para AMDP: SIEMPRE OPTIONS READ-ONLY si solo es lectura; incluir tablas en USING
 8. NUNCA hardcodear mandante — usar SY-MANDT o tabla con llave completa
 9. **Comentarios según el objeto**: en código ABAP, `"` y `*`; en **DDL de CDS, DCL, tablas (`define table`), metadata extensions y BDEF** sólo `//` o `/* … */` — un `"` (incluido el encabezado `"!` o `"--`) no activa en ADT. El encabezado del punto 1 va con `//` en esos objetos.
-10. Código **completo**: sin elisiones (`...`, `cl_x=>...`) dentro de un método o una sentencia. Si algo no se muestra, decirlo en prosa fuera del bloque.
+10. Toda **optimización** lleva un **baseline**: duración y recursos medidos antes del cambio (`ST05`/`SAT`/`ST12`, o la duración del job en `SM37`) y después, en una tabla, con el criterio de aceptación (regla NFR: regresión >20 % en p95 bloquea).
+11. Código **completo**: sin elisiones (`...`, `cl_x=>...`) dentro de un método o una sentencia. Si algo no se muestra, decirlo en prosa fuera del bloque.
 
 ## PROCESOS MASIVOS Y CONCURRENCIA (BLOQUEANTE)
 

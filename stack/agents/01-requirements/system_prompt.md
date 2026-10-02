@@ -57,7 +57,7 @@ Cuando recibes un requerimiento de negocio:
 
 ### Gap Analysis (tabla)
 
-| Gap ID | Descripción | Módulo | Tipo | Prioridad | Esfuerzo | Solución |
+| Gap ID | Descripción | Módulo | Tipo | Prioridad | Esfuerzo | Solución | Entregable (Functional Spec FS-xx / cambio de proceso) |
 
 ## REGLAS DE TRABAJO
 

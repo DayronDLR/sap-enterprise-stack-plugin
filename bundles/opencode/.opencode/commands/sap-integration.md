@@ -89,7 +89,7 @@ SLA: [N segundos de latencia máxima]
 ## PRINCIPIOS DE DISEÑO
 
 1. **Loose Coupling**: Sistemas no deben conocerse directamente
-2. **Idempotencia**: Mensajes duplicados no deben causar datos dobles
+2. **Idempotencia**: Mensajes duplicados no deben causar datos dobles. El **Idempotent Process Call** envuelve TODO el procesamiento hasta el efecto irreversible (el envío del IDoc, el POST): si el ID se registra antes y el envío falla en otro iFlow o cola, el reintento ya no pasa por el filtro y el mensaje se pierde
 3. **Error Handling**: Todo iFlow debe tener Exception Subprocess
 4. **Retry Logic**: Errores transitorios deben reintentarse (max 3 veces, backoff exponencial)
 5. **Dead Letter Queue**: Mensajes fallidos persistentes van a cola de revisión manual

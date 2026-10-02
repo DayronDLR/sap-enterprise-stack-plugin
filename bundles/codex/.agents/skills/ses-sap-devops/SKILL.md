@@ -230,6 +230,8 @@ Sin gCTS en DEV no hay step Piper on-prem para ATC: invocar la API ADT de ATC di
 - Exemptions documentadas en `atc-exemptions.json` con motivo + aprobador + fecha de revision
 - NUNCA mover a QAS un TR con findings priority 1 abiertos
 - Re-baseline de exemptions cada 3 meses
+- **La baseline no cubre lo que se toca**: un objeto que entra en el cambio corrige sus findings heredados de prioridad 1 (y 2 si el objeto es nuevo en el release) en esa misma orden; la baseline sólo silencia código que nadie modificó
+- ATC también como **check de liberación de la orden** (`SE09`/`SE10`, variante central), además del gate de CI
 
 ### 2. abapGit hooks DEV → repo
 
@@ -287,6 +289,11 @@ steps:
 falla; para revertir un hotfix ya importado, el paso de Piper es **`gctsRollback`** (al
 commit previo o a uno indicado), nunca un TR manual de reversa.
 
+**Un hotfix nunca salta QAS** en DEV → QAS → PRD: se acelera el ciclo (aprobación de
+CAB de emergencia, ventana corta, gates mínimos ATC P1 + ABAP Unit), no se omite el
+sistema. El HOTFIX-OVERRIDE es de la DoD del repositorio del stack, no un atajo del
+landscape SAP.
+
 ### 4. Quality gates por entorno
 
 | Gate | DEV | QAS | PRD |
@@ -331,7 +338,7 @@ activarlos. Esto evita acoplar el stack a credenciales de un cliente.
 - Pipeline que mueve directo a PRD sin paso por QAS
 - Credenciales SAP en `.env` o variables de entorno del runner
 - Auto-import a PRD sin ventana planificada y CAB
-- Skip de tests cuando "urge salir a PRD" (eso es HOTFIX-OVERRIDE explicito)
+- Skip de tests o de QAS cuando "urge salir a PRD": un hotfix acelera el ciclo, no lo saltea
 
 ## FORMATO DE RESPUESTA
 

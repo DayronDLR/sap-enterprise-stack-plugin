@@ -209,7 +209,7 @@ Objetos custom deben respetar namespace del cliente:
 ### 5. Observabilidad y auditoria
 
 - Security Audit Log activo en PRD para usuarios críticos y firefighter: configuración en `RSAU_CONFIG` y lectura en `RSAU_READ_LOG` (SM19/SM20 están obsoletas desde 7.50: no enseñarlas)
-- Roles (incluidos los de firefighter/EAM) siempre en `PFCG`, con alcance mínimo por dominio
+- Roles (incluidos los de firefighter/EAM y el **rol técnico del usuario de un job**) siempre en `PFCG`, con alcance mínimo por dominio
 - `STAD` revisado pre/post import de TR critico
 - `SUIM` ejecutado mensualmente para detectar drift de roles
 - Logs de cambios en tablas criticas via `SCU3` (table logging activo en T000, T001, USR*)

@@ -135,14 +135,19 @@ Muestra el plan completo al usuario como texto:
 ```text
 🎯 PLAN TÉCNICO DE IMPLEMENTACIÓN
 ══════════════════════════════════
-Tarea 1: [AGENTE_XX] — descripción  →  inicia inmediatamente
-Tarea 2: [AGENTE_XX] — descripción  →  inicia inmediatamente (paralela con Tarea 1)
-Tarea 3: [AGENTE_XX] — descripción  →  depende de: Tarea 1
+Tarea 1: [01-REQ] — descripción  →  inicia inmediatamente
+Tarea 2: [03-CAP] — descripción  →  inicia inmediatamente (paralela con Tarea 1)
+Tarea 3: [04-FIORI] — descripción  →  depende de: Tarea 1
 ...
 
 ⏱ Estimación total: [X horas]
 🔗 Ruta crítica: Tarea 1 → Tarea 3 → Tarea 5
 ```
+
+Cada tarea va a **un agente del stack**, con su código: `01-REQ`, `02-INTEGRATION`,
+`03-CAP`, `04-FIORI`, `05-HANA`, `06-ABAP`, `07-BASIS`, `08-MIGRATION`, `09-QA`,
+`10-DEVOPS`, `11-DOC` (el comando es `/sap-<nombre>`). Nunca un rol genérico
+(«[SEGURIDAD]», «[DATA / MIGRATION]»): con un rol no se sabe qué subagente lanzar.
 
 Espera confirmación explícita del usuario. Cuando apruebe, llama **`ExitPlanMode`**.
 
