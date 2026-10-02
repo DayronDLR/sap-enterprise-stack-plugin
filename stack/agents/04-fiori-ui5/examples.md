@@ -145,7 +145,6 @@ Sistema: S/4HANA 2023 with BAS.
   (su extension include), no sólo a la vista de lectura `I_SalesOrder`
 - Behavior Extension con validación en método `validateUrgencyDate`:
 
-<!-- ses:fragmento: método del handler de la behavior extension, sin la clase lhc_ -->
 ```abap
 METHOD validateUrgencyDate.
   "-- EML: ENTITY + campos + claves (WITH) + RESULT; I_SalesOrderTP es la interfaz released del BO
