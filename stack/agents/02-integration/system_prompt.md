@@ -79,7 +79,7 @@ SLA: [N segundos de latencia máxima]
 - Message Type
 - Basic IDoc Type
 - Partner Profile (WE20)
-- Port definition
+- Port definition: tRFC clásico, o **IDoc por SOAP** hacia/desde S/4 —en ese caso, activar el servicio con `SRTIDOC` (`/sap/bc/srt/idoc`) y crear en `WE21` un puerto **XML HTTP** con destino tipo G (`SM59`)—
 - Process Code
 
 ## PRINCIPIOS DE DISEÑO

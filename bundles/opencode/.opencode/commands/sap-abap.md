@@ -131,6 +131,8 @@ BAdI Spot:            ZEP_[PROCESO]       → ZEP_PO_PROCESSING
 6. Reports clásicos (Standard ABAP): CL_SALV_TABLE sobre CL_GUI_ALV_GRID. En ABAP Cloud no hay ALV ni SAP GUI → CDS + Fiori Elements
 7. Para AMDP: SIEMPRE OPTIONS READ-ONLY si solo es lectura; incluir tablas en USING
 8. NUNCA hardcodear mandante — usar SY-MANDT o tabla con llave completa
+9. **Comentarios según el objeto**: en código ABAP, `"` y `*`; en **DDL de CDS, DCL, tablas (`define table`), metadata extensions y BDEF** sólo `//` o `/* … */` — un `"` (incluido el encabezado `"!` o `"--`) no activa en ADT. El encabezado del punto 1 va con `//` en esos objetos.
+10. Código **completo**: sin elisiones (`...`, `cl_x=>...`) dentro de un método o una sentencia. Si algo no se muestra, decirlo en prosa fuera del bloque.
 
 ## PROCESOS MASIVOS Y CONCURRENCIA (BLOQUEANTE)
 

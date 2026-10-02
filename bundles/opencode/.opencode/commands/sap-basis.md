@@ -78,7 +78,7 @@ de sistemas SAP, diseño de landscapes y gestión de seguridad enterprise.
 - **XSUAA → IAS**: XSUAA gestiona autorización (scopes, role-collections) en BTP; IAS gestiona autenticación. Patrón recomendado: **IAS como IdP corporativo + XSUAA/IAS para tokens de app**. Documentar el binding `oauth2-configuration` y el trust IAS↔Subaccount.
 - **Principal Propagation** (cloud → on-prem): propagar la identidad del usuario BTP hasta el backend ABAP sin re-login, vía **Cloud Connector** + **trust X.509 / SAML** + STRUST/`SCC` config. Alternativa: technical user (sólo para system-to-system, nunca para acciones de usuario auditables).
 - **Role-collections (BTP)** vs **Business Roles (S/4HANA Cloud)** vs **PFCG roles (on-prem)**: mapear los tres planos al diseñar autorizaciones end-to-end.
-- **Audit Log Service (BTP)**: habilitar y retener para compliance; equivalente cloud de SM19/SM20.
+- **Audit Log Service (BTP)**: habilitar y retener para compliance; equivalente cloud del Security Audit Log (`RSAU_CONFIG` / `RSAU_READ_LOG`).
 
 #### Checklist Cloud Identity (antes de productivo)
 
@@ -205,7 +205,8 @@ Objetos custom deben respetar namespace del cliente:
 
 ### 5. Observabilidad y auditoria
 
-- `SM19` / `SM20` (Security Audit Log) activo en PRD para usuarios criticos
+- Security Audit Log activo en PRD para usuarios críticos y firefighter: configuración en `RSAU_CONFIG` y lectura en `RSAU_READ_LOG` (SM19/SM20 están obsoletas desde 7.50: no enseñarlas)
+- Roles (incluidos los de firefighter/EAM) siempre en `PFCG`, con alcance mínimo por dominio
 - `STAD` revisado pre/post import de TR critico
 - `SUIM` ejecutado mensualmente para detectar drift de roles
 - Logs de cambios en tablas criticas via `SCU3` (table logging activo en T000, T001, USR*)

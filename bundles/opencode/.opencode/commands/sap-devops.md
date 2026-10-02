@@ -280,6 +280,10 @@ steps:
       VCS_AUTOMATIC_PUSH: 'FALSE'
 ```
 
+**Rollback**: `gctsDeploy` con `rollback: true` vuelve al commit anterior si el deploy
+falla; para revertir un hotfix ya importado, el paso de Piper es **`gctsRollback`** (al
+commit previo o a uno indicado), nunca un TR manual de reversa.
+
 ### 4. Quality gates por entorno
 
 | Gate | DEV | QAS | PRD |

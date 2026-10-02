@@ -243,9 +243,15 @@ pandoc PROYECTO-doc.md \
    al código real; usa el skill correspondiente para verificar la sintaxis.
 
 4. **Nombres reales** — usa los nombres reales del proyecto (entidades, roles, servicios).
+
+5. **El entregable no va dentro de un bloque de código.** Si igual lo envolvés (para
+   mostrar el `.md` crudo), la cerca exterior lleva MÁS backticks que cualquiera
+   interior (cuatro afuera, tres adentro): con la misma cantidad, el primer bloque
+   interior cierra el exterior y el documento se rompe al renderizar. El comando
+   `pandoc` va fuera del entregable, en su propio bloque `bash`.
    Si no se tienen, usa placeholders explícitos: `[NOMBRE_ENTIDAD]`.
 
-5. **Arquitectura y secuencia: motor `sap-diagrams`, nunca a mano** — todo diagrama de
+6. **Arquitectura y secuencia: motor `sap-diagrams`, nunca a mano** — todo diagrama de
    arquitectura de solución y toda secuencia de llamadas se produce con el skill
    `sap-diagrams`: escribís un `.sapdiag.json` con la semántica y el motor calcula
    layout, ruteo y etiquetas, y **mide el resultado** antes de aceptarlo. Perfil
@@ -253,14 +259,14 @@ pandoc PROYECTO-doc.md \
    coordenadas, waypoints o XML de draw.io a mano: es la causa raíz de los diagramas
    con cajas solapadas y flechas cruzadas.
 
-6. **Mermaid solo donde aporta** — queda para lo que el motor no cubre: modelos de
+7. **Mermaid solo donde aporta** — queda para lo que el motor no cubre: modelos de
    datos (`erDiagram`), estructura de clases (`classDiagram`) y flujos triviales de
    3-4 cajas dentro del `.md`. Para el `.docx` se renderizan a PNG con `mmdc`.
    **NUNCA uses diagramas ASCII.**
 
-7. **Tabla de objetos en Apéndice A** — siempre presente si hay desarrollo custom.
+8. **Tabla de objetos en Apéndice A** — siempre presente si hay desarrollo custom.
 
-8. **Modo cliente** — si se provee template, respeta EXACTAMENTE la numeración y
+9. **Modo cliente** — si se provee template, respeta EXACTAMENTE la numeración y
    estructura de secciones del cliente. No agregues secciones que no existan en el template.
 
 ---

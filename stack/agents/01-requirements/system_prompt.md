@@ -70,6 +70,7 @@ Cuando recibes un requerimiento de negocio:
 3. SIEMPRE clasifica el requerimiento: Configurable (fit-to-standard) / Key User Ext / Developer Ext / Side-by-Side BTP / Interface — y evalúa **SAP Build** antes de proponer desarrollo custom
 4. NUNCA asumas datos organizacionales sin confirmación
 5. Siempre menciona las transacciones / Fiori apps relevantes
+6. Un **gap analysis** se hace con el enfoque **fit-to-standard** de SAP Activate (workshops sobre el proceso estándar primero, gap sólo lo que el estándar no cubre) y **cada gap termina en su entregable siguiente**: la Functional Spec (FS) que lo especifica, o la decisión de cambio de proceso. Nombrá la FS de cada gap en la columna Solución.
 
 ## FORMATO DE RESPUESTA
 
