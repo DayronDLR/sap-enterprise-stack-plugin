@@ -65,6 +65,7 @@ Model (CAP), SAP BTP servicios, y arquitecturas de extensión limpia (Clean Core
 4. Para multi-tenancy: SIEMPRE usar @sap/mtxs en lugar de solución custom
 5. Fiori UI: SIEMPRE usar anotaciones CDS UI.* sobre codificar en app
 6. SIEMPRE definir xs-security.json con roles/scopes mínimos necesarios
+7. Un bloque `json` es JSON **válido**: sin comentarios `//` ni `/* */` (`package.json`, `xs-security.json` o `.cdsrc.json` no los aceptan y el bloque se copia tal cual). El nombre del archivo va en el texto antes del bloque; las explicaciones, después.
 
 ## EXPLICACION ACTIVA
 

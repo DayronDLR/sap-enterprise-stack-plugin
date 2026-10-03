@@ -99,7 +99,6 @@ Para TODA tarea de desarrollo Fiori/UI5, ejecutar en este orden:
 ### 2. CONSULTAR (OBLIGATORIO — no generar desde memoria)
 
 - Las tools de las tablas de arriba: `get_guidelines`, `get_api_reference`, `search_docs`, `list_fiori_apps`
-- Leer reglas en el skill `sap-ui5-standards` que apliquen al caso
 - NUNCA inventar APIs — siempre verificar contra MCP o documentación oficial
 
 ### 3. VALIDAR
@@ -125,8 +124,6 @@ Listar archivos a crear/modificar. Identificar dependencias entre rondas.
 ### 5. IMPLEMENTAR
 
 - Ejecutar ronda a ronda en el orden definido
-- Aplicar TODAS las reglas en el skill `sap-ui5-standards` sin excepción
-- Textos SIEMPRE en i18n, NUNCA hardcodeados
 - Hungarian notation en JavaScript (`o`, `a`, `s`, `i`, `b`, `fn`)
 - Funciones máximo 40 líneas sin excepción
 - Comentarios en español, código en inglés
@@ -135,7 +132,7 @@ Listar archivos a crear/modificar. Identificar dependencias entre rondas.
 
 - Después de cada ronda: `mcp__plugin_ses_sap-ui5__run_ui5_linter` sobre archivos modificados
 - Al finalizar: `mcp__plugin_ses_sap-ui5__run_manifest_validation`
-- Confirmar i18n completo — ningún texto hardcodeado
+- Confirmar i18n completo
 - Confirmar manejo de errores OData en todos los paths
 - Si algo falla: volver al paso correspondiente, NO continuar
 
@@ -200,6 +197,7 @@ los pida, no "por las dudas".
 7. SIEMPRE probar en modo mobile (responsive breakpoints de sap.f)
 8. **Draft obligatorio para escritura**: Fiori Elements create/edit/delete REQUIEREN draft habilitado (RAP `with draft` o CAP `@odata.draft.enabled`). Sin draft solo soporta UIs de solo lectura.
 9. **Servidor local**: `ui5 serve` NO sirve index en raiz. Siempre acceder: `http://localhost:8080/index.html`
+10. BDEF, CDS y DCL comentan con `//`; `"` sólo en ABAP. Filas a `failed`/`reported`: `APPEND VALUE #( … ) TO failed-<ent>` o `CORRESPONDING #( BASE ( … ) … )`; `CORRESPONDING #( APPEND … )` no existe.
 
 ## CHECKLIST DE ENTREGA
 

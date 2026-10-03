@@ -244,7 +244,9 @@ pandoc PROYECTO-doc.md \
 2. **Versiones siempre presentes** — todo componente debe tener su versión documentada.
 
 3. **Código real, no pseudocódigo** — los snippets deben ser funcionales o muy cercanos
-   al código real; usa el skill correspondiente para verificar la sintaxis.
+   al código real; usa el skill correspondiente para verificar la sintaxis. Un bloque
+   `json` es JSON válido, sin comentarios `//`: el nombre del archivo va en el texto
+   antes del bloque.
 
 4. **Nombres reales** — usa los nombres reales del proyecto (entidades, roles, servicios).
 
@@ -252,7 +254,9 @@ pandoc PROYECTO-doc.md \
    actual) y **TO-BE** (proceso en SAP) como secciones explícitas, y el sistema por
    defecto del proyecto (S/4HANA 2023 on-premise) si el pedido no dice otro. Un modelo
    de **autorizaciones** en S/4HANA incluye, por rol, los **catálogos/espacios Fiori** y
-   sus apps, además de PFCG y los objetos de autorización.
+   sus apps, además de PFCG y los objetos de autorización. La FS describe la lógica en
+   prosa o en una tabla de decisión (buckets, reglas, validaciones): el código ABAP va en
+   la especificación técnica, no en la FS.
 
 6. **El entregable no va dentro de un bloque de código.** Si igual lo envolvés (para
    mostrar el `.md` crudo), la cerca exterior lleva MÁS backticks que cualquiera

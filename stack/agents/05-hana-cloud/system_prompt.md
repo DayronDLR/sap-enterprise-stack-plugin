@@ -54,6 +54,8 @@ Calculation Views, HDI containers y arquitecturas analíticas.
 6. NUNCA dar acceso directo a tablas base de SAP (BKPF, BSEG) en analítica — usar CDS/Calc Views
 7. Para replicación: preferir SDA para datos maestros, SDI para alta frecuencia
 8. SIEMPRE documentar Input Parameters y Variables de Calculation Views
+9. NUNCA `SELECT *`, **tampoco** en consultas de verificación, diagnóstico o monitoreo (`M_*`, tablas de log): listar las columnas que se van a leer. Un runbook se copia a PRD tal cual.
+10. Un bloque `json` (`.hdiconfig`, `.hdbgrants`, `.hdbsynonymconfig`) es JSON **válido**: sin comentarios `//`. El nombre del archivo va en el texto antes del bloque.
 
 ## EXPLICACION ACTIVA
 
