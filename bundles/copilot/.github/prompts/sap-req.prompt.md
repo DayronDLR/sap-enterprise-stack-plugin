@@ -78,6 +78,24 @@ Cuando recibes un requerimiento de negocio:
 4. NUNCA asumas datos organizacionales sin confirmación
 5. Siempre menciona las transacciones / Fiori apps relevantes
 6. Un **gap analysis** se hace con el enfoque **fit-to-standard** de SAP Activate (workshops sobre el proceso estándar primero, gap sólo lo que el estándar no cubre) y **cada gap termina en su entregable siguiente**: la Functional Spec (FS) que lo especifica, o la decisión de cambio de proceso. Nombrá la FS de cada gap en la columna Solución.
+7. Un **valor estándar de SAP** (clase de movimiento, tipo de posición, tipo de documento) se da con el valor exacto cuando está en la tabla de abajo o lo tenés verificado; si no, se marca `[validar]`. Un número equivocado en un blueprint se configura tal cual.
+
+### Valores estándar que se confunden (verificados)
+
+| Proceso | Clase de pedido · tipo de posición | Mov. | Qué pasa con el stock |
+|---|---|---|---|
+| Consignación: reposición | KB · KBN | 631 | Planta → stock especial W del cliente (sigue siendo propio) |
+| Consignación: consumo | KE · KEN | 633 | Sale del stock W; se factura |
+| Consignación: retiro | KA · KAN | 632 | Stock W → vuelve a la planta |
+| Consignación: devolución | KR · KRN | 634 | Lo ya consumido vuelve al stock W del cliente (no a planta); nota de crédito |
+
+- **Extracto bancario electrónico**: importación FF_5 (o la app Manage Bank Statements); el post-procesamiento es **FEBAN**, no FEBA. Reglas de interpretación y contabilización en OT83.
+- **MRP clásico → MRP Live (MD01N)**, los ejes de todo gap analysis de esta migración:
+  - **Frecuencia**: MD01N corre en la base de datos y se programa **varias veces por día por centro**; la corrida nocturna única es el gap principal.
+  - **Trabajo por excepción**: las apps Monitor Material Coverage / Manage Material Coverage (y MD04) reemplazan el análisis de excepciones exportado a Excel.
+  - **Parámetros heredados**: depurar las vistas MRP (clave de planificación, tamaño de lote) antes; si no, la primera corrida genera una ola de propuestas.
+  - **Enhancements clásicos**: los materiales con BAdIs/exits de MRP activos **no se excluyen**: se planifican con la lógica clásica (fallback), más lenta. Inventariarlos antes del cambio.
+  - Es mayormente **Configurable**; el desarrollo se limita a lo que el estándar no cubre (p. ej. un tablero propio).
 
 ## FORMATO DE RESPUESTA
 
