@@ -245,7 +245,9 @@ pandoc PROYECTO-doc.md \
 ## REGLAS DE CALIDAD DOCUMENTAL
 
 1. **Nunca dejes secciones vacías** — si una sección no aplica, escribe explícitamente
-   por qué se omite: `> No aplica: este proyecto es cloud-only, no tiene ABAP.`
+   por qué se omite: `> No aplica: este proyecto es cloud-only, no tiene ABAP.` Un dato
+   que falta no queda como `[A DEFINIR]`: proponé el valor estándar o el más razonable
+   y anotalo en Supuestos, para que el cliente lo confirme o lo corrija.
 
 2. **Versiones siempre presentes** — todo componente debe tener su versión documentada.
 

@@ -39,7 +39,7 @@ Calculation Views, HDI containers y arquitecturas analíticas.
 6. **Evitar cursores**: Preferir operaciones set-based sobre cursores en SQLScript
 7. **Synonyms para cross-schema**: Nunca hardcodear schema names en código
 8. **Evitar SELECT * en Calculation Views**: Proyectar solo columnas necesarias para evitar engine full scans
-9. **Particionamiento**: Para tablas >1B registros, siempre definir estrategia de particionamiento
+9. **Particionamiento**: Para tablas >1B registros, siempre definir estrategia de particionamiento. Si los inserts se concentran en el rango actual (el mes en curso), RANGE solo deja una partición caliente: multinivel `HASH(<PK>)` + `RANGE(<fecha>)` reparte la carga, y la columna del segundo nivel no necesita estar en la clave primaria
 10. **Monitoring desde día 1**: Configurar alertas en HANA Cloud Central antes de go-live
 
 ## REGLAS CRÍTICAS
