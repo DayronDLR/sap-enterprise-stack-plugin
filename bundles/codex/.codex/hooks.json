@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/delivery-gate.sh\"",
+            "command": "SES_HOST=codex sh -c 'd=$PWD; while [ ! -f \"$d/.codex/hooks.json\" ] && [ \"$d\" != / ]; do d=$(dirname \"$d\"); done; f=\"$d/.agents/hooks/scripts/delivery-gate.sh\"; if [ -f \"$d/.codex/hooks.json\" ] && [ -f \"$f\" ] && [ -O \"$f\" ]; then exec bash \"$f\"; fi; echo \"[ses] no encuentro .agents/hooks/scripts/delivery-gate.sh desde $PWD: este gate no corre. Reinstalá el bundle (ses init --host codex).\" >&2; exit 2'",
             "timeout": 600,
             "async": false
           }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/protect-sensitive-files.sh\"",
+            "command": "SES_HOST=codex sh -c 'd=$PWD; while [ ! -f \"$d/.codex/hooks.json\" ] && [ \"$d\" != / ]; do d=$(dirname \"$d\"); done; f=\"$d/.agents/hooks/scripts/protect-sensitive-files.sh\"; if [ -f \"$d/.codex/hooks.json\" ] && [ -f \"$f\" ] && [ -O \"$f\" ]; then exec bash \"$f\"; fi; echo \"[ses] no encuentro .agents/hooks/scripts/protect-sensitive-files.sh desde $PWD: este gate no corre. Reinstalá el bundle (ses init --host codex).\" >&2; exit 2'",
             "timeout": 600,
             "async": false
           }
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/mcp-guard.sh\"",
+            "command": "SES_HOST=codex sh -c 'd=$PWD; while [ ! -f \"$d/.codex/hooks.json\" ] && [ \"$d\" != / ]; do d=$(dirname \"$d\"); done; f=\"$d/.agents/hooks/scripts/mcp-guard.sh\"; if [ -f \"$d/.codex/hooks.json\" ] && [ -f \"$f\" ] && [ -O \"$f\" ]; then exec bash \"$f\"; fi; echo \"[ses] no encuentro .agents/hooks/scripts/mcp-guard.sh desde $PWD: este gate no corre. Reinstalá el bundle (ses init --host codex).\" >&2; exit 2'",
             "timeout": 600,
             "async": false
           }
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/shrink-input.sh\"",
+            "command": "SES_HOST=codex sh -c 'd=$PWD; while [ ! -f \"$d/.codex/hooks.json\" ] && [ \"$d\" != / ]; do d=$(dirname \"$d\"); done; f=\"$d/.agents/hooks/scripts/shrink-input.sh\"; if [ -f \"$d/.codex/hooks.json\" ] && [ -f \"$f\" ] && [ -O \"$f\" ]; then exec bash \"$f\"; fi; echo \"[ses] no encuentro .agents/hooks/scripts/shrink-input.sh desde $PWD: este gate no corre. Reinstalá el bundle (ses init --host codex).\" >&2; exit 0'",
             "timeout": 600,
             "async": true
           }
@@ -53,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/auto-lint.sh\"",
+            "command": "SES_HOST=codex sh -c 'd=$PWD; while [ ! -f \"$d/.codex/hooks.json\" ] && [ \"$d\" != / ]; do d=$(dirname \"$d\"); done; f=\"$d/.agents/hooks/scripts/auto-lint.sh\"; if [ -f \"$d/.codex/hooks.json\" ] && [ -f \"$f\" ] && [ -O \"$f\" ]; then exec bash \"$f\"; fi; echo \"[ses] no encuentro .agents/hooks/scripts/auto-lint.sh desde $PWD: este gate no corre. Reinstalá el bundle (ses init --host codex).\" >&2; exit 0'",
             "timeout": 600,
             "async": true
           }
@@ -65,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/agent-reinforcement.sh\"",
+            "command": "SES_HOST=codex sh -c 'd=$PWD; while [ ! -f \"$d/.codex/hooks.json\" ] && [ \"$d\" != / ]; do d=$(dirname \"$d\"); done; f=\"$d/.agents/hooks/scripts/agent-reinforcement.sh\"; if [ -f \"$d/.codex/hooks.json\" ] && [ -f \"$f\" ] && [ -O \"$f\" ]; then exec bash \"$f\"; fi; echo \"[ses] no encuentro .agents/hooks/scripts/agent-reinforcement.sh desde $PWD: este gate no corre. Reinstalá el bundle (ses init --host codex).\" >&2; exit 0'",
             "timeout": 600,
             "async": true
           }
@@ -77,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/verify-artefactos.sh\"",
+            "command": "SES_HOST=codex sh -c 'd=$PWD; while [ ! -f \"$d/.codex/hooks.json\" ] && [ \"$d\" != / ]; do d=$(dirname \"$d\"); done; f=\"$d/.agents/hooks/scripts/verify-artefactos.sh\"; if [ -f \"$d/.codex/hooks.json\" ] && [ -f \"$f\" ] && [ -O \"$f\" ]; then exec bash \"$f\"; fi; echo \"[ses] no encuentro .agents/hooks/scripts/verify-artefactos.sh desde $PWD: este gate no corre. Reinstalá el bundle (ses init --host codex).\" >&2; exit 0'",
             "timeout": 600,
             "async": true
           }
@@ -87,7 +87,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/log-agent-activity.sh\"",
+            "command": "SES_HOST=codex sh -c 'd=$PWD; while [ ! -f \"$d/.codex/hooks.json\" ] && [ \"$d\" != / ]; do d=$(dirname \"$d\"); done; f=\"$d/.agents/hooks/scripts/log-agent-activity.sh\"; if [ -f \"$d/.codex/hooks.json\" ] && [ -f \"$f\" ] && [ -O \"$f\" ]; then exec bash \"$f\"; fi; echo \"[ses] no encuentro .agents/hooks/scripts/log-agent-activity.sh desde $PWD: este gate no corre. Reinstalá el bundle (ses init --host codex).\" >&2; exit 0'",
             "timeout": 600,
             "async": true
           }
@@ -99,7 +99,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CODEX_PROJECT_ROOT:-.}/.agents/hooks/scripts/session-close-note.sh\"",
+            "command": "SES_HOST=codex sh -c 'd=$PWD; while [ ! -f \"$d/.codex/hooks.json\" ] && [ \"$d\" != / ]; do d=$(dirname \"$d\"); done; f=\"$d/.agents/hooks/scripts/session-close-note.sh\"; if [ -f \"$d/.codex/hooks.json\" ] && [ -f \"$f\" ] && [ -O \"$f\" ]; then exec bash \"$f\"; fi; echo \"[ses] no encuentro .agents/hooks/scripts/session-close-note.sh desde $PWD: este gate no corre. Reinstalá el bundle (ses init --host codex).\" >&2; exit 0'",
             "timeout": 600,
             "async": true
           }

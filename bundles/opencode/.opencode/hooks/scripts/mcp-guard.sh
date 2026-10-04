@@ -20,6 +20,36 @@ set -u
 
 INPUT=$(cat)
 
+# Codex (SES_HOST=codex, lo pone su emisor) no acepta `permissionDecision: ask` ni
+# `updatedInput`: los rechaza como no soportados y la llamada seguia SIN control.
+# Ahi lo que en Claude es una pregunta se deniega con el motivo y la forma de
+# habilitarlo, y el limite de filas se pide en vez de inyectarse.
+EN_CODEX=0
+# Tambien por `turn_id` en el NIVEL SUPERIOR de la entrada, como verify-artefactos.sh
+# y como el evaluador node de abajo: la misma regla en los dos caminos. Se confirma
+# con python solo si la subcadena aparece (el caso comun no paga el parseo); sin
+# python, la subcadena alcanza: un falso positivo solo endurece, nunca abre.
+if [[ "${SES_HOST:-}" = "codex" ]]; then
+    EN_CODEX=1
+elif [[ "$INPUT" == *'"turn_id"'* ]]; then
+    EN_CODEX=1
+    if command -v python3 >/dev/null 2>&1; then
+        NIVEL=$(printf '%s' "$INPUT" | python3 -I -S -c 'import json,sys
+try: print("si" if "turn_id" in json.load(sys.stdin) else "no")
+except Exception: print("?")' 2>/dev/null)
+        [[ "$NIVEL" = "no" ]] && EN_CODEX=0
+    fi
+fi
+# $1 = que hace la llamada; $2 = en Claude, que confirmar; $3 = en Codex, como
+# habilitarlo. Pregunta o deniega segun el host.
+preguntar() {
+    if [[ $EN_CODEX -eq 1 ]]; then
+        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[mcp-guard] %s Codex no puede pedir confirmacion: %s"}}\n' "$1" "$3"
+    else
+        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"[mcp-guard] %s %s"}}\n' "$1" "$2"
+    fi
+}
+
 # ── sap-adt: lista de lo que SÍ se permite ────────────────────────────────────
 #
 # `sap-adt` (`@mcp-abap-adt/core`) no es de solo lectura: expone tools que crean,
@@ -66,10 +96,12 @@ if [[ "$TOOL_NAME" =~ ^mcp__.*sap[-_]adt__([A-Za-z0-9_]+)$ ]]; then
     ADT_LECTURA_RE='^(Get|Search|List|Read|Describe|Check|Validate|ResolveTransport|RunUnitTest|RunClassUnitTestsLow|RuntimeAnalyze|RuntimeGet|RuntimeList)'
     if [[ ! "$TOOL_ADT" =~ $ADT_LECTURA_RE ]]; then
         if [[ "${SES_ADT_WRITE:-}" = "ask" ]]; then
-            printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"[mcp-guard] %s modifica o ejecuta en el sistema SAP del archivo de SAP_ADT_ENV_PATH. Confirmá que es DEV y que corresponde."}}\n' "$TOOL_ADT"
+            preguntar "$TOOL_ADT modifica o ejecuta en el sistema SAP del archivo de SAP_ADT_ENV_PATH." \
+                "Confirmá que es DEV y que corresponde." \
+                "la escritura en SAP queda denegada en este host; activá el objeto desde ADT."
             exit 0
         fi
-        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[mcp-guard] %s modifica o ejecuta en el sistema SAP, y el stack usa sap-adt en solo lectura. Entregá el código para activarlo en ADT, o, si la persona lo decide, exportá SES_ADT_WRITE=ask para confirmar cada llamada."}}\n' "$TOOL_ADT"
+        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[mcp-guard] %s modifica o ejecuta en el sistema SAP, y el stack usa sap-adt en solo lectura. Entregá el código para activarlo en ADT%s."}}\n' "$TOOL_ADT" "$([[ $EN_CODEX -eq 1 ]] || printf ', o, si la persona lo decide, exportá SES_ADT_WRITE=ask para confirmar cada llamada')"
         exit 0
     fi
     # Leer filas de una tabla las manda al modelo: pueden ser datos personales.
@@ -77,7 +109,9 @@ if [[ "$TOOL_NAME" =~ ^mcp__.*sap[-_]adt__([A-Za-z0-9_]+)$ ]]; then
     # falta, se pide aca y se pierde solo el limite de filas.
     if [[ "$TOOL_ADT" =~ ^(GetTableContents|GetSqlQuery)$ && "${SES_ADT_DATA:-}" != "allow" ]] \
        && { [[ "${SES_MCP_GUARD:-}" = "off" ]] || ! command -v node >/dev/null 2>&1; }; then
-        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"[mcp-guard] %s lee datos del sistema SAP (pueden ser datos personales). Confirmá la lectura; SES_ADT_DATA=allow la habilita sin preguntar."}}\n' "$TOOL_ADT"
+        preguntar "$TOOL_ADT lee datos del sistema SAP (pueden ser datos personales)." \
+            "Confirmá la lectura; SES_ADT_DATA=allow la habilita sin preguntar." \
+            "si la persona lo autoriza, que exporte SES_ADT_DATA=allow y reinicie la sesion."
         exit 0
     fi
 fi
@@ -151,6 +185,19 @@ process.stdin.on("data", (d) => (raw += d)).on("end", () => {
   const conLimite = input[param] !== undefined && input[param] !== null;
   // El modelo ya eligio un limite y no hay nada que confirmar: respetarlo.
   if (conLimite && !datos) process.exit(0);
+
+  // Codex no soporta `ask` ni `updatedInput` (ver EN_CODEX arriba).
+  if (process.env.SES_HOST === "codex" || ev.turn_id !== undefined) {
+    const motivos = [];
+    if (datos) motivos.push(`${tool} lee datos del sistema SAP (pueden ser datos personales). ` +
+      "Codex no puede pedir confirmacion: si la persona lo autoriza, que exporte SES_ADT_DATA=allow y reinicie la sesion.");
+    if (!conLimite) motivos.push(`${tool} sin ${param}: volvé a llamarla con ${param}: ${value} (o el limite que necesites).`);
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: {
+      hookEventName: "PreToolUse", permissionDecision: "deny",
+      permissionDecisionReason: `[mcp-guard] ${motivos.join(" ")}`,
+    } }));
+    process.exit(0);
+  }
 
   const salida = { hookEventName: "PreToolUse" };
   const motivos = [];

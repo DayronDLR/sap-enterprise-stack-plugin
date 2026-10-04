@@ -13,7 +13,7 @@ Corré el auditor sobre los transcripts de este proyecto:
 node ".agents/scripts/token-audit.mjs" --top 12
 ```
 
-Argumentos del usuario: `$ARGUMENTS`
+Argumentos del usuario: `<la solicitud que acompaña la invocación del skill>`
 
 Interpretá la salida para el dev, en este orden:
 

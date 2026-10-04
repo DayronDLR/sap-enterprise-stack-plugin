@@ -22,9 +22,9 @@ args = ["-y", "@sap-ux/fiori-mcp-server@1.15.0", "fiori-mcp"]
 startup_timeout_sec = 30
 
 [mcp_servers.sap-adt]
-command = "npx"
-args = ["-y", "@mcp-abap-adt/core@7.2.1", "--exposition=readonly"]
-env = { "MCP_ENV_PATH" = "${SAP_ADT_ENV_PATH:-/dev/null}", "SAP_SYSTEM_TYPE" = "${SAP_ADT_SYSTEM_TYPE:-onprem}" }
+command = "sh"
+args = ["-c", "export MCP_ENV_PATH=\"${SAP_ADT_ENV_PATH:-/dev/null}\" SAP_SYSTEM_TYPE=\"${SAP_ADT_SYSTEM_TYPE:-onprem}\"; exec npx -y @mcp-abap-adt/core@7.2.1 --exposition=readonly"]
+env_vars = ["SAP_ADT_ENV_PATH", "SAP_ADT_SYSTEM_TYPE"]
 # Requiere secrets del usuario: sin ellos el server no arranca,
 # pero el resto de la configuracion sigue siendo valida.
 startup_timeout_sec = 30

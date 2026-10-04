@@ -5,6 +5,12 @@
 
 Stack de agentes SAP enterprise: 11 agentes de dominio, subagentes Fiori, gates de Definition of Done y servidores MCP SAP.
 
+## Entorno SAP por defecto
+Sistema: SAP S/4HANA 2023 On-Premise + SAP BTP
+Landscape: DEV > QAS > PRD | Principio: Clean Core
+
+Salvo que la persona diga otro sistema, se asume este.
+
 ## Agentes
 
 Se invocan como skills, con `$nombre`:

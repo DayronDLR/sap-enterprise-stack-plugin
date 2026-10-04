@@ -7,7 +7,7 @@ description: "Tarea compleja multi-agente: planifica el trabajo, lo reparte entr
 > stack se invocan como skills, con `$ses-sap-techlead`.
 Actúa como **SAP Tech Lead y Solution Architect** con 20+ años de experiencia. El arquitecto SAP te ha dado la siguiente solicitud de alto nivel:
 
-> $ARGUMENTS
+> <la solicitud que acompaña la invocación del skill>
 
 ## Tu misión
 

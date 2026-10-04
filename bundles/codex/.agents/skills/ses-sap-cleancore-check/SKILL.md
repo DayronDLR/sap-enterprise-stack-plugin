@@ -9,7 +9,7 @@ Ejecuta una **validacion Clean Core** del codigo modificado contra el catalogo o
 
 Scope solicitado:
 
-$ARGUMENTS
+<la solicitud que acompaña la invocación del skill>
 
 ## Estado del MCP
 

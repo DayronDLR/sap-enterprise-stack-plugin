@@ -29,4 +29,4 @@ Analiza todos los cambios pendientes en el repositorio (staged + unstaged + untr
 - Si el push falla por estar detrás del remote, haz `git pull --rebase` primero y reintenta.
 - **NUNCA** incluir `Co-Authored-By` de un agente ni de ningún bot. El commit debe quedar únicamente con el usuario de git configurado en el sistema.
 
-$ARGUMENTS
+<la solicitud que acompaña la invocación del skill>

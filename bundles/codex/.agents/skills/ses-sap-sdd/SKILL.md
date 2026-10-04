@@ -7,7 +7,7 @@ description: "Ciclo SDD previo a codear (estimación y arquitectura): requerimie
 > stack se invocan como skills, con `$ses-sap-sdd`.
 Vas a conducir el ciclo SDD (ADR-014) sobre este pedido del arquitecto SAP:
 
-> $ARGUMENTS
+> <la solicitud que acompaña la invocación del skill>
 
 ## 0. ¿Corresponde?
 

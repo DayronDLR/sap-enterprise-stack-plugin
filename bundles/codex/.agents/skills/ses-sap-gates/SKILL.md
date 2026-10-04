@@ -11,7 +11,7 @@ Corré los 3 gates de la DoD sobre el trabajo actual. Este comando es la forma
 **explícita** de pedir la revisión: los gates ya no corren en cada turno, corren
 acá o al momento de entregar (`git commit` / `git push` / `gh pr create`).
 
-Argumentos opcionales: `$ARGUMENTS`
+Argumentos opcionales: `<la solicitud que acompaña la invocación del skill>`
 
 - `--gate=1` / `--gate=2` / `--gate=3` → correr solo ese gate
 - sin argumentos → los tres, en orden

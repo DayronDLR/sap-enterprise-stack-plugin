@@ -23,6 +23,8 @@ set -u
 INPUT=$(cat)
 
 [[ "${SES_SHRINK:-}" = "off" ]] && exit 0
+# Codex rechaza `updatedInput` sin `permissionDecision: allow`: el hook solo hacia ruido.
+[[ "${SES_HOST:-}" = "codex" ]] && exit 0
 
 # ── Fast path ────────────────────────────────────────────────────────────────
 # Corre en cada comando Bash: si no matchea ninguno de los verbos ruidosos,

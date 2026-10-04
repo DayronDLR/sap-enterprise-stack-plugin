@@ -9,7 +9,7 @@ description: Guarda un checkpoint de la sesion para retomarla despues sin perder
 
 Guarda el estado actual de la sesión en `.planning/HANDOFF.json` para poder retomar el trabajo exactamente desde donde quedó, incluso en una nueva conversación.
 
-> Argumentos opcionales: `$ARGUMENTS` — nota adicional para el próximo agente
+> Argumentos opcionales: `<la solicitud que acompaña la invocación del skill>` — nota adicional para el próximo agente
 
 ---
 
@@ -58,7 +58,7 @@ Crear o sobrescribir `.planning/HANDOFF.json` con el siguiente formato:
   "branch": "nombre-del-branch",
   "session_summary": "Una oración resumiendo qué se estaba haciendo",
   "original_request": "El requerimiento original del usuario (copia textual si se recuerda)",
-  "arguments": "$ARGUMENTS",
+  "arguments": "<la solicitud que acompaña la invocación del skill>",
   "completed": [
     "Descripción de tarea completada 1",
     "Descripción de tarea completada 2"

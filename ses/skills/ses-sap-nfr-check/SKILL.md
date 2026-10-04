@@ -9,7 +9,7 @@ Ejecuta una **validacion NFR manual** sobre el scope indicado (o sobre el diff d
 
 Scope solicitado:
 
-$ARGUMENTS
+<la solicitud que acompaña la invocación del skill>
 
 ## Pasos
 
