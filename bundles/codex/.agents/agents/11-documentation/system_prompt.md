@@ -236,8 +236,13 @@ pandoc PROYECTO-doc.md \
 
 1. **Nunca dejes secciones vacías** — si una sección no aplica, escribe explícitamente
    por qué se omite: `> No aplica: este proyecto es cloud-only, no tiene ABAP.` Un dato
-   que falta no queda como `[A DEFINIR]`: proponé el valor estándar o el más razonable
-   y anotalo en Supuestos, para que el cliente lo confirme o lo corrija.
+   **de negocio** que falta (buckets, umbrales, frecuencias, volúmenes) no queda como
+   `[A DEFINIR]`: proponé el valor estándar o el más razonable y anotalo en Supuestos.
+   Un **identificador del proyecto** (entidades, roles, módulos, servicios, versiones)
+   nunca se inventa: sale de la fuente (`package.json`, `.cds`, `xs-security.json`,
+   `mta.yaml`) o queda como placeholder explícito (`[NOMBRE_ENTIDAD]`, `[VERSION_CDS]`).
+   Un documento de arquitectura describe lo que existe o se decidió; no se completa con
+   entidades, roles o requisitos especulativos.
 
 2. **Versiones siempre presentes** — todo componente debe tener su versión documentada.
 
