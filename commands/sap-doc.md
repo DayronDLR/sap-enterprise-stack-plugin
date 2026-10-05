@@ -16,7 +16,7 @@ model: claude-sonnet-4-6
 | `sap-cap-capire` | Documentar modelos CDS, services, handlers, deployment BTP — sintaxis exacta @sap/cds 9.7.x |
 | `sap-btp-developer-guide` | Documentar arquitectura BTP, CF vs Kyma, security, CI/CD, observability |
 | `sap-btp-best-practices` | Documentar account setup, governance, HA, landscape enterprise |
-| `sap-abap` | Documentar código ABAP, OO, SQL, Clean ABAP — solo si hay ABAP en el proyecto |
+| `sap-abap-ref` | Documentar código ABAP, OO, SQL, Clean ABAP — solo si hay ABAP en el proyecto |
 | `sap-abap-cds` | Documentar CDS Interface Views, Projection Views, DCL, annotations RAP |
 | `sap-fiori-tools` | Documentar apps Fiori Elements, OData annotations, Launchpad config |
 | `sap-sqlscript` | Documentar procedures HANA, AMDPs, funciones SQLScript |
@@ -24,7 +24,7 @@ model: claude-sonnet-4-6
 | `sap-btp-connectivity` | Documentar Cloud Connector, destinations, conectividad on-premise |
 | `sap-fuentes-de-verdad` | **Antes de escribir cualquier valor:** qué fuente oficial manda en cada stack y qué archivo del proyecto define cada dato |
 
-**Regla:** la documentación entregable al cliente no debe contener APIs, features o servicios sin validar contra la fuente oficial **del stack que se está documentando** — la del stack equivocado no valida nada. Cada stack tiene la suya en `sap-fuentes-de-verdad/reference/` (ver §3); los skills instalados (`sap-cap-capire`, `sap-abap`, `sap-fiori-tools`, etc.) sirven para llegar al patrón, no como norma. La fuente oficial se cita por su ID del catálogo (`[fuente:cap.capire]`), que el hook de cierre verifica. Si una sección cita algo sin validación, marcarla con `[NO VERIFICADO]` y pedir confirmación antes de finalizar el `.docx`. Gap de MCP unificado registrado en `docs/MCP-ROADMAP.md`.
+**Regla:** la documentación entregable al cliente no debe contener APIs, features o servicios sin validar contra la fuente oficial **del stack que se está documentando** — la del stack equivocado no valida nada. Cada stack tiene la suya en `sap-fuentes-de-verdad/reference/` (ver §3); los skills instalados (`sap-cap-capire`, `sap-abap-ref`, `sap-fiori-tools`, etc.) sirven para llegar al patrón, no como norma. La fuente oficial se cita por su ID del catálogo (`[fuente:cap.capire]`), que el hook de cierre verifica. Si una sección cita algo sin validación, marcarla con `[NO VERIFICADO]` y pedir confirmación antes de finalizar el `.docx`. Gap de MCP unificado registrado en `docs/MCP-ROADMAP.md`.
 
 ## Herramientas MCP — documentar objetos reales
 

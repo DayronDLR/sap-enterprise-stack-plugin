@@ -62,15 +62,29 @@ export function huellas(rutas) {
   const indice = {};
   if (rutas.length) {
     for (const l of git(['-c', 'core.quotePath=false', 'ls-files', '-s', '-z', '--', ...rutas]).split('\0')) {
-      const m = /^\d+ ([0-9a-f]+) \d+\t(.+)$/.exec(l);
-      if (m) indice[m[2]] = m[1];
+      // El modo entra en la huella: un symlink reemplazado por un archivo con el
+      // mismo texto que su destino tiene el mismo blob, pero cambió. Los dos efectos
+      // fallan hacia revisar de más: una ronda guardada con el formato anterior
+      // (`<blob>:<blob>`) da todo como cambiado una vez, y con `core.symlinks=false`
+      // (Windows, donde el symlink queda como archivo) esa ruta vuelve en cada ronda.
+      // El bit ejecutable (100755/100644) no cuenta.
+      const m = /^(\d+) ([0-9a-f]+) \d+\t(.+)$/.exec(l);
+      if (m) indice[m[3]] = `${m[1] === '120000' ? 'l' : 'f'}${m[2]}`;
     }
   }
-  const vivos = rutas.filter((r) => fs.existsSync(path.join(dir, r)));
-  const disco = vivos.length
-    ? git(['hash-object', '--no-filters', '--stdin-paths'], `${vivos.map((r) => path.join(dir, r)).join('\n')}\n`).trim().split('\n')
+  // `lstat`, no `existsSync`: un symlink colgado existe en el árbol aunque su destino
+  // no. Un symlink se hashea como lo guarda git —el blob de su destino—: pasarlo por
+  // `--stdin-paths` lo seguía y, si apuntaba a un directorio, `hash-object` fallaba
+  // («Unable to hash») y la ronda no se podía abrir.
+  const lstat = (r) => { try { return fs.lstatSync(path.join(dir, r)); } catch { return null; } };
+  const estados = new Map(rutas.map((r) => [r, lstat(r)]).filter(([, st]) => st));
+  const links = [...estados].filter(([, st]) => st.isSymbolicLink()).map(([r]) => r);
+  const regulares = [...estados].filter(([, st]) => !st.isSymbolicLink()).map(([r]) => r);
+  const disco = regulares.length
+    ? git(['hash-object', '--no-filters', '--stdin-paths'], `${regulares.map((r) => path.join(dir, r)).join('\n')}\n`).trim().split('\n')
     : [];
-  const enDisco = Object.fromEntries(vivos.map((r, i) => [r, disco[i]]));
+  const enDisco = Object.fromEntries(regulares.map((r, i) => [r, `f${disco[i]}`]));
+  for (const r of links) enDisco[r] = `l${git(['hash-object', '--stdin'], fs.readlinkSync(path.join(dir, r))).trim()}`;
   return Object.fromEntries(rutas.map((r) => [r, `${indice[r] ?? 'sin-indice'}:${enDisco[r] ?? 'borrado'}`]));
 }
 

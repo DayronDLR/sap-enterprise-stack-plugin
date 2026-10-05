@@ -16,7 +16,7 @@ No existe MCP oficial SAP para consultar release-state / Clean Core level (gap r
 - **SAP API Business Hub**: <https://api.sap.com> — lista de released APIs y BAPIs
 - **SAP Help Portal — ABAP Release Notes** por release target (default S/4HANA 2023)
 - **ATC en sistema cliente** (transaccion `SCI` / `ATC`) — variante `S4HANA_READINESS_REMOTE` o `S4HANA_CLOUD_DEVELOPMENT`
-- Skills locales `sap-abap` y `sap-abap-cds` para guidelines Clean ABAP
+- Skills locales `sap-abap-ref` y `sap-abap-cds` para guidelines Clean ABAP
 
 ## Pasos
 

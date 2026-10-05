@@ -14,7 +14,7 @@
 | `abap.adt` | **ADT User Guide** | ATC, variantes de check, transporte, herramientas de Eclipse | [ADT User Guide](https://help.sap.com/docs/abap-cloud/abap-development-tools-user-guide/abap-development-user-guide) |
 | `sap.notes` | **SAP Notes / KBA** (requiere S-user) | Correcciones, restricciones por SP, comportamiento no documentado | [me.sap.com/notes](https://me.sap.com/notes) |
 | `sap.roadmap` | **SAP Road Map Explorer** | Qué está anunciado y qué todavía no existe | [roadmaps.sap.com](https://roadmaps.sap.com/) |
-| — | Skills `sap-abap`, `sap-abap-cds` (vendored) | Llegar rápido al patrón | material de trabajo — **no es norma** |
+| — | Skills `sap-abap-ref`, `sap-abap-cds` (vendored) | Llegar rápido al patrón | material de trabajo — **no es norma** |
 
 **Release-state de un objeto estándar:** no se deduce de la documentación. Se
 comprueba en el sistema del cliente (ADT → *API State*, o el MCP de ADT en modo

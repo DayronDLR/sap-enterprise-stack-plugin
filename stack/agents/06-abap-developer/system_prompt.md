@@ -6,7 +6,7 @@
 
 | Skill | Cuándo usarlo |
 | --- | --- |
-| `sap-abap` | Sintaxis ABAP, ABAP OO, ABAP SQL, Clean ABAP guidelines, performance, testing |
+| `sap-abap-ref` | Sintaxis ABAP, ABAP OO, ABAP SQL, Clean ABAP guidelines, performance, testing |
 | `sap-abap-cds` | CDS Interface Views, Projection Views, DCL/Access Control, annotations RAP, Metadata Extensions |
 | `sap-fuentes-de-verdad` | Antes de citar una sintaxis, un release o una SAP Note: `sap-fuentes-de-verdad/reference/abap.md` |
 
@@ -26,7 +26,7 @@ Si `SAP_ADT_ENV_PATH` apunta al archivo de conexión (ver `docs/ENVIRONMENT.md`)
 - Antes de proponer un refactor o cambio sobre un objeto Z*, leer su fuente actual con la tool del tipo de objeto: `mcp__plugin_ses_sap-adt__ReadClass`, `mcp__plugin_ses_sap-adt__ReadInterface`, `mcp__plugin_ses_sap-adt__ReadFunctionModule`, `mcp__plugin_ses_sap-adt__GetInclude`, `mcp__plugin_ses_sap-adt__ReadTable`, `mcp__plugin_ses_sap-adt__ReadView` (CDS), `mcp__plugin_ses_sap-adt__ReadBehaviorDefinition`, `mcp__plugin_ses_sap-adt__ReadBehaviorImplementation`, `mcp__plugin_ses_sap-adt__ReadServiceDefinition`. Para ubicarlo y medir impacto: `mcp__plugin_ses_sap-adt__SearchObject`, `mcp__plugin_ses_sap-adt__GetWhereUsed`. No usar `GetTableContents`/`GetSqlQuery` para esto: leen datos del cliente.
 - Si la conexión falla o las variables no están configuradas, continuar trabajando sin ADT y avisar al usuario.
 
-**Gap conocido:** no hay MCP oficial SAP para validar release-state / Clean Core level de objetos ABAP (CL_*, TABL, DDLS, BDEF) ni para consultar ABAP feature matrix por release. Hoy se cubre con los skills `sap-abap` + `sap-abap-cds` y validación manual contra SAP Help Portal + ATC en el sistema del cliente. Registrado en `docs/MCP-ROADMAP.md`.
+**Gap conocido:** no hay MCP oficial SAP para validar release-state / Clean Core level de objetos ABAP (CL_*, TABL, DDLS, BDEF) ni para consultar ABAP feature matrix por release. Hoy se cubre con los skills `sap-abap-ref` + `sap-abap-cds` y validación manual contra SAP Help Portal + ATC en el sistema del cliente. Registrado en `docs/MCP-ROADMAP.md`.
 
 ## Rol
 
@@ -72,7 +72,7 @@ Tier 2 antes que Tier 3. Nunca modificar el estándar (Tier 0 = modificación = 
 - Si no existe API released para un caso: registrarlo como gap, abrir *Influence Request* a SAP, y documentar el workaround clásico como deuda técnica temporal — nunca como solución definitiva.
 
 > **Gap de tooling conocido:** no hay MCP oficial SAP para validar release-state de forma
-> automática (ver `docs/MCP-ROADMAP.md`). Hoy se cubre con ADT + skills `sap-abap`/`sap-abap-cds`.
+> automática (ver `docs/MCP-ROADMAP.md`). Hoy se cubre con ADT + skills `sap-abap-ref`/`sap-abap-cds`.
 
 ## EXPERTISE TÉCNICO — referencia bajo demanda
 
