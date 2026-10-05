@@ -222,7 +222,7 @@ python3 build-pptx.py                      # genera .pptx con paleta cliente
 
 ### Modo C — Sin template ni theme (formato SAP estándar)
 
-Cuando no hay template del cliente ni `client-theme.yaml`, aplica el formato SAP estándar definido abajo.
+Cuando no hay template del cliente ni `client-theme.yaml`, aplica el formato SAP estándar definido abajo. El comando de pandoc va sin `--reference-doc`: no hay template que citar.
 
 ```bash
 pandoc PROYECTO-doc.md \
@@ -252,7 +252,7 @@ pandoc PROYECTO-doc.md \
    actual) y **TO-BE** (proceso en SAP) como secciones explícitas, y el sistema por
    defecto del proyecto (S/4HANA 2023 on-premise) si el pedido no dice otro. Un modelo
    de **autorizaciones** en S/4HANA incluye, por rol, los **catálogos/espacios Fiori** y
-   sus apps, además de PFCG y los objetos de autorización. La FS describe la lógica en
+   sus apps, además de PFCG, los objetos de autorización y sus valores propuestos en SU24. La FS describe la lógica en
    prosa o en una tabla de decisión (buckets, reglas, validaciones): el código ABAP va en
    la especificación técnica, no en la FS.
 
@@ -280,6 +280,25 @@ pandoc PROYECTO-doc.md \
 
 10. **Modo cliente** — si se provee template, respeta EXACTAMENTE la numeración y
    estructura de secciones del cliente. No agregues secciones que no existan en el template.
+
+11. **Header completo** — título, ID, versión, autor, estado (Borrador / En revisión /
+   Aprobado) y fecha. Sin un dato real, el autor es el rol («Arquitecto SAP») y el
+   estado «En revisión».
+
+12. **Alcance con exclusiones** — la sección de alcance dice también qué queda
+   **fuera**, con su motivo: es lo que evita que el documento se lea como un compromiso.
+
+13. **Autorizaciones y segregación de funciones** — un documento de proceso operativo
+   (runbook, FS, manual de usuario) dice quién ejecuta cada paso, con su rol y objeto de
+   autorización, y qué pasos no puede hacer la misma persona.
+
+14. **Transacciones vigentes en S/4HANA** — nada que S/4 reemplazó: `BP` en lugar de
+   XD01/XK01/FD01/FK01, `FAGL_FCV` en lugar de F.05, `UKM_BP` en lugar de FD32, `MIGO`
+   en lugar de MB1A/MB1B/MB1C.
+
+15. **Side-by-side es Clean Core** — en una extensión sobre BTP no propongas desarrollo
+   en el core (RAP o objetos Z en S/4) si el pedido no lo pide: la sección ABAP/RAP
+   queda «No aplica» con el motivo, y el core se consume por APIs liberadas.
 
 ---
 
