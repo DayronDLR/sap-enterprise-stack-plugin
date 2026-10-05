@@ -25,9 +25,9 @@ calcular: se niega a sellar una revisión más liviana que la que corresponde.
 | Nivel | Cuándo | Gate 2 | Gate 3 |
 | --- | --- | --- | --- |
 | `config-trivial` | Cada clave cambiada está en una lista de lo seguro (versión, descripción, metadatos, versión concreta de una dependencia que ya estaba, título, i18n); ≤ 30 líneas, sin borrados ni hallazgos del scan | En esta sesión, sin subagente: los seis checks de abajo; sella `review --nivel=config-trivial` | No aplica: `qa --config-trivial` |
-| `liviana` | Sólo markdown, textos i18n e imágenes, ≤ 300 líneas y **sin código** (fences, código indentado, `<pre>`/`<script>`) en ninguna de sus versiones | Subagente `reviewer` con `model: sonnet`, dimensiones 1, 2, 3 y 8, sin ejecutar nada | No aplica: `qa --nivel=liviana` |
-| `estandar` | El resto: UI, tests, código fuera del backend, markdown con código | `reviewer` con `model: sonnet`, las ocho dimensiones; ejecutar sólo lo barato y decisivo | `sap-qa` con `model: sonnet`, sólo las secciones de `tecnologias` |
-| `completa` | Seguridad (`xs-security`, `xs-app`, `.cdsrc`), configuración que instala o despliega, hooks/CI, scripts, backend CAP (`srv/`, `db/`, `.cds`), ABAP, HANA, credenciales, borrados, más de 400 líneas o algo ilegible | `reviewer` con `model: opus`, las ocho dimensiones; reproducir lo que se pueda | `sap-qa` con `model: opus`, con evidencia ejecutada (mutantes, concurrencia) |
+| `liviana` | Sólo markdown, textos i18n e imágenes, ≤ 300 líneas y **sin código** (fences, código indentado, `<pre>`/`<script>`) en ninguna de sus versiones | Subagente `reviewer` con un modelo intermedio, dimensiones 1, 2, 3 y 8, sin ejecutar nada | No aplica: `qa --nivel=liviana` |
+| `estandar` | El resto: UI, tests, código fuera del backend, markdown con código | `reviewer` con un modelo intermedio, las ocho dimensiones; ejecutar sólo lo barato y decisivo | `sap-qa` con un modelo intermedio, sólo las secciones de `tecnologias` |
+| `completa` | Seguridad (`xs-security`, `xs-app`, `.cdsrc`), configuración que instala o despliega, hooks/CI, scripts, backend CAP (`srv/`, `db/`, `.cds`), ABAP, HANA, credenciales, borrados, más de 400 líneas o algo ilegible | `reviewer` con el modelo más capaz, las ocho dimensiones; reproducir lo que se pueda | `sap-qa` con el modelo más capaz, con evidencia ejecutada (mutantes, concurrencia) |
 
 Si el host deja elegir el modelo del subagente, usá el de la tabla; si no, usa el suyo y el resto del plan igual aplica. Si el nivel no se puede
 calcular, es `completa`.
