@@ -82,7 +82,7 @@ export function desCitar(ruta) {
   try { return JSON.parse(r); } catch { return r.slice(1, -1); }
 }
 
-/** Qué hace cada nivel. El modelo es el del Agent tool; un host sin elección lo ignora. */
+/** Qué hace cada nivel. El modelo es el del subagente; un host sin elección lo ignora. */
 export const PLAN = {
   'config-trivial': {
     review: { subagente: false, dimensiones: 'los seis checks de /sap-gates', ejecutar: false },

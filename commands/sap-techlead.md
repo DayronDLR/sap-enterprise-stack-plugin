@@ -99,7 +99,7 @@ Identifica:
 3. Las dependencias entre tareas
 4. Riesgos o ambigüedades que deban resolverse primero
 
-Si hay ambigüedades críticas que bloqueen el diseño, usa `AskUserQuestion` con máximo 2 preguntas antes de continuar.
+Si hay ambigüedades críticas que bloqueen el diseño, usá `AskUserQuestion` (máximo 2 preguntas) antes de continuar.
 
 ### 1.2 — Ubicá la persona de cada agente (no la leas)
 
@@ -129,7 +129,7 @@ El CONTEXT.md se actualiza **progresivamente** durante la sesión: al recibir el
 
 ---
 
-## PASO 2 — Plan de implementación (DENTRO de plan mode — solo texto, cero tool calls de escritura)
+## PASO 2 — Plan de implementación (solo texto, cero tool calls de escritura)
 
 Muestra el plan completo al usuario como texto:
 
@@ -150,7 +150,12 @@ Cada tarea va a **un agente del stack**, con su código: `01-REQ`, `02-INTEGRATI
 `10-DEVOPS`, `11-DOC` (el comando es `/sap-<nombre>`). Nunca un rol genérico
 («[SEGURIDAD]», «[DATA / MIGRATION]»): con un rol no se sabe qué subagente lanzar.
 
-Espera confirmación explícita del usuario. Cuando apruebe, llama **`ExitPlanMode`**.
+Una app Fiori nueva o un objeto de autorización nuevo lleva siempre una tarea
+`[07-BASIS]`: el rol y su asignación. En S/4, rol PFCG (catálogo o espacio,
+autorizaciones); en BTP, role collection sobre los role templates de
+`xs-security.json`. No depende de que el pedido diga «rol» o «autorización».
+
+Espera confirmación explícita del usuario. Cuando apruebe, llamá **`ExitPlanMode`**.
 
 ---
 
@@ -158,21 +163,21 @@ Espera confirmación explícita del usuario. Cuando apruebe, llama **`ExitPlanMo
 
 ### 3.1 — Crea las tareas
 
-Usa `TaskCreate` para cada subtarea del plan aprobado:
+Usa `TaskCreate` para cada subtarea del plan aprobado (título → `subject`, descripción → `description`, gerundio → `activeForm`):
 
-- **subject**: "[AGENTE] — Descripción concisa" (ej: "[ABAP] Crear BAdI de validación de PO")
-- **description**: Qué debe producir, qué inputs recibe, qué entregables genera, qué buenas prácticas aplicar
-- **activeForm**: Descripción en gerundio (ej: "Desarrollando BAdI de validación")
+- **título**: "[AGENTE] — Descripción concisa" (ej: "[ABAP] Crear BAdI de validación de PO")
+- **descripción**: Qué debe producir, qué inputs recibe, qué entregables genera, qué buenas prácticas aplicar
+- **gerundio**: Descripción en gerundio para el progreso (ej: "Desarrollando BAdI de validación")
 
-Establece dependencias entre tareas con `TaskUpdate` → `addBlockedBy` según las reglas del `routing_rules.json`.
+Establece las dependencias entre tareas según las reglas del `routing_rules.json`, con `TaskUpdate` → `addBlockedBy`.
 
 ### 3.2 — Lanzamiento de subagentes especializados
 
-Lanzá los subagentes con el `Agent` tool. Cada uno recibe la **ruta** de su persona (PASO 1.2), no su contenido.
+Lanzá los subagentes con la tool `Agent`. Cada uno recibe la **ruta** de su persona (PASO 1.2), no su contenido.
 
 **Reglas de ejecución:**
 
-- Tareas **sin dependencias** → lánzalas **en paralelo** (múltiples `Agent` tool calls en el **mismo mensaje**)
+- Tareas **sin dependencias** → lánzalas **en paralelo** (múltiples llamadas a `Agent` en el **mismo mensaje**)
 - Tareas **con dependencias** → espera el resultado de las predecesoras y pásalo como contexto al siguiente subagente
 
 Marca cada tarea como `in_progress` con `TaskUpdate` **antes** de lanzar el subagente.
@@ -255,12 +260,12 @@ Tras completar todos los subagentes funcionales y ANTES del cierre, seguí el
 flujo de `/ses:sap-gates` (Pasos 0 a 3): el nivel de revisión lo calcula
 `nivel-revision.mjs` y decide el modelo y el alcance de cada gate.
 
-1. **Invocar reviewer** con `Agent` tool (subagent: `reviewer`, `model` según el nivel)
+1. **Invocar reviewer** con la tool `Agent` (subagente: `reviewer`, `model` según el nivel)
    - Scope: el diff de la sesión, o sólo el delta si `ronda-revision.mjs delta review` devuelve una ronda anterior
    - Ronda: `iniciar` antes de lanzarlo y `cerrar` con el veredicto al terminar (`ronda-revision.mjs`)
    - Si CRITICAL/HIGH → volver a delegar al agente correspondiente para corregir y repetir con `delta --con-hallazgos`: sólo lo que cambió y los archivos con hallazgos abiertos
 
-2. **Invocar AGENT_09 (QA & Testing)** con `Agent` tool, salvo que el nivel sea `config-trivial` o `liviana` (ahí el Gate 3 no aplica)
+2. **Invocar AGENT_09 (QA & Testing)** con la tool `Agent`, salvo que el nivel sea `config-trivial` o `liviana` (ahí el Gate 3 no aplica)
    - Tarea: "Ejecutar `${CLAUDE_PLUGIN_ROOT}/stack/agents/09-qa-testing/nfr-checklist.md` —sólo las secciones de las tecnologías del diff— contra el diff de la sesion. Devolver hallazgos inline con evidencia o NO CUBIERTO. Tras completar sin CRITICAL/HIGH, ejecutar `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sellar-gate.sh" qa --nivel=<nivel>`."
    - Si bloquea por NFR no cubierto → corregir antes de cerrar
 

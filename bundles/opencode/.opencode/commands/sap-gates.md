@@ -29,8 +29,7 @@ calcular: se niega a sellar una revisión más liviana que la que corresponde.
 | `estandar` | El resto: UI, tests, código fuera del backend, markdown con código | `reviewer` con `model: sonnet`, las ocho dimensiones; ejecutar sólo lo barato y decisivo | `sap-qa` con `model: sonnet`, sólo las secciones de `tecnologias` |
 | `completa` | Seguridad (`xs-security`, `xs-app`, `.cdsrc`), configuración que instala o despliega, hooks/CI, scripts, backend CAP (`srv/`, `db/`, `.cds`), ABAP, HANA, credenciales, borrados, más de 400 líneas o algo ilegible | `reviewer` con `model: opus`, las ocho dimensiones; reproducir lo que se pueda | `sap-qa` con `model: opus`, con evidencia ejecutada (mutantes, concurrencia) |
 
-El modelo se pasa en el parámetro `model` del Agent tool; un host que no deja
-elegirlo usa el suyo y el resto del plan igual aplica. Si el nivel no se puede
+Si el host deja elegir el modelo del subagente, usá el de la tabla; si no, usa el suyo y el resto del plan igual aplica. Si el nivel no se puede
 calcular, es `completa`.
 
 **Los seis checks de `config-trivial`:** la versión o el valor cambiado es el
