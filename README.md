@@ -11,7 +11,7 @@
 A complete SAP development stack inside Claude Code. Install the plugin and you
 get **11 specialized SAP agents**, an **orchestrator** that routes in natural
 language, support **subagents**, **SAP reference skills**, **quality gates
-(Definition of Done)** and **5 SAP MCP servers** — without cloning any repo.
+(Definition of Done)** and **4 SAP MCP servers** — without cloning any repo.
 
 > 🌐 **The agents reply in your language.** Write your request in English → you
 > get English; write in Spanish → Spanish. SAP terms and code stay untouched.
@@ -87,36 +87,66 @@ commands, skills, MCP servers and Definition of Done — also runs on:
 | **OpenCode** | 5 of 8 — the other 3 use events OpenCode doesn't expose |
 | **GitHub Copilot** | none; the gates live in git hooks and CI |
 
-### Codex CLI — install as a plugin
+### Codex CLI — install and update
 
-Codex has its own plugin marketplace, and this repo is one:
+On Codex the stack comes in **two independent parts**:
+
+| Part | What it brings | Installed with |
+| --- | --- | --- |
+| **Plugin** | 51 skills: 20 commands (`$ses-sap-abap`…), 6 subagents, 25 reference skills | `codex plugin …` — once per machine |
+| **Project bundle** | the Definition of Done hooks, the 4 SAP MCP servers (`sap-adt` included) and `AGENTS.md` with the SAP context | `instalar.sh` — once per project |
+
+A Codex plugin cannot carry hooks or MCP servers (verified against `codex-cli
+0.153.4`: `plugin_hooks` is `removed`), which is why the bundle exists.
+
+**First time**
 
 ```bash
-codex plugin marketplace add https://github.com/DayronDLR/sap-enterprise-stack-plugin
+# 1. Plugin — register the marketplace, then install (both are needed)
+codex plugin marketplace add DayronDLR/sap-enterprise-stack-plugin
 codex plugin add ses@sap-stack
-codex plugin marketplace upgrade && codex plugin add ses@sap-stack   # to update
-```
 
-That gives you **51 skills**: the **20 commands** (invoked `$ses-sap-abap`), the **6 subagents**, and **25 reference skills**.
-
-> **What a Codex plugin cannot carry:** hooks and MCP servers. Verified against
-> `codex-cli 0.153.4` — the `plugin_hooks` feature is `removed`, and `hooks` isn't
-> among the keys its own plugin validator accepts. If you want the Definition of
-> Done blocking your deliveries and the 5 SAP MCP servers, add the full bundle:
-
-```bash
+# 2. Bundle — from a clone of this repo
 git clone https://github.com/DayronDLR/sap-enterprise-stack-plugin
 cd sap-enterprise-stack-plugin
-./instalar.sh codex ~/my-sap-project     # or: opencode · copilot
+./instalar.sh codex ~/my-sap-project
 ```
 
-`instalar.sh` is **additive**: if a file in your project differs from the bundle it
-stops and names it instead of overwriting. `--force` is the explicit way to let the
-bundle win.
+**3.** Open `codex` in the project, **trust the folder** when it asks, and **approve
+the hooks in `/hooks`**. Until you do both, no hook runs: the gates stay in git
+and CI.
 
-**On Codex, one more step:** open Codex once in the project and accept when it
-asks whether you trust the folder. Until you do, the hooks don't run and the 3
-gates won't stop you as you type — they stay in git hooks and CI.
+`instalar.sh` also installs the bundle for the other hosts:
+`./instalar.sh opencode <project>` or `./instalar.sh copilot <project>`.
+
+**Update**
+
+```bash
+# 1. Plugin — `upgrade` refreshes the marketplace; `add` installs the new version
+codex plugin marketplace upgrade
+codex plugin add ses@sap-stack
+
+# 2. Bundle — bring the new version and let it replace the old one
+cd sap-enterprise-stack-plugin && git pull
+./instalar.sh codex ~/my-sap-project --force
+```
+
+**3.** Open `codex` in the project and **approve the hooks again in `/hooks`**: every
+changed hook goes back to «Hooks need review» and does not run until approved.
+
+**If something fails**
+
+| Message or symptom | Cause | Fix |
+| --- | --- | --- |
+| ``plugin `ses` was not found in marketplace `sap-stack` `` | The `sap-stack` marketplace was never added on this machine (`upgrade` only refreshes the ones you already have) | `codex plugin marketplace add DayronDLR/sap-enterprise-stack-plugin`, then `codex plugin add ses@sap-stack` |
+| `upgrade` says «Upgraded» but the skills are the old ones | `upgrade` does not reinstall the plugin | `codex plugin add ses@sap-stack` |
+| `instalar.sh` stops: «N file(s) differ from the bundle» | Files from a previous bundle, or edits of yours | Review the list; if the bundle should win, repeat with `--force` |
+| The gates do not stop a delivery | Folder not trusted, or hooks not approved | Open `codex` in the project and approve in `/hooks` |
+
+**Windows.** The plugin installs the same way from PowerShell (`codex.cmd plugin
+…`). The bundle's hooks and `sap-adt` run with `sh`/`bash`: run `instalar.sh` from
+Git Bash, and use Codex from WSL or Git Bash. Native PowerShell is not verified
+for the hooks or `sap-adt`.
 
 ## Getting started (2 minutes)
 
@@ -364,37 +394,66 @@ agentes, comandos, skills, servidores MCP y Definition of Done— también corre
 | **OpenCode** | 5 de 8 — los otros 3 usan eventos que OpenCode no expone |
 | **GitHub Copilot** | ninguno; los gates viven en los hooks de git y en CI |
 
-### Codex CLI — instalar como plugin
+### Codex CLI — instalar y actualizar
 
-Codex tiene su propio marketplace de plugins, y este repo es uno:
+En Codex el stack viene en **dos partes independientes**:
+
+| Parte | Qué trae | Se instala con |
+| --- | --- | --- |
+| **Plugin** | 51 skills: los 20 comandos (`$ses-sap-abap`…), 6 subagentes y 25 skills de referencia | `codex plugin …` — una vez por máquina |
+| **Bundle del proyecto** | los hooks de la Definition of Done, los 4 servidores MCP SAP (`sap-adt` incluido) y `AGENTS.md` con el contexto SAP | `instalar.sh` — una vez por proyecto |
+
+Un plugin de Codex no puede llevar hooks ni servidores MCP (verificado contra
+`codex-cli 0.153.4`: `plugin_hooks` está `removed`); por eso existe el bundle.
+
+**Primera vez**
 
 ```bash
-codex plugin marketplace add https://github.com/DayronDLR/sap-enterprise-stack-plugin
+# 1. Plugin — registrar el marketplace y después instalar (hacen falta los dos)
+codex plugin marketplace add DayronDLR/sap-enterprise-stack-plugin
 codex plugin add ses@sap-stack
-codex plugin marketplace upgrade && codex plugin add ses@sap-stack   # para actualizar
-```
 
-Eso te da **51 skills**: los **20 comandos** (se invocan `$ses-sap-abap`), los **6 subagentes** y **25 skills** de referencia.
-
-> **Lo que un plugin de Codex no puede llevar:** hooks ni servidores MCP.
-> Verificado contra `codex-cli 0.153.4` — la feature `plugin_hooks` está
-> `removed`, y `hooks` no figura entre las claves que acepta su propio validador
-> de plugins. Si querés la Definition of Done bloqueando tus entregas y los 5
-> servidores MCP SAP, sumá el bundle completo:
-
-```bash
+# 2. Bundle — desde un clone de este repo
 git clone https://github.com/DayronDLR/sap-enterprise-stack-plugin
 cd sap-enterprise-stack-plugin
-./instalar.sh codex ~/mi-proyecto-sap     # o: opencode · copilot
+./instalar.sh codex ~/mi-proyecto-sap
 ```
 
-`instalar.sh` es **aditivo**: si un archivo de tu proyecto difiere del bundle, se
-detiene y te lo nombra en vez de pisarlo. `--force` es la salida explícita para que
-gane el bundle.
+**3.** Abrí `codex` en el proyecto, **confiá en la carpeta** cuando te pregunte y
+**aprobá los hooks en `/hooks`**. Hasta hacer las dos cosas no corre ningún
+hook: los gates quedan en git y CI.
 
-**En Codex hace falta un paso más:** abrí Codex una vez en el proyecto y aceptá
-cuando pregunte si confiás en la carpeta. Hasta que lo hagas los hooks no corren y
-los 3 gates no te frenan al escribir — quedan en los hooks de git y en CI.
+`instalar.sh` también instala el bundle de los otros hosts:
+`./instalar.sh opencode <proyecto>` o `./instalar.sh copilot <proyecto>`.
+
+**Actualizar**
+
+```bash
+# 1. Plugin — `upgrade` refresca el marketplace; `add` instala la versión nueva
+codex plugin marketplace upgrade
+codex plugin add ses@sap-stack
+
+# 2. Bundle — traer la versión nueva y que reemplace a la vieja
+cd sap-enterprise-stack-plugin && git pull
+./instalar.sh codex ~/mi-proyecto-sap --force
+```
+
+**3.** Abrí `codex` en el proyecto y **aprobá de nuevo los hooks en `/hooks`**: cada
+hook que cambió vuelve a «Hooks need review» y no corre hasta aprobarlo.
+
+**Si algo falla**
+
+| Mensaje o síntoma | Causa | Arreglo |
+| --- | --- | --- |
+| ``plugin `ses` was not found in marketplace `sap-stack` `` | El marketplace `sap-stack` nunca se agregó en esta máquina (`upgrade` sólo refresca los que ya tenés) | `codex plugin marketplace add DayronDLR/sap-enterprise-stack-plugin` y después `codex plugin add ses@sap-stack` |
+| `upgrade` dice «Upgraded» pero los skills son los viejos | `upgrade` no reinstala el plugin | `codex plugin add ses@sap-stack` |
+| `instalar.sh` se detiene: «N archivo(s) difieren del bundle» | Archivos de un bundle anterior, o cambios tuyos | Revisá la lista; si el bundle debe ganar, repetí con `--force` |
+| Los gates no frenan una entrega | Carpeta sin confiar, o hooks sin aprobar | Abrí `codex` en el proyecto y aprobalos en `/hooks` |
+
+**Windows.** El plugin se instala igual desde PowerShell (`codex.cmd plugin …`).
+Los hooks del bundle y `sap-adt` corren con `sh`/`bash`: ejecutá `instalar.sh`
+desde Git Bash, y usá Codex desde WSL o Git Bash. En PowerShell nativo los hooks y
+`sap-adt` no están verificados.
 
 ## Licencia
 
